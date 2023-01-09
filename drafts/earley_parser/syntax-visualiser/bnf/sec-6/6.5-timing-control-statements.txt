@@ -28,4 +28,3 @@ event_trigger ::= -> hierarchical_event_identifier ;
 disable_statement ::= disable hierarchical_task_identifier ;
 | disable hierarchical_block_identifier ;
 | disable fork ;
-

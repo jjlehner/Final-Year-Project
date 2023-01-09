@@ -7,4 +7,3 @@ parallel_path_description ::= ( specify_input_terminal_descriptor [ polarity_ope
 full_path_description ::= ( list_of_path_inputs [ polarity_operator ] *> list_of_path_outputs ) list_of_path_inputs ::=
 specify_input_terminal_descriptor { , specify_input_terminal_descriptor }
 list_of_path_outputs ::= specify_output_terminal_descriptor { , specify_output_terminal_descriptor }
-

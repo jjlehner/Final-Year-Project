@@ -8,4 +8,3 @@ tf_port_item ::= { attribute_instance } [ tf_port_direction ] [ var ] data_type_
 tf_port_direction ::= port_direction | const ref
 tf_port_declaration ::= { attribute_instance } tf_port_direction [ var ] data_type_or_implicit list_of_tf_variable_identifiers ;
 task_prototype ::= task task_identifier [ ( [ tf_port_list ] ) ]
-

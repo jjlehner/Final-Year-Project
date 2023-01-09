@@ -17,4 +17,3 @@ rs_repeat ::= repeat ( expression ) production_item
 rs_case ::= case ( case_expression ) rs_case_item { rs_case_item } endcase
 rs_case_item ::= case_item_expression { , case_item_expression } : production_item ;
 | default [ : ] production_item ;
-

@@ -118,4 +118,3 @@ let_formal_type ::= data_type_or_implicit
 let_list_of_arguments ::= [ let_actual_arg ] {, [ let_actual_arg ] } {, . identifier ( [ let_actual_arg ] ) }
 | . identifier ( [ let_actual_arg ] ) { , . identifier ( [ let_actual_arg ] ) }
 let_actual_arg ::= expression
-

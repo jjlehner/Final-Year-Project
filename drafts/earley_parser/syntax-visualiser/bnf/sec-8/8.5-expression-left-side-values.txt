@@ -6,4 +6,3 @@ variable_lvalue ::= [ implicit_class_handle . | package_scope ] hierarchical_var
 | [ assignment_pattern_expression_type ] assignment_pattern_variable_lvalue
 | streaming_concatenation
 nonrange_variable_lvalue ::= [implicit_class_handle.|package_scope]hierarchical_variable_identifier nonrange_select
-

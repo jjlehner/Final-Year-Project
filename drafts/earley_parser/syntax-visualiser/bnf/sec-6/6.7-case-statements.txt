@@ -16,4 +16,3 @@ randcase_statement ::= randcase randcase_item { randcase_item } endcase
 randcase_item ::= expression : statement_or_null
 open_range_list ::= open_value_range { , open_value_range }
 open_value_range ::= value_range
-

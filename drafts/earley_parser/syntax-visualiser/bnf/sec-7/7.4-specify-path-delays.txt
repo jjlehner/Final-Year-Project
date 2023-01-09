@@ -32,4 +32,3 @@ state_dependent_path_declaration ::= if ( module_path_expression ) simple_path_d
 | if ( module_path_expression ) edge_sensitive_path_declaration
 | ifnone simple_path_declaration
 polarity_operator ::= + | -
-

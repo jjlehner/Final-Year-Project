@@ -63,4 +63,3 @@ set_covergroup_expression ::= covergroup_expression
 integer_covergroup_expression ::= covergroup_expression
 cross_set_expression ::= covergroup_expression
 covergroup_expression ::= expression
-

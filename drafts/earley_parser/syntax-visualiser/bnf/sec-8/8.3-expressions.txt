@@ -44,4 +44,3 @@ part_select_range ::= constant_range | indexed_range
 indexed_range ::= expression +: constant_expression
 | expression-:constant_expression
 genvar_expression ::= constant_expression
-

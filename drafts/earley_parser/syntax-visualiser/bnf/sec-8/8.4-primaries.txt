@@ -47,4 +47,3 @@ constant_select ::= [{.member_identifier constant_bit_select}.member_identifier]
 constant_cast ::= casting_type ' ( constant_expression )
 constant_let_expression ::= let_expression
 cast ::= casting_type ' ( expression )
-

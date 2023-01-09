@@ -19,4 +19,3 @@ array_manipulation_call ::= array_method_name { attribute_instance } [ ( list_of
 randomize_call ::= randomize { attribute_instance } [ ( [ variable_identifier_list | null ] ) ] [ with [ ( [ identifier_list ] ) ] constraint_block ]
 method_call_root ::= primary | implicit_class_handle
 array_method_name ::= method_identifier | unique | and | or | xor
-

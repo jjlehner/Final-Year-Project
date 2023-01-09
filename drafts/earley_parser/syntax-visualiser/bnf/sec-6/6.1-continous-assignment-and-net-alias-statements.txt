@@ -5,4 +5,3 @@ list_of_variable_assignments ::= variable_assignment { , variable_assignment }
 net_alias ::= alias
 net_lvalue = net_lvalue { = net_lvalue } ;
 net_assignment ::= net_lvalue = expression
-

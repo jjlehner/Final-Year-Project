@@ -11,4 +11,3 @@ modport_tf_ports_declaration ::= import_export modport_tf_port { , modport_tf_po
 modport_tf_port ::= method_prototype
 | tf_identifier
 import_export ::= import | export
-

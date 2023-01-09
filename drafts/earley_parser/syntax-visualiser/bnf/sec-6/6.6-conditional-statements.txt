@@ -3,4 +3,3 @@ unique_priority ::= unique | unique0 | priority
 cond_predicate ::= expression_or_cond_pattern { &&& expression_or_cond_pattern }
 expression_or_cond_pattern ::= expression | cond_pattern
 cond_pattern ::= expression matches pattern
-

@@ -22,4 +22,3 @@ cycle_delay ::= ## integral_number
 | ## ( expression )
 clockvar ::= hierarchical_identifier
 clockvar_expression ::= clockvar select
-

@@ -12,4 +12,3 @@ dpi_import_export ::= import dpi_spec_string [ dpi_function_import_property ] [ 
 dpi_spec_string ::= "DPI-C" | "DPI" dpi_function_import_property ::= context | pure dpi_task_import_property ::= context
 dpi_function_proto ::= function_prototype
 dpi_task_proto ::= task_prototype
-

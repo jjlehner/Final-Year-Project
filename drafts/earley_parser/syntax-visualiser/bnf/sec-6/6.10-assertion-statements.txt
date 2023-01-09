@@ -22,4 +22,3 @@ deferred_immediate_assume_statement ::= assume #0 ( expression ) action_block
 deferred_immediate_cover_statement ::=
 cover #0 ( expression ) statement_or_null
 | cover final ( expression ) statement_or_null
-

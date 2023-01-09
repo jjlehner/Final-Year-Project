@@ -84,4 +84,3 @@ topmodule_identifier ::= identifier
 type_identifier ::= identifier
 udp_identifier ::= identifier
 variable_identifier ::= identifier
-

@@ -22,4 +22,3 @@ $fullskew_timing_check ::= $fullskew ( reference_event , data_event , timing_che
 $period_timing_check ::= $period ( controlled_reference_event , timing_check_limit [ , [ notifier ] ] ) ;
 $width_timing_check ::= $width ( controlled_reference_event , timing_check_limit , threshold [ , [ notifier ] ] ) ;
 $nochange_timing_check ::= $nochange ( reference_event , data_event , start_edge_offset , end_edge_offset [ , [ notifier ] ] );
-

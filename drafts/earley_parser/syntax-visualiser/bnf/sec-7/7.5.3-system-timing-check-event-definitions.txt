@@ -19,4 +19,3 @@ scalar_timing_check_condition ::= expression
 | expression!=scalar_constant
 | expression!==scalar_constant
 scalar_constant ::=1'b0|1'b1|1'B0|1'B1|'b0|'b1|'B0|'B1|1|0
-

@@ -12,4 +12,3 @@ timestamp_condition ::= mintypmax_expression
 start_edge_offset ::= mintypmax_expression
 threshold ::= constant_expression
 timing_check_limit ::= expression
-
