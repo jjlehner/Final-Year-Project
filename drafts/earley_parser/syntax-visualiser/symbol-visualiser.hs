@@ -2,26 +2,15 @@ module Main where
 
 import           Control.Monad
 import           Control.Monad.State.Lazy
+import           Data.Function
 import           Data.GraphViz
 import           Data.List
-import Data.Function
-import Debug.Trace
+import           Debug.Trace
+import           System.Environment
 
-import Text.Parsec
-    ( char,
-      digit,
-      letter,
-      oneOf,
-      string,
-      between,
-      eof,
-      many1,
-      optional,
-      sepBy,
-      (<|>),
-      many,
-      runP,
-      try)
+import           Text.Parsec              (between, char, digit, eof, letter,
+                                           many, many1, oneOf, optional, runP,
+                                           sepBy, string, try, (<|>))
 import           Text.Parsec.Char
 import           Text.Parsec.String
 bnfFiles = [
@@ -103,23 +92,23 @@ symbolIdentifierInSymbolExpression :: SymbolIdentifier -> [Symbol] -> Bool
 symbolIdentifierInSymbolExpression symbolIdentifier =
     any (symbolIdentifierInSymbol symbolIdentifier)
 
+symbolIdentifierInNonTerminal :: SymbolIdentifier -> NonTerminal -> Bool
 symbolIdentifierInNonTerminal symbolIdentifier (NonTerminal {name, symbols}) = any (symbolIdentifierInSymbolExpression symbolIdentifier) symbols
 
-findSymbolIdentifierInNonTerminal :: [NonTerminal] -> [NonTerminal] -> SymbolIdentifier -> ([NonTerminal], [NonTerminal])
+type UnExploredNonTerminal = NonTerminal
+type ExploredNonTerminal = NonTerminal
+type GraphEdge = (SymbolIdentifier, SymbolIdentifier, ())
+
+findSymbolIdentifierInNonTerminal :: [NonTerminal] -> [ExploredNonTerminal] -> SymbolIdentifier -> ([UnExploredNonTerminal], [ExploredNonTerminal])
 findSymbolIdentifierInNonTerminal allNonTerminals exploredNonTerminals symbolIdentifier =
     (unExploredParents, exploredParents) where
     parents = filter (symbolIdentifierInNonTerminal symbolIdentifier) allNonTerminals
     unExploredParents = parents \\ exploredNonTerminals
     exploredParents = parents `intersect` exploredNonTerminals
 
-type GraphEdge = (SymbolIdentifier, SymbolIdentifier, ())
-
 makeEdges :: SymbolIdentifier -> [NonTerminal] -> [GraphEdge]
 makeEdges startingSymbol parents =
     map (\parent -> (name parent, startingSymbol, ())) parents
-
-type UnExploredNonTerminal = NonTerminal
-type ExploredNonTerminal = NonTerminal
 
 parentEdgesFolder :: [NonTerminal] -> ([GraphEdge], [NonTerminal]) -> SymbolIdentifier -> ([GraphEdge], [ExploredNonTerminal])
 parentEdgesFolder allNonTerminals (edges, exploredNonTerminals) symbolIdentifier =
@@ -134,8 +123,7 @@ parentEdgesFolder allNonTerminals (edges, exploredNonTerminals) symbolIdentifier
 
 findAllGrammarTreeEdges :: [NonTerminal] -> [NonTerminal] -> [SymbolIdentifier] -> ([GraphEdge], [ExploredNonTerminal])
 findAllGrammarTreeEdges allNonTerminals exploredNonTerminals startingSymbols =
-    let res = foldl (parentEdgesFolder allNonTerminals) ([], exploredNonTerminals) startingSymbols
-    in  res
+    foldl (parentEdgesFolder allNonTerminals) ([], exploredNonTerminals) startingSymbols
 
 drawGrammarTree :: [NonTerminal] -> SymbolIdentifier -> DotGraph String
 drawGrammarTree allNonTerminals startingSymbolIdentifier =
@@ -143,9 +131,8 @@ drawGrammarTree allNonTerminals startingSymbolIdentifier =
     & fst
     & graphElemsToDot nonClusteredParams []
 
-
 main = do
+    args <- getArgs
     grammar <- readGrammarFiles
     let nonTerminals = parseGrammarFiles grammar
-    -- putStr $ show $ length $ fst a
     runGraphviz (drawGrammarTree nonTerminals "timeunits_declaration") Png "syntax-visualiser/bin/output.png"
