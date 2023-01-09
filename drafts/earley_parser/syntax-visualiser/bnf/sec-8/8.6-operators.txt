@@ -1,0 +1,6 @@
+unary_operator ::= +|-|!|~|&|~&|||~||^|~^|^~
+binary_operator ::= +|-|*|/|%|==|!=|===|!==|==?|!=?|&&||||** | <|<=|>|>=|&|||^|^~|~^|>>|<<|>>>|<<< | ->|<->
+inc_or_dec_operator ::= ++ | --
+unary_module_path_operator ::= !|~|&|~&|||~||^|~^|^~
+binary_module_path_operator ::= ==|!=|&&||||&|||^|^~|~^
+

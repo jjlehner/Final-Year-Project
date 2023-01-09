@@ -1,0 +1,1 @@
+interface_instantiation ::= interface_identifier [ parameter_value_assignment ] hierarchical_instance { , hierarchical_instance } ;

@@ -1,0 +1,5 @@
+local_parameter_declaration ::= localparamdata_type_or_implicit list_of_param_assignments
+| localparam type list_of_type_assignments
+parameter_declaration ::= parameterdata_type_or_implicit list_of_param_assignments
+| parameter type list_of_type_assignments
+specparam_declaration ::= specparam [ packed_dimension ] list_of_specparam_assignments

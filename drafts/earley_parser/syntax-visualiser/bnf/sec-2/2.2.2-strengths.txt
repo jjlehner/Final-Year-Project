@@ -1,0 +1,8 @@
+drive_strength ::= ( strength0 , strength1 )
+| ( strength1 , strength0 )
+| ( strength0 , highz1 )
+| ( strength1 , highz0 )
+| ( highz0 , strength1 )
+| ( highz1 , strength0 )
+strength0 ::= supply0 | strong0 | pull0 | weak0 strength1 ::= supply1 | strong1 | pull1 | weak1
+charge_strength ::= ( small ) | ( medium ) | ( large )

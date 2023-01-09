@@ -1,0 +1,15 @@
+timecheck_condition ::= mintypmax_expression controlled_reference_event ::= controlled_timing_check_event data_event ::= timing_check_event
+delayed_data ::= terminal_identifier
+| terminal_identifier[constant_mintypmax_expression]
+delayed_reference ::= terminal_identifier
+| terminal_identifier[constant_mintypmax_expression]
+end_edge_offset ::= mintypmax_expression
+event_based_flag ::= constant_expression
+notifier ::= variable_identifier
+reference_event ::= timing_check_event
+remain_active_flag ::= constant_mintypmax_expression
+timestamp_condition ::= mintypmax_expression
+start_edge_offset ::= mintypmax_expression
+threshold ::= constant_expression
+timing_check_limit ::= expression
+

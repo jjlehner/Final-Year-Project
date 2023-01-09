@@ -1,0 +1,7 @@
+delay3 ::= # delay_value | # ( mintypmax_expression [ , mintypmax_expression [ , mintypmax_expression ] ] )
+delay2 ::= # delay_value | # ( mintypmax_expression [ , mintypmax_expression ] )
+delay_value ::= unsigned_number
+| real_number
+| ps_identifier
+| time_literal
+| 1step

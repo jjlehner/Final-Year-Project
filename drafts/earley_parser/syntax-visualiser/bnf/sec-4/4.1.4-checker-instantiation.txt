@@ -1,0 +1,6 @@
+checker_instantiation ::= ps_checker_identifier name_of_instance ( [list_of_checker_port_connections] ) ;
+list_of_checker_port_connections ::= ordered_checker_port_connection { , ordered_checker_port_connection }
+| named_checker_port_connection { , named_checker_port_connection }
+ordered_checker_port_connection ::= { attribute_instance } [ property_actual_arg ]
+named_checker_port_connection ::= { attribute_instance } . formal_port_identifier [ ( [ property_actual_arg ] ) ]
+| { attribute_instance } .*

@@ -1,0 +1,1 @@
+white_space ::= space | tab | newline | eof

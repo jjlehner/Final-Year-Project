@@ -1,0 +1,8 @@
+block_item_declaration ::= { attribute_instance } data_declaration
+| { attribute_instance } local_parameter_declaration ;
+| { attribute_instance } parameter_declaration ;
+| { attribute_instance } overload_declaration
+| { attribute_instance } let_declaration
+overload_declaration ::= bind overload_operator function data_type function_identifier ( overload_proto_formals ) ;
+overload_operator ::=+|++|–|– –|*|**|/|%|==|!=|<|<=|>|>=|=
+overload_proto_formals ::= data_type {, data_type}
