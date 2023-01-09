@@ -7,18 +7,11 @@ package_import_item ::= package_identifier :: identifier
 package_export_declaration ::= export *::* ;
 | export package_import_item { , package_import_item } ;
 genvar_declaration ::= genvar list_of_genvar_identifiers ;
-net_declaration ::= net_type [ drive_strength | charge_strength ] [ vectored | scalared ]
-data_type_or_implicit [ delay ] list_of_net_decl_assignments ;
-| net_type_identifier [ delay_control ]
-list_of_net_decl_assignments ;
-| interconnect implicit_data_type [ # delay_value ]
-net_identifier { unpacked_dimension }
-[ , net_identifier { unpacked_dimension }] ;
-type_declaration ::=
-typedef data_type type_identifier { variable_dimension } ;
-|typedefinterface_instance_identifierconstant_bit_select.type_identifier type_identifier; | typedef [ enum | struct | union | class | interface class ] type_identifier ;
-net_type_declaration ::=
-nettype data_type net_type_identifier
-[ with [ package_scope | class_scope ] tf_identifier ] ;
+net_declaration ::= net_type [ drive_strength | charge_strength ] [ vectored | scalared ] data_type_or_implicit [ delay ] list_of_net_decl_assignments ;
+| net_type_identifier [ delay_control ] list_of_net_decl_assignments ;
+| interconnect implicit_data_type [ # delay_value ] net_identifier { unpacked_dimension } [ , net_identifier { unpacked_dimension }] ;
+type_declaration ::= typedef data_type type_identifier { variable_dimension } ;
+| typedefinterface_instance_identifierconstant_bit_select.type_identifier type_identifier; | typedef [ enum | struct | union | class | interface class ] type_identifier ;
+net_type_declaration ::= nettype data_type net_type_identifier [ with [ package_scope | class_scope ] tf_identifier ] ;
 | nettype [ package_scope | class_scope ] net_type_identifier net_type_identifier ;
 lifetime ::= static | automatic A.2.2 Declaration data types

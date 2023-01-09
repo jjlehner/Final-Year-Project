@@ -1,5 +1,6 @@
 randsequence_statement ::= randsequence ( [ production_identifier ] ) production { production } endsequence
-production ::= [ data_type_or_void ] production_identifier [ ( tf_port_list ) ] : rs_rule { | rs_rule } ; rs_rule ::= rs_production_list [ := weight_specification [ rs_code_block ] ]
+production ::= [ data_type_or_void ] production_identifier [ ( tf_port_list ) ] : rs_rule { \| rs_rule } ;
+rs_rule ::= rs_production_list [ := weight_specification [ rs_code_block ] ]
 rs_production_list ::= rs_prod { rs_prod }
 | randjoin [ ( expression ) ] production_item production_item { production_item }
 weight_specification ::= integral_number

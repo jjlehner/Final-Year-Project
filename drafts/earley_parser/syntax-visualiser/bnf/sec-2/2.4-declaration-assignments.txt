@@ -1,5 +1,5 @@
-defparam_assignment ::= hierarchical_parameter_identifier = constant_mintypmax_expression net_decl_assignment ::= net_identifier { unpacked_dimension } [ = expression ] param_assignment ::=
-parameter_identifier { unpacked_dimension } [ = constant_param_expression ]
+defparam_assignment ::= hierarchical_parameter_identifier = constant_mintypmax_expression net_decl_assignment ::= net_identifier { unpacked_dimension } [ = expression ]
+param_assignment ::= parameter_identifier { unpacked_dimension } [ = constant_param_expression ]
 specparam_assignment ::= specparam_identifier = constant_mintypmax_expression
 | pulse_control_specparam
 type_assignment ::= type_identifier [ = data_type ]

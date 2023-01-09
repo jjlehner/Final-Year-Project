@@ -1,6 +1,6 @@
 generate_region ::= generate { generate_item } endgenerate
-loop_generate_construct ::= for ( genvar_initialization ; genvar_expression ; genvar_iteration )
-generate_block genvar_initialization ::= [ genvar ] genvar_identifier = constant_expression
+loop_generate_construct ::= for ( genvar_initialization ; genvar_expression ; genvar_iteration ) generate_block
+genvar_initialization ::= [ genvar ] genvar_identifier = constant_expression
 genvar_iteration ::= genvar_identifier assignment_operator genvar_expression
 | inc_or_dec_operator genvar_identifier
 | genvar_identifier inc_or_dec_operator
@@ -11,8 +11,7 @@ case_generate_construct ::= case ( constant_expression ) case_generate_item { ca
 case_generate_item ::= constant_expression { , constant_expression } : generate_block
 | default [ : ] generate_block
 generate_block ::= generate_item
-| [generate_block_identifier:]begin[:generate_block_identifier] { generate_item }
-end [ : generate_block_identifier ]
+| [generate_block_identifier:]begin[:generate_block_identifier] { generate_item } end [ : generate_block_identifier ]
 generate_item ::= module_or_generate_item
 | interface_or_generate_item
 | checker_or_generate_item

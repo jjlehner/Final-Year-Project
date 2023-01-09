@@ -18,18 +18,18 @@ cover_point ::= [ [ data_type_or_implicit ] cover_point_identifier : ] coverpoin
 bins_or_empty ::= { {attribute_instance} { bins_or_options ; } }
 |;
 bins_or_options ::= coverage_option
-| [ wildcard ] bins_keyword bin_identifier [ [ [ covergroup_expression ] ] ] = { covergroup_range_list } [ with ( with_covergroup_expression ) ] [ iff ( expression ) ]
-| [ wildcard ] bins_keyword bin_identifier [ [ [ covergroup_expression ] ] ] = cover_point_identifier with ( with_covergroup_expression ) ] [ iff ( expression ) ]
-| [ wildcard ] bins_keyword bin_identifier [ [ [ covergroup_expression ] ] ] = set_covergroup_expression [ iff ( expression ) ]
+| [ wildcard ] bins_keyword bin_identifier [ \[ [ covergroup_expression ] \] ] = { covergroup_range_list } [ with ( with_covergroup_expression ) ] [ iff ( expression ) ]
+| [ wildcard ] bins_keyword bin_identifier [ \[ [ covergroup_expression ] \] ] = cover_point_identifier with [ ( with_covergroup_expression ) ] [ iff ( expression ) ]
+| [ wildcard ] bins_keyword bin_identifier [ \[ [ covergroup_expression ] \] ] = set_covergroup_expression [ iff ( expression ) ]
 | [wildcard]bins_keyword bin_identifier[[]]=trans_list[iff(expression)]
 | bins_keyword bin_identifier[[[covergroup_expression]]]=default[iff(expression)]
 | bins_keyword bin_identifier=defaultsequence[iff(expression)]
-bins_keyword::= bins | illegal_bins | ignore_bins
+bins_keyword ::= bins | illegal_bins | ignore_bins
 trans_list ::= ( trans_set ) { , ( trans_set ) }
 trans_set ::= trans_range_list { => trans_range_list }
 trans_range_list ::= trans_item
 | trans_item[*repeat_range]
-| trans_item[–>repeat_range]
+| trans_item[->repeat_range]
 | trans_item[=repeat_range]
 trans_item ::= covergroup_range_list
 repeat_range ::= covergroup_expression
@@ -39,7 +39,7 @@ list_of_cross_items ::= cross_item , cross_item { , cross_item }
 cross_item ::= cover_point_identifier
 | variable_identifier
 cross_body ::= { { cross_body_item ; } }
-|;
+| ;
 cross_body_item ::= function_declaraton
 | bins_selection_or_option;
 bins_selection_or_option ::= { attribute_instance } coverage_option
@@ -48,7 +48,7 @@ bins_selection ::= bins_keyword bin_identifier = select_expression [ iff ( expre
 select_expression ::= select_condition
 | ! select_condition
 | select_expression&&select_expression
-| select_expression || select_expression
+| select_expression \|\| select_expression
 | ( select_expression )
 | select_expressionwith(with_covergroup_expression)[matchesinteger_covergroup_expression]
 | cross_identifier

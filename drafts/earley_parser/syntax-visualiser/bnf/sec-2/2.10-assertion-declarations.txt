@@ -9,8 +9,8 @@ assert_property_statement ::= assert property ( property_spec ) action_block
 assume_property_statement ::= assumeproperty(property_spec) action_block
 cover_property_statement ::= cover property ( property_spec ) statement_or_null
 expect_property_statement ::= expect ( property_spec ) action_block
-cover_sequence_statement::= cover sequence ( [clocking_event ] [ disable iff ( expression_or_dist ) ] sequence_expr ) statement_or_null
-restrict_property_statement::= restrict property ( property_spec ) ;
+cover_sequence_statement ::= cover sequence ( [clocking_event ] [ disable iff ( expression_or_dist ) ] sequence_expr ) statement_or_null
+restrict_property_statement ::= restrict property ( property_spec ) ;
 property_instance ::= ps_or_hierarchical_property_identifier [ ( [ property_list_of_arguments ] ) ]
 property_list_of_arguments ::= [property_actual_arg] { , [property_actual_arg] } { , . identifier ( [property_actual_arg] ) }
 | . identifier ( [property_actual_arg] ) { , . identifier ( [property_actual_arg] ) }
@@ -19,9 +19,7 @@ property_actual_arg ::= property_expr
 assertion_item_declaration ::= property_declaration
 | sequence_declaration
 | let_declaration
-property_declaration ::= property property_identifier [ ( [ property_port_list ] ) ] ;
-{ assertion_variable_declaration } property_spec [ ; ]
-endproperty [ : property_identifier ]
+property_declaration ::= property property_identifier [ ( [ property_port_list ] ) ] ; { assertion_variable_declaration } property_spec [ ; ] endproperty [ : property_identifier ]
 property_port_list ::= property_port_item {, property_port_item}
 property_port_item ::= { attribute_instance } [ local [ property_lvar_port_direction ] ] property_formal_type formal_port_identifier {variable_dimension} [ = property_actual_arg ]
 property_lvar_port_direction ::= input
@@ -60,7 +58,7 @@ property_expr ::= sequence_expr
 | sync_reject_on ( expression_or_dist ) property_expr
 | property_instance
 | clocking_event property_expr
-property_case_item::= expression_or_dist { , expression_or_dist } : property_expr [ ; ]
+property_case_item ::= expression_or_dist { , expression_or_dist } : property_expr [ ; ]
 | default [ : ] property_expr [ ; ]
 sequence_declaration ::= sequence sequence_identifier [ ( [ sequence_port_list ] ) ] ; { assertion_variable_declaration } sequence_expr [ ; ] endsequence [ : sequence_identifier ]
 sequence_port_list ::= sequence_port_item {, sequence_port_item}
@@ -90,8 +88,7 @@ sequence_match_item ::= operator_assignment
 | inc_or_dec_expression
 | subroutine_call
 sequence_instance ::= ps_or_hierarchical_sequence_identifier [ ( [ sequence_list_of_arguments ] ) ]
-sequence_list_of_arguments ::=
-[sequence_actual_arg] { , [sequence_actual_arg] } { , . identifier ( [sequence_actual_arg] ) }
+sequence_list_of_arguments ::= [sequence_actual_arg] { , [sequence_actual_arg] } { , . identifier ( [sequence_actual_arg] ) }
 | . identifier ( [sequence_actual_arg] ) { , . identifier ( [sequence_actual_arg] ) }
 sequence_actual_arg ::= event_expression
 | sequence_expr
