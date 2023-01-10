@@ -56,6 +56,7 @@ executable symbol-visualiser
         fgl == 5.8.0.0,
         process == 1.6.16.0,
         directory == 1.3.8.0,
-        mtl == 2.3.1
+        mtl == 2.3.1,
+        containers == 0.6.6
     hs-source-dirs:   syntax-visualiser
     default-language: GHC2021

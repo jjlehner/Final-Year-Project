@@ -1,7 +1,7 @@
 module foo;
 
-initial begin
-    block();
+always_comb begin
+
 end
 
 endmodule : foo

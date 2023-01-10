@@ -111,6 +111,6 @@ main = do
   let graph = generateGraph $ snd $ updateId 0 $ parsed
   createDirectoryIfMissing False "syntax-visualiser/bin"
   writeFile "syntax-visualiser/bin/parse.txt" treeStr
-  runGraphviz (graphElemsToDot nonClusteredParams [] graph) Png "syntax-visualiser/bin/output.png"
+  runGraphviz (graphElemsToDot nonClusteredParams [] graph) Png "syntax-visualiser/bin/ast-output.png"
 
 

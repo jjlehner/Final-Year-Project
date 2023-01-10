@@ -5,14 +5,18 @@ import           Control.Monad.State.Lazy
 import           Data.Function
 import           Data.GraphViz
 import           Data.List
+import           Data.Set
 import           Debug.Trace
 import           System.Environment
 
-import           Text.Parsec              (between, char, digit, eof, letter,
-                                           many, many1, oneOf, optional, runP,
-                                           sepBy, string, try, (<|>))
+import           Data.GraphViz.Attributes.Complete
+import           Text.Parsec                       (between, char, digit, eof,
+                                                    letter, many, many1, oneOf,
+                                                    optional, runP, sepBy,
+                                                    string, try, (<|>))
 import           Text.Parsec.Char
 import           Text.Parsec.String
+
 bnfFilesSec1 = [
     "syntax-visualiser/bnf/sec-1/1.1-library-source-text.txt",
     "syntax-visualiser/bnf/sec-1/1.2-SystemVerilog-source-text.txt",
@@ -122,8 +126,8 @@ bnfFiles = bnfFilesSec1
 
 type SymbolIdentifier = String
 type SymbolExpression = [Symbol]
-data Symbol = SingleSymbol SymbolIdentifier | OptionalSymbol [SymbolExpression] | MultipleSymbol [SymbolExpression] deriving (Show, Eq)
-data NonTerminal = NonTerminal {name::SymbolIdentifier, symbols::[SymbolExpression]} deriving (Show, Eq)
+data Symbol = SingleSymbol SymbolIdentifier | OptionalSymbol [SymbolExpression] | MultipleSymbol [SymbolExpression] deriving (Show, Eq, Ord)
+data NonTerminal = NonTerminal {name::SymbolIdentifier, symbols::[SymbolExpression]} deriving (Show, Eq, Ord)
 
 readGrammarFiles = do
     grammars <- traverse readFile bnfFiles
@@ -217,40 +221,51 @@ type UnExploredNonTerminal = NonTerminal
 type ExploredNonTerminal = NonTerminal
 type GraphEdge = (SymbolIdentifier, SymbolIdentifier, ())
 
-findSymbolIdentifierInNonTerminal :: [NonTerminal] -> [ExploredNonTerminal] -> SymbolIdentifier -> ([UnExploredNonTerminal], [ExploredNonTerminal])
+findSymbolIdentifierInNonTerminal :: Set NonTerminal -> Set ExploredNonTerminal -> SymbolIdentifier -> (Set UnExploredNonTerminal, Set ExploredNonTerminal)
 findSymbolIdentifierInNonTerminal allNonTerminals exploredNonTerminals symbolIdentifier =
     (unExploredParents, exploredParents) where
-    parents = filter (symbolIdentifierInNonTerminal symbolIdentifier) allNonTerminals
-    unExploredParents = parents \\ exploredNonTerminals
-    exploredParents = parents `intersect` exploredNonTerminals
+    parents = Data.Set.filter (symbolIdentifierInNonTerminal symbolIdentifier) allNonTerminals
+    unExploredParents = parents Data.Set.\\ exploredNonTerminals
+    exploredParents = parents `intersection` exploredNonTerminals
 
-makeEdges :: SymbolIdentifier -> [NonTerminal] -> [GraphEdge]
+makeEdges :: SymbolIdentifier -> Set NonTerminal -> Set GraphEdge
 makeEdges startingSymbol parents =
-    map (\parent -> (name parent, startingSymbol, ())) parents
+    Data.Set.map (\parent -> (name parent, startingSymbol, ())) parents
 
-parentEdgesFolder :: [NonTerminal] -> ([GraphEdge], [NonTerminal]) -> SymbolIdentifier -> ([GraphEdge], [ExploredNonTerminal])
+parentEdgesFolder :: Set NonTerminal -> (Set GraphEdge, Set NonTerminal) -> SymbolIdentifier -> (Set GraphEdge, Set ExploredNonTerminal)
 parentEdgesFolder allNonTerminals (edges, exploredNonTerminals) symbolIdentifier =
     let (newTerminals, newExplored) = findSymbolIdentifierInNonTerminal allNonTerminals exploredNonTerminals symbolIdentifier
-        (parentEdges, finalExplored) =  map (name) newTerminals
-                                        & findAllGrammarTreeEdges allNonTerminals (newTerminals ++ newExplored ++ exploredNonTerminals)
+        (parentEdges, finalExplored) =  Data.Set.map (name) newTerminals
+                                        & findAllGrammarTreeEdges allNonTerminals (newTerminals `Data.Set.union` newExplored `Data.Set.union` exploredNonTerminals)
     in  (makeEdges symbolIdentifier newTerminals
-        & (++) (makeEdges symbolIdentifier newExplored)
-        & (++) parentEdges
-        & (++) edges
-        , exploredNonTerminals ++ newExplored ++ finalExplored)
+        & Data.Set.union (makeEdges symbolIdentifier newExplored)
+        & Data.Set.union parentEdges
+        & Data.Set.union edges
+        , exploredNonTerminals `Data.Set.union` newExplored `Data.Set.union` finalExplored)
 
-findAllGrammarTreeEdges :: [NonTerminal] -> [NonTerminal] -> [SymbolIdentifier] -> ([GraphEdge], [ExploredNonTerminal])
+findAllGrammarTreeEdges :: Set NonTerminal -> Set NonTerminal -> Set SymbolIdentifier -> (Set GraphEdge, Set ExploredNonTerminal)
 findAllGrammarTreeEdges allNonTerminals exploredNonTerminals startingSymbols =
-    trace (show $ length exploredNonTerminals) foldl (parentEdgesFolder allNonTerminals) ([], exploredNonTerminals) startingSymbols
+    Data.Set.foldl (parentEdgesFolder allNonTerminals) (Data.Set.empty, exploredNonTerminals) startingSymbols
 
-drawGrammarTree :: [NonTerminal] -> SymbolIdentifier -> DotGraph String
+drawGrammarTree :: Set NonTerminal -> SymbolIdentifier -> DotGraph String
 drawGrammarTree allNonTerminals startingSymbolIdentifier =
-    findAllGrammarTreeEdges allNonTerminals [] [startingSymbolIdentifier]
+    findAllGrammarTreeEdges allNonTerminals Data.Set.empty (Data.Set.singleton startingSymbolIdentifier)
     & fst
-    & graphElemsToDot nonClusteredParams []
+    & toList
+    & graphElemsToDot params []
+    where
+        edgeAttribute color penWidth = [ Color $ toColorList [ color ], PenWidth $ penWidth]
+        params =  nonClusteredParams {
+                        fmtEdge = \(from, to, el) ->
+                            if to == startingSymbolIdentifier then
+                                edgeAttribute (RGB 0xff 0 0) 10
+                            else
+                                edgeAttribute ( RGB 0 0 0 ) 1
+        }
 
 main = do
     args <- getArgs
     grammar <- readGrammarFiles
     let nonTerminals = parseGrammarFiles grammar
-    runGraphviz (drawGrammarTree nonTerminals "eof") Png "syntax-visualiser/bin/output.png"
+                        & Data.Set.fromList
+    runGraphviz (drawGrammarTree nonTerminals "always_keyword") Png "syntax-visualiser/bin/output.png"
