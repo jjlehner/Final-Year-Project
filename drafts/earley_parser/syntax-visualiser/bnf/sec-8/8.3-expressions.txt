@@ -14,8 +14,7 @@ constant_range_expression ::= constant_expression
 constant_part_select_range ::= constant_range
 | constant_indexed_range
 constant_range ::= constant_expression : constant_expression
-constant_indexed_range ::=
-constant_expression +: constant_expression
+constant_indexed_range ::= constant_expression +: constant_expression
 | constant_expression -: constant_expression
 expression ::= primary
 | unary_operator { attribute_instance } primary
@@ -25,15 +24,13 @@ expression ::= primary
 | conditional_expression
 | inside_expression
 | tagged_union_expression
-tagged_union_expression ::=
-tagged member_identifier [ expression ]
-inside_expression ::= expression inside { open_range_list }
+tagged_union_expression ::= tagged member_identifier [ expression ]
+inside_expression ::= expression inside \{ open_range_list \}
 value_range ::= expression
-| [ expression : expression ]
+| \[ expression : expression \]
 mintypmax_expression ::= expression
 | expression:expression:expression
-module_path_conditional_expression ::= module_path_expression ? { attribute_instance }
-module_path_expression : module_path_expression
+module_path_conditional_expression ::= module_path_expression ? { attribute_instance } module_path_expression : module_path_expression
 module_path_expression ::= module_path_primary
 | unary_module_path_operator { attribute_instance } module_path_primary
 | module_path_expression binary_module_path_operator { attribute_instance } module_path_expression

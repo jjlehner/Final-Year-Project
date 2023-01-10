@@ -7,7 +7,7 @@ blocking_assignment ::= variable_lvalue=delay_or_event_control expression
 | [ implicit_class_handle . | class_scope | package_scope ] hierarchical_variable_identifier select = class_new
 | operator_assignment
 operator_assignment ::= variable_lvalue assignment_operator expression
-assignment_operator ::= =|+=|-=|*=|/=|%=|&=||=|^=|<<=|>>=|<<<=|>>>=
+assignment_operator ::= = | += | -= | *= | /= | %= | &= | \|= | ^= | <<= | >>= | <<<= | >>>=
 nonblocking_assignment ::= variable_lvalue <= [ delay_or_event_control ] expression
 procedural_continuous_assignment ::= assign variable_assignment
 | deassign variable_lvalue
