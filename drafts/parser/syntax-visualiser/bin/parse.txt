@@ -8,24 +8,32 @@ Node @0 (tag: kDescriptionList) {
       Leaf @7 (#';' @10-11: ";")
     }
     Node @1 (tag: kModuleItemList) {
-      Node @0 (tag: kAlwaysStatement) {
-        Leaf @0 (#"always_comb" @13-24: "always_comb")
-        Node @1 (tag: kSeqBlock) {
-          Node @0 (tag: kBegin) {
-            Leaf @0 (#"begin" @25-30: "begin")
+      Node @0 (tag: kDataDeclaration) {
+        Node @1 (tag: kInstantiationBase) {
+          Node @0 (tag: kInstantiationType) {
+            Node @0 (tag: kDataType) {
+              Node @1 (tag: kDataTypePrimitive) {
+                Leaf @0 (#"logic" @12-17: "logic")
+              }
+              Node @3 (tag: kPackedDimensions) {
+              }
+            }
           }
-          Node @1 (tag: kBlockItemStatementList) {
-          }
-          Node @2 (tag: kEnd) {
-            Leaf @0 (#"end" @32-35: "end")
+          Node @1 (tag: kGateInstanceRegisterVariableList) {
+            Node @0 (tag: kRegisterVariable) {
+              Leaf @0 (#SymbolIdentifier @18-19: "a")
+              Node @1 (tag: kUnpackedDimensions) {
+              }
+            }
           }
         }
+        Leaf @2 (#';' @19-20: ";")
       }
     }
-    Leaf @2 (#"endmodule" @37-46: "endmodule")
+    Leaf @2 (#"endmodule" @21-30: "endmodule")
     Node @3 (tag: kLabel) {
-      Leaf @0 (#':' @47-48: ":")
-      Leaf @1 (#SymbolIdentifier @49-52: "foo")
+      Leaf @0 (#':' @31-32: ":")
+      Leaf @1 (#SymbolIdentifier @33-36: "foo")
     }
   }
 }

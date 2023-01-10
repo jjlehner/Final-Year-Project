@@ -1,7 +1,3 @@
 module foo;
-
-always_comb begin
-
-end
-
+logic a;
 endmodule : foo

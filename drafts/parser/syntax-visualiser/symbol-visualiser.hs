@@ -268,4 +268,4 @@ main = do
     grammar <- readGrammarFiles
     let nonTerminals = parseGrammarFiles grammar
                         & Data.Set.fromList
-    runGraphviz (drawGrammarTree nonTerminals "always_keyword") Png "syntax-visualiser/bin/output.png"
+    runGraphviz (drawGrammarTree nonTerminals (args !! 0)) Png "syntax-visualiser/bin/output.png"
