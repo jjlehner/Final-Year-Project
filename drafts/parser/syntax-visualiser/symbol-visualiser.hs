@@ -5,6 +5,7 @@ import           Control.Monad.State.Lazy
 import           Data.Function
 import           Data.GraphViz
 import           Data.List
+import           Data.Maybe
 import           Data.Set
 import           Debug.Trace
 import           System.Environment
@@ -16,6 +17,12 @@ import           Text.Parsec                       (between, char, digit, eof,
                                                     string, try, (<|>))
 import           Text.Parsec.Char
 import           Text.Parsec.String
+
+import           System.Console.CmdArgs            (Data, Typeable, cmdArgs,
+                                                    def, details, help, opt,
+                                                    summary, typ, verbosity,
+                                                    versionArg, (&=))
+import           System.Console.CmdArgs.Implicit   (argPos)
 
 bnfFilesSec1 = [
     "syntax-visualiser/bnf/sec-1/1.1-library-source-text.txt",
@@ -247,11 +254,19 @@ findAllGrammarTreeEdges :: Set NonTerminal -> Set NonTerminal -> Set SymbolIdent
 findAllGrammarTreeEdges allNonTerminals exploredNonTerminals startingSymbols =
     Data.Set.foldl (parentEdgesFolder allNonTerminals) (Data.Set.empty, exploredNonTerminals) startingSymbols
 
-drawGrammarTree :: Set NonTerminal -> SymbolIdentifier -> DotGraph String
-drawGrammarTree allNonTerminals startingSymbolIdentifier =
+runPathFinding :: SymbolIdentifier -> Maybe SymbolIdentifier -> [GraphEdge] -> Maybe [GraphEdge]
+runPathFinding start (Just root) graphEdges =
+    findPath graphEdges root start Data.Set.empty
+runPathFinding _ Nothing graphEdges = Just graphEdges
+
+drawGrammarTree :: Set NonTerminal -> SymbolIdentifier -> Maybe SymbolIdentifier -> DotGraph String
+drawGrammarTree allNonTerminals startingSymbolIdentifier maybeRoot =
     findAllGrammarTreeEdges allNonTerminals Data.Set.empty (Data.Set.singleton startingSymbolIdentifier)
     & fst
     & toList
+    & runPathFinding startingSymbolIdentifier maybeRoot
+    & fromJust
+    & Data.Set.toList . Data.Set.fromList
     & graphElemsToDot params []
     where
         edgeAttribute color penWidth = [ Color $ toColorList [ color ], PenWidth $ penWidth]
@@ -263,9 +278,48 @@ drawGrammarTree allNonTerminals startingSymbolIdentifier =
                                 edgeAttribute ( RGB 0 0 0 ) 1
         }
 
+traverseTuple :: (a, Maybe [a]) -> Maybe [a]
+traverseTuple (_, Nothing) = Nothing
+traverseTuple (a, Just b)  = Just $ a:b
+
+findPath :: [GraphEdge] -> SymbolIdentifier -> SymbolIdentifier -> Set SymbolIdentifier -> Maybe [GraphEdge]
+findPath graphEdges start end avoid =
+    let subEdges = Data.List.filter (\(from, _, _) -> start == from) graphEdges
+        immediateSubTerminals = subEdges
+                                & Data.List.map (\(_, to, _) -> to)
+        avoid' = Data.Set.insert start avoid
+    in
+        if start == end then
+            Just []
+        else if member start avoid || member end avoid then
+            Nothing
+        else
+            Data.List.map (\subTerminal -> findPath graphEdges subTerminal end avoid') immediateSubTerminals
+            & zip subEdges
+            & Data.List.map traverseTuple
+            & catMaybes
+            & concat
+            & \x -> case x of
+                        [] -> Nothing
+                        _  -> Just x
+
+data SymbolVisualiser = SymbolVisualiser
+    {
+        startingSymbol :: SymbolIdentifier,
+        avoid          :: [SymbolIdentifier],
+        root           :: Maybe SymbolIdentifier
+    }
+    deriving (Show,Eq, Data, Typeable)
+
+args = SymbolVisualiser
+    {   startingSymbol = def &= argPos 0,
+        avoid = [] &= typ "SYMBOL_IDENTIFIER" &= help "Non-Terminals to avoid",
+        root = Nothing &= typ "SYMBOL_IDENTIFIER" &= help "Root NonTerminal"
+   } &= versionArg [summary ""]
+
 main = do
-    args <- getArgs
+    a <- cmdArgs args
     grammar <- readGrammarFiles
     let nonTerminals = parseGrammarFiles grammar
                         & Data.Set.fromList
-    runGraphviz (drawGrammarTree nonTerminals (args !! 0)) Png "syntax-visualiser/bin/output.png"
+    runGraphviz (drawGrammarTree nonTerminals (startingSymbol a) (root a)) Png "syntax-visualiser/bin/output.png"
