@@ -7,7 +7,6 @@ import           Data.GraphViz
 import           Data.List
 import           Data.Maybe
 import           Data.Set
-import           Debug.Trace
 import           System.Environment
 
 import           Data.GraphViz.Attributes.Complete
