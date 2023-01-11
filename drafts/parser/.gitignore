@@ -4,4 +4,4 @@ dist-newstyle/*
 .direnv/*
 .ghci_history
 .vscode/*
-*/bin/*
+bin/

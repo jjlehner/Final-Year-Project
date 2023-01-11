@@ -322,4 +322,5 @@ main = do
     grammar <- readGrammarFiles
     let nonTerminals = parseGrammarFiles grammar
                         & Data.Set.fromList
+                        & Data.Set.filter (\x -> not $ member (name x) $ fromList $ avoid a)
     runGraphviz (drawGrammarTree nonTerminals (startingSymbol a) (root a)) Png "syntax-visualiser/bin/output.png"
