@@ -49,12 +49,14 @@ executable verilog-to-haskell
     main-is:          Main.hs
 
     -- Modules included in this executable, other than Main.
-    other-modules:    V2H.Ast
+    other-modules:    V2H.Ast,
+                      V2H.Parser
 
     -- LANGUAGE extensions used by modules in this package.
     default-extensions:    DuplicateRecordFields
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.17.0.0
+    build-depends:    base ^>=4.17.0.0,
+                      containers ^>= 0.6.6
 
     -- Directories containing source files.
     hs-source-dirs:    src, src/V2H
