@@ -1,7 +1,7 @@
 package_item ::= package_or_generate_item_declaration
 | anonymous_program
 | package_export_declaration
-| timeunits_declaration3
+| timeunits_declaration
 package_or_generate_item_declaration ::= net_declaration
 | data_declaration
 | task_declaration

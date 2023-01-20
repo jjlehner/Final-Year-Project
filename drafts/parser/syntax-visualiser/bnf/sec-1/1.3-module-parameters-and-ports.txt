@@ -15,7 +15,7 @@ port_declaration ::= { attribute_instance } inout_declaration
 port ::= [ port_expression ]
 | . port_identifier ( [ port_expression ] )
 port_expression ::= port_reference
-| { port_reference { , port_reference } }
+| \{ port_reference { , port_reference } \}
 port_reference ::= port_identifier constant_select
 port_direction ::= input | output | inout | ref
 net_port_header ::= [ port_direction ] net_port_type

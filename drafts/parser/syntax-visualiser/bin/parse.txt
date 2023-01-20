@@ -13,7 +13,7 @@ Node @0 (tag: kDescriptionList) {
           Node @0 (tag: kInstantiationType) {
             Node @0 (tag: kDataType) {
               Node @1 (tag: kDataTypePrimitive) {
-                Leaf @0 (#"logic" @12-17: "logic")
+                Leaf @0 (#"logic" @16-21: "logic")
               }
               Node @3 (tag: kPackedDimensions) {
               }
@@ -21,19 +21,40 @@ Node @0 (tag: kDescriptionList) {
           }
           Node @1 (tag: kGateInstanceRegisterVariableList) {
             Node @0 (tag: kRegisterVariable) {
-              Leaf @0 (#SymbolIdentifier @18-19: "a")
+              Leaf @0 (#SymbolIdentifier @22-23: "a")
               Node @1 (tag: kUnpackedDimensions) {
               }
             }
           }
         }
-        Leaf @2 (#';' @19-20: ";")
+        Leaf @2 (#';' @23-24: ";")
+      }
+      Node @1 (tag: kDataDeclaration) {
+        Node @1 (tag: kInstantiationBase) {
+          Node @0 (tag: kInstantiationType) {
+            Node @0 (tag: kDataType) {
+              Node @1 (tag: kDataTypePrimitive) {
+                Leaf @0 (#"logic" @29-34: "logic")
+              }
+              Node @3 (tag: kPackedDimensions) {
+              }
+            }
+          }
+          Node @1 (tag: kGateInstanceRegisterVariableList) {
+            Node @0 (tag: kRegisterVariable) {
+              Leaf @0 (#SymbolIdentifier @35-36: "b")
+              Node @1 (tag: kUnpackedDimensions) {
+              }
+            }
+          }
+        }
+        Leaf @2 (#';' @36-37: ";")
       }
     }
-    Leaf @2 (#"endmodule" @21-30: "endmodule")
+    Leaf @2 (#"endmodule" @38-47: "endmodule")
     Node @3 (tag: kLabel) {
-      Leaf @0 (#':' @31-32: ":")
-      Leaf @1 (#SymbolIdentifier @33-36: "foo")
+      Leaf @0 (#':' @48-49: ":")
+      Leaf @1 (#SymbolIdentifier @50-53: "foo")
     }
   }
 }

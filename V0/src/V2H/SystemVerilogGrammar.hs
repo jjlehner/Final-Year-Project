@@ -1,6 +1,12 @@
-module V2H.Grammar where
+module V2H.SystemVerilogGrammar where
+
+import V2H.Ast
+import V2H.Parser
+
+import Text.Parsec
 
 
+-- | Incomplete production rule
 descriptionNT =
     DModuleDeclaration <$> moduleDeclarationNT
     -- | DUdpDeclaration <$> udpDeclarationNT
@@ -10,3 +16,4 @@ descriptionNT =
     -- | DPackageItem <$> many attributeInstanceNT <*> packageItemNT
     -- | DBindDirective <$> many attributeInstanceNT <*> bindDirectiveNT
     -- | DConfigDeclaration <$> configDeclarationNT
+
