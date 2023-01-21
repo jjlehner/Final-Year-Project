@@ -16,7 +16,8 @@ module V2H.Ast (
     module V2H.Ast.Sec6.ProceduralBlocksAndAssignments,
     module V2H.Ast.Sec8.Primaries,
     module V2H.Ast.Sec9.Attributes,
-    module V2H.Ast.Sec9.Identifiers
+    module V2H.Ast.Sec9.Identifiers,
+    AstRoot
 ) where
 
 import V2H.Ast.Sec1.ConfigurationSourceText
@@ -38,7 +39,7 @@ import V2H.Ast.Sec8.Primaries
 import V2H.Ast.Sec9.Attributes
 import V2H.Ast.Sec9.Identifiers
 
-data AstRoot = AstLibrary LibraryText | AstSource SourceText
+data AstRoot = ARLibrary LibraryText | ARSource SourceText
 
 -- data LibraryText = LibraryText
 

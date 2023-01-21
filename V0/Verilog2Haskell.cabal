@@ -51,6 +51,7 @@ executable verilog-to-haskell
     -- Modules included in this executable, other than Main.
     other-modules:    V2H.Parser,
                       V2H.Ast,
+                      V2H.Lexer,
                       V2H.SystemVerilogGrammar,
                       V2H.Ast.Sec1.LibrarySourceText,
                       V2H.Ast.Sec1.SourceText,
@@ -89,6 +90,7 @@ executable verilog-to-haskell
                       V2H.Parser.Sec6.ContinuousAssignmentAndNetAliasStatements,
                       V2H.Parser.Sec6.ProceduralBlocksAndAssignments,
                       V2H.Parser.Sec4.GeneratedInstantiation
+                      V2H.Parser.Sec6.Statements
 
 
     -- LANGUAGE extensions used by modules in this package.
