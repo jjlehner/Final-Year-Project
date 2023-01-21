@@ -20,20 +20,14 @@ import V2H.Parser.Sec8.Primaries
 import V2H.Parser.Sec9.Attributes
 import V2H.Parser.Sec9.Identifiers
 import Data.Map
+import Data.Functor.Identity
 
 import Text.Parsec
-data IdentifierInfo =
-    IdentifierInfo {
-        identifierInfo :: String,
-        identifierType :: IdentifierType,
-        definedInFile :: FilePath
-    }
 
-data IdentifierType = Function | Task
-type IdentifierTable = Map String IdentifierInfo
+emptyTable = empty
 
-parseSource :: SourceName -> String -> Either ParseError AstRoot
-parseSource sourceName source = runParser astRootNT empty sourceName source
+parseSource sourceName source = runParserT astRootNT emptyTable sourceName source
 
-astRootNT = sourceTextNT <|> libraryTextNT
+astRootNT :: ParserSV AstRoot
+astRootNT = ARSource <$> sourceTextNT <|> ARLibrary <$> libraryTextNT
 

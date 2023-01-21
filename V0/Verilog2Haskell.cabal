@@ -52,7 +52,6 @@ executable verilog-to-haskell
     other-modules:    V2H.Parser,
                       V2H.Ast,
                       V2H.Lexer,
-                      V2H.SystemVerilogGrammar,
                       V2H.Ast.Sec1.LibrarySourceText,
                       V2H.Ast.Sec1.SourceText,
                       V2H.Ast.Sec1.ModuleParametersAndPorts,

@@ -17,7 +17,7 @@ module V2H.Ast (
     module V2H.Ast.Sec8.Primaries,
     module V2H.Ast.Sec9.Attributes,
     module V2H.Ast.Sec9.Identifiers,
-    AstRoot
+    AstRoot (..)
 ) where
 
 import V2H.Ast.Sec1.ConfigurationSourceText

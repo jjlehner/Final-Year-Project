@@ -1,5 +1,6 @@
 module V2H.Parser.Sec4.ProgramInstantiation where
-import Text.Parsec
-
+import V2H.Ast.Sec4.ProgramInstantiation
+import V2H.Parser.Sec9.Identifiers
 -- | Incomplete production rule
-programInstantiation = undefined
+programInstantiationNT :: ParserSV ProgramInstantiation
+programInstantiationNT = undefined

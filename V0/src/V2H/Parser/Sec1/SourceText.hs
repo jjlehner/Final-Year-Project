@@ -14,7 +14,7 @@ import Text.Parsec
 import Text.Parsec.String
 
 
-sourceTextNT = undefined
+sourceTextNT = SourceText <$> optionMaybe timeunitsDeclarationNT <*> descriptionNT
 
 descriptionNT = undefined
 
@@ -31,7 +31,6 @@ moduleAnsiHeaderNT =
         many portNT
 
 -- | Incomplete production rule
-moduleDeclarationNT :: Parsec String u ModuleDeclaration
 moduleDeclarationNT =
     MDAnsiHeader <$> moduleAnsiHeaderNT <*> (optionMaybe timeunitsDeclarationNT) <*> many nonPortModuleItemNT
 
@@ -77,4 +76,4 @@ interfaceClassMethodNT = undefined
 packageDeclarationNT = undefined
 
 -- | Incomplete production rule
-timeunitsDeclarationNT = undefined
+timeunitsDeclarationNT = return TimeunitsDeclaration

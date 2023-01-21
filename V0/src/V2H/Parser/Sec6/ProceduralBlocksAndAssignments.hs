@@ -5,7 +5,7 @@ import V2H.Parser.Sec6.Statements
 import V2H.Lexer
 import Text.Parsec
 import Text.Parsec.Char
-
+import V2H.Parser.Sec9.Identifiers
 -- | Incomplete production rule
 initialConstructNT = undefined
 
@@ -20,4 +20,5 @@ alwaysCombNT = svLexeme (string "always_comb") *> pure AlwaysComb
 alwaysNT = svLexeme (string "always") *> pure Always
 
 -- | Incomplete production rule
+finalConstructNT :: ParserSV FinalConstruct
 finalConstructNT = undefined
