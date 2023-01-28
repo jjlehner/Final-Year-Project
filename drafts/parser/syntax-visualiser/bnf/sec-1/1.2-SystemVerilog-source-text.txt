@@ -35,7 +35,7 @@ interface_class_type ::= ps_class_identifier [ parameter_value_assignment ]
 interface_class_declaration ::= interface class class_identifier [ parameter_port_list ] [ extends interface_class_type { , interface_class_type } ] ; { interface_class_item } endclass [ : class_identifier]
 interface_class_item ::= type_declaration
 | { attribute_instance } interface_class_method
-| local_parameter_declaration;
+| local_parameter_declaration ;
 | parameter_declaration ; | ;
 interface_class_method ::= pure virtual method_prototype ;
 package_declaration ::= { attribute_instance } package [ lifetime ] package_identifier ; [ timeunits_declaration ] { { attribute_instance } package_item } endpackage [ : package_identifier ]

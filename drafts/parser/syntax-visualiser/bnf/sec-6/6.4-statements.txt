@@ -17,7 +17,7 @@ statement_item ::= blocking_assignment ;
 | seq_block
 | wait_statement
 | procedural_assertion_statement
-| clocking_drive;
+| clocking_drive ;
 | randsequence_statement
 | randcase_statement
 | expect_property_statement

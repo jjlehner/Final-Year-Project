@@ -11,7 +11,7 @@ case_generate_construct ::= case ( constant_expression ) case_generate_item { ca
 case_generate_item ::= constant_expression { , constant_expression } : generate_block
 | default [ : ] generate_block
 generate_block ::= generate_item
-| [generate_block_identifier:]begin[:generate_block_identifier] { generate_item } end [ : generate_block_identifier ]
+| [ generate_block_identifier : ] begin [ : generate_block_identifier] { generate_item } end [ : generate_block_identifier ]
 generate_item ::= module_or_generate_item
 | interface_or_generate_item
 | checker_or_generate_item

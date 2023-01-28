@@ -306,15 +306,47 @@ data SymbolVisualiser = SymbolVisualiser
     {
         startingSymbol :: SymbolIdentifier,
         avoid          :: [SymbolIdentifier],
-        root           :: Maybe SymbolIdentifier
+        root           :: Maybe SymbolIdentifier,
+        printTerminals :: Bool
     }
     deriving (Show,Eq, Data, Typeable)
+
 
 args = SymbolVisualiser
     {   startingSymbol = def &= argPos 0,
         avoid = [] &= typ "SYMBOL_IDENTIFIER" &= help "Non-Terminals to avoid",
-        root = Nothing &= typ "SYMBOL_IDENTIFIER" &= help "Root NonTerminal"
+        root = Nothing &= typ "SYMBOL_IDENTIFIER" &= help "Root NonTerminal",
+        printTerminals = False &= typ "Bool" &= help "Print terminals"
    } &= versionArg [summary ""]
+
+
+getAllSymbolIdentifiersFromSymbol :: Symbol -> Set SymbolIdentifier
+getAllSymbolIdentifiersFromSymbol symbol =
+   case symbol of
+        SingleSymbol identifier -> Data.Set.singleton identifier
+        OptionalSymbol expr -> Data.List.map getAllSymbolIdentifiersFromExpression expr
+                               & mconcat
+        MultipleSymbol expr -> Data.List.map getAllSymbolIdentifiersFromExpression expr
+                               & mconcat
+
+getAllSymbolIdentifiersFromExpression :: SymbolExpression -> Set SymbolIdentifier
+getAllSymbolIdentifiersFromExpression expression =
+    Data.List.map getAllSymbolIdentifiersFromSymbol expression
+    & mconcat
+
+getAllSymbolIdentifiersFromExpressionList :: [SymbolExpression] -> Set SymbolIdentifier
+getAllSymbolIdentifiersFromExpressionList expressionList =
+    Data.List.map getAllSymbolIdentifiersFromExpression expressionList
+    & mconcat
+
+getTerminals :: Set NonTerminal -> [SymbolIdentifier]
+getTerminals g =
+    let symbolIdentifiers = Data.Set.map (getAllSymbolIdentifiersFromExpressionList . symbols) g
+                            & unions
+        nonTerminals = Data.List.foldl (\s nt -> name nt : s) [] g
+                       & fromList
+    in Data.Set.difference symbolIdentifiers nonTerminals
+       & toList
 
 main = do
     a <- cmdArgs args
@@ -322,4 +354,8 @@ main = do
     let nonTerminals = parseGrammarFiles grammar
                         & Data.Set.fromList
                         & Data.Set.filter (\x -> not $ member (name x) $ fromList $ avoid a)
+    when (printTerminals a)
+        $ writeFile "syntax-visualiser/bin/terminals.txt"
+        $ intercalate "\n"
+        $ Data.List.map show (getTerminals nonTerminals)
     runGraphviz (drawGrammarTree nonTerminals (startingSymbol a) (root a)) Png "syntax-visualiser/bin/output.png"

@@ -6,7 +6,7 @@ constant_expression ::= constant_primary
 | constant_expression binary_operator { attribute_instance } constant_expression
 | constant_expression ? { attribute_instance } constant_expression : constant_expression
 constant_mintypmax_expression ::= constant_expression
-| constant_expression:constant_expression:constant_expression
+| constant_expression : constant_expression : constant_expression
 constant_param_expression ::= constant_mintypmax_expression | data_type | $
 param_expression ::= mintypmax_expression | data_type | $
 constant_range_expression ::= constant_expression
@@ -36,7 +36,7 @@ module_path_expression ::= module_path_primary
 | module_path_expression binary_module_path_operator { attribute_instance } module_path_expression
 | module_path_conditional_expression
 module_path_mintypmax_expression ::= module_path_expression
-| module_path_expression:module_path_expression:module_path_expression
+| module_path_expression : module_path_expression : module_path_expression
 part_select_range ::= constant_range | indexed_range
 indexed_range ::= expression +: constant_expression
 | expression-:constant_expression

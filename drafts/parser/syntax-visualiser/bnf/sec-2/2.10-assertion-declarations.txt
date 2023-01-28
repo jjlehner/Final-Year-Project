@@ -6,7 +6,7 @@ concurrent_assertion_statement ::= assert_property_statement
 | cover_sequence_statement
 | restrict_property_statement
 assert_property_statement ::= assert property ( property_spec ) action_block
-assume_property_statement ::= assumeproperty(property_spec) action_block
+assume_property_statement ::= assumeproperty ( property_spec ) action_block
 cover_property_statement ::= cover property ( property_spec ) statement_or_null
 expect_property_statement ::= expect ( property_spec ) action_block
 cover_sequence_statement ::= cover sequence ( [clocking_event ] [ disable iff ( expression_or_dist ) ] sequence_expr ) statement_or_null
@@ -31,8 +31,8 @@ property_expr ::= sequence_expr
 | not property_expr
 | property_exprorproperty_expr
 | property_exprandproperty_expr
-| sequence_expr|->property_expr
-| sequence_expr|=>property_expr
+| sequence_expr \|-> property_expr
+| sequence_expr \|=> property_expr
 | if ( expression_or_dist ) property_expr [ else property_expr ]
 | case ( expression_or_dist ) property_case_item { property_case_item } endcase | sequence_expr#-#property_expr
 | sequence_expr#=#property_expr

@@ -4,4 +4,4 @@ import V2H.Ast.Sec8.Primaries
 import V2H.Parser.Sec9.Identifiers
 -- | Incomplete production rule
 constantSelectNT :: ParserSV ConstantSelect
-constantSelectNT = undefined
+constantSelectNT = return ConstantSelect{}

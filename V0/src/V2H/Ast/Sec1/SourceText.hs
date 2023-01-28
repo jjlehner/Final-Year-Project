@@ -12,7 +12,7 @@ import V2H.Ast.Sec9.Identifiers
 data SourceText = SourceText {
     timeunitsDeclaration :: Maybe TimeunitsDeclaration,
     description           :: [Description]
-}
+} deriving (Show)
 
 data Description =
     DModuleDeclaration {
@@ -33,7 +33,7 @@ data Description =
         bindDirective :: BindDirective
     } | DConfigDeclaration {
         configDeclaration :: ConfigDeclaration
-    }
+    } deriving (Show)
 
 data ModuleNonAnsiHeader =
     ModuleNonAnsiHeader {
@@ -44,7 +44,7 @@ data ModuleNonAnsiHeader =
         packageImportDeclarations :: [PackageImportDeclaration],
         parameterPorts :: Maybe ParameterPorts,
         ports :: [Port]
-    }
+    } deriving (Show)
 
 data ModuleAnsiHeader =
     ModuleAnsiHeader {
@@ -55,7 +55,7 @@ data ModuleAnsiHeader =
         packageImportDeclarations :: [PackageImportDeclaration],
         parameterPorts :: Maybe ParameterPorts,
         ports :: [Port]
-    }
+    } deriving (Show)
 
 data ModuleDeclaration =
     MDNonAnsiHeader {
@@ -76,48 +76,48 @@ data ModuleDeclaration =
         moduleNonAnsiHeader :: ModuleNonAnsiHeader
     } | MDAnsiExtern {
         moduleAnsiHeader :: ModuleAnsiHeader
-    }
+    } deriving (Show)
 
-data ModuleKeyword = Module | MacroModule
-
--- | Incomplete production rule
-data InterfaceDeclaration = InterfaceDeclaration
+data ModuleKeyword = Module | MacroModule deriving (Show)
 
 -- | Incomplete production rule
-data InterfaceNonAnsiHeader = InterfaceNonAnsiHeader
+data InterfaceDeclaration = InterfaceDeclaration deriving (Show)
 
 -- | Incomplete production rule
-data InterfaceAnsiHeader = InterfaceAnsiHeader
+data InterfaceNonAnsiHeader = InterfaceNonAnsiHeader deriving (Show)
 
 -- | Incomplete production rule
-data ProgramDeclaration = ProgramDeclaration
+data InterfaceAnsiHeader = InterfaceAnsiHeader deriving (Show)
 
 -- | Incomplete production rule
-data ProgramNonAnsiHeader = ProgramNonAnsiHeader
+data ProgramDeclaration = ProgramDeclaration deriving (Show)
 
 -- | Incomplete production rule
-data ProgramAnsiHeader = ProgramAnsiHeader
+data ProgramNonAnsiHeader = ProgramNonAnsiHeader deriving (Show)
 
 -- | Incomplete production rule
-data CheckerDeclaration = CheckerDeclaration
+data ProgramAnsiHeader = ProgramAnsiHeader deriving (Show)
 
 -- | Incomplete production rule
-data ClassDeclaration = ClassDeclaration
+data CheckerDeclaration = CheckerDeclaration deriving (Show)
 
 -- | Incomplete production rule
-data InterfaceClassType = InterfaceClassType
+data ClassDeclaration = ClassDeclaration deriving (Show)
 
 -- | Incomplete production rule
-data InterfaceClassDeclaration = InterfaceClassDeclaration
+data InterfaceClassType = InterfaceClassType deriving (Show)
 
 -- | Incomplete production rule
-data InterfaceClassItem = InterfaceClassItem
+data InterfaceClassDeclaration = InterfaceClassDeclaration deriving (Show)
 
 -- | Incomplete production rule
-data InterfaceClassMethod = InterfaceClassMethod
+data InterfaceClassItem = InterfaceClassItem deriving (Show)
 
 -- | Incomplete production rule
-data PackageDeclaration = PackageDeclaration
+data InterfaceClassMethod = InterfaceClassMethod deriving (Show)
 
 -- | Incomplete production rule
-data TimeunitsDeclaration = TimeunitsDeclaration
+data PackageDeclaration = PackageDeclaration deriving (Show)
+
+-- | Incomplete production rule
+data TimeunitsDeclaration = TimeunitsDeclaration deriving (Show)

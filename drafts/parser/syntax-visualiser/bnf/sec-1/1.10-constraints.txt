@@ -5,7 +5,7 @@ constraint_block_item ::= solve solve_before_list before solve_before_list ;
 solve_before_list ::= constraint_primary { , constraint_primary }
 constraint_primary ::= [ implicit_class_handle . | class_scope ] hierarchical_identifier select
 constraint_expression ::= [ soft ] expression_or_dist ;
-| uniqueness_constraint;
+| uniqueness_constraint ;
 | expression->constraint_set
 | if ( expression ) constraint_set [ else constraint_set ]
 | foreach ( ps_or_hierarchical_array_identifier [ loop_variables ] ) constraint_set | disable soft constraint_primary ;

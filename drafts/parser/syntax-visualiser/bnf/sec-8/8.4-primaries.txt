@@ -11,7 +11,7 @@ constant_primary ::= primary_literal
 | ( constant_mintypmax_expression )
 | constant_cast
 | constant_assignment_pattern_expression
-| type_reference40
+| type_reference
 module_path_primary ::= number
 | identifier
 | module_path_concatenation
@@ -33,7 +33,7 @@ primary ::= primary_literal
 | this
 | $
 | null
-class_qualifier ::= [ local:: ] [ implicit_class_handle . | class_scope ]
+class_qualifier ::= [ local :: ] [ implicit_class_handle . | class_scope ]
 range_expression ::= expression
 | part_select_range
 primary_literal ::= number | time_literal | unbased_unsized_literal | string_literal
@@ -42,9 +42,9 @@ time_literal44 ::= unsigned_number time_unit
 implicit_class_handle41 ::= this | super | this . super
 bit_select ::= { \[ expression \] }
 select ::= [ { . member_identifier bit_select } . member_identifier ] bit_select [ [ part_select_range ] ]
-nonrange_select ::= [{ . member_identifier bit_select} . member_identifier ] bit_select
+nonrange_select ::= [ { . member_identifier bit_select } . member_identifier ] bit_select
 constant_bit_select ::= { \[ constant_expression \] }
-constant_select ::= [{.member_identifier constant_bit_select}.member_identifier] constant_bit_select [ \[ constant_part_select_range \] ]
+constant_select ::= [ {. member_identifier constant_bit_select} . member_identifier ] constant_bit_select [ \[ constant_part_select_range \] ]
 constant_cast ::= casting_type ' ( constant_expression )
 constant_let_expression ::= let_expression
 cast ::= casting_type ' ( expression )

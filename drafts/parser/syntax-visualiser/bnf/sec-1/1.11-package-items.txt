@@ -11,8 +11,8 @@ package_or_generate_item_declaration ::= net_declaration
 | extern_constraint_declaration
 | class_declaration
 | class_constructor_declaration
-| local_parameter_declaration;
-| parameter_declaration;
+| local_parameter_declaration ;
+| parameter_declaration ;
 | covergroup_declaration
 | overload_declaration
 | assertion_item_declaration | ;

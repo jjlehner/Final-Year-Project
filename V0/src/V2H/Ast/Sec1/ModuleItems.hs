@@ -8,14 +8,14 @@ import V2H.Ast.Sec6.ContinuousAssignmentAndNetAliasStatements
 import V2H.Ast.Sec6.ProceduralBlocksAndAssignments
 
 -- | Incomplete production rule
-data BindDirective = BindDirective
+data BindDirective = BindDirective deriving (Show)
 
 data ModuleItem =
     MIPort_Declaration {
         portDeclaration :: PortDeclaration
     } | MINonPortModuleItem {
         nonPortModuleItem :: NonPortModuleItem
-    }
+    } deriving (Show)
 
 data NonPortModuleItem =
     NPMIModuleOrGenerateItemDeclaration {
@@ -44,9 +44,9 @@ data NonPortModuleItem =
         conditionalGenerateConstruct :: ConditionalGenerateConstruct
     } | NPMIElaborationSystemTask {
         elaborationSystemTask :: ElaborationSystemTask
-    }
+    } deriving (Show)
 -- | Incomplete production rule
-data ModuleOrGenerateItemDeclaration = ModuleOrGenerateItemDeclaration
+data ModuleOrGenerateItemDeclaration = ModuleOrGenerateItemDeclaration deriving (Show)
 
 -- | Incomplete production rule
-data ElaborationSystemTask = ElaborationSystemTask
+data ElaborationSystemTask = ElaborationSystemTask deriving (Show)

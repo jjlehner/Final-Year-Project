@@ -39,7 +39,7 @@ import V2H.Ast.Sec8.Primaries
 import V2H.Ast.Sec9.Attributes
 import V2H.Ast.Sec9.Identifiers
 
-data AstRoot = ARLibrary LibraryText | ARSource SourceText
+data AstRoot = ARLibrary LibraryText | ARSource SourceText deriving (Show)
 
 -- data LibraryText = LibraryText
 

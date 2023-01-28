@@ -5,4 +5,4 @@ import Text.Parsec
 
 -- | Incomplete production rule
 attributeInstanceNT :: ParserSV AttributeInstance
-attributeInstanceNT = undefined
+attributeInstanceNT = try $ string "(* *)" *> return AttributeInstance

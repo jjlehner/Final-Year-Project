@@ -1,8 +1,8 @@
 covergroup_declaration ::= covergroup covergroup_identifier [ ( [ tf_port_list ] ) ] [ coverage_event ] ; { coverage_spec_or_option } endgroup [ : covergroup_identifier ]
 coverage_spec_or_option ::= {attribute_instance} coverage_spec
 | {attribute_instance} coverage_option ;
-coverage_option ::= option.member_identifier = expression
-| type_option.member_identifier = constant_expression
+coverage_option ::= option. member_identifier = expression
+| type_option. member_identifier = constant_expression
 coverage_spec ::= cover_point
 | cover_cross
 coverage_event ::= clocking_event
@@ -21,19 +21,19 @@ bins_or_options ::= coverage_option
 | [ wildcard ] bins_keyword bin_identifier [ \[ [ covergroup_expression ] \] ] = { covergroup_range_list } [ with ( with_covergroup_expression ) ] [ iff ( expression ) ]
 | [ wildcard ] bins_keyword bin_identifier [ \[ [ covergroup_expression ] \] ] = cover_point_identifier with [ ( with_covergroup_expression ) ] [ iff ( expression ) ]
 | [ wildcard ] bins_keyword bin_identifier [ \[ [ covergroup_expression ] \] ] = set_covergroup_expression [ iff ( expression ) ]
-| [wildcard]bins_keyword bin_identifier[[]]=trans_list[iff(expression)]
-| bins_keyword bin_identifier[[[covergroup_expression]]]=default[iff(expression)]
-| bins_keyword bin_identifier=defaultsequence[iff(expression)]
+| [ wildcard ] bins_keyword bin_identifier[ \[ \] ] = trans_list [ iff( expression ) ]
+| bins_keyword bin_identifier [ \[ [ covergroup_expression ] \] ] = default[ iff( expression ) ]
+| bins_keyword bin_identifier = defaultsequence [ iff( expression ) ]
 bins_keyword ::= bins | illegal_bins | ignore_bins
 trans_list ::= ( trans_set ) { , ( trans_set ) }
 trans_set ::= trans_range_list { => trans_range_list }
 trans_range_list ::= trans_item
-| trans_item[*repeat_range]
-| trans_item[->repeat_range]
-| trans_item[=repeat_range]
+| trans_item[* repeat_range ]
+| trans_item[-> repeat_range ]
+| trans_item[= repeat_range ]
 trans_item ::= covergroup_range_list
 repeat_range ::= covergroup_expression
-| covergroup_expression:covergroup_expression
+| covergroup_expression : covergroup_expression
 cover_cross ::= [ cross_identifier : ] cross list_of_cross_items [ iff ( expression ) ] cross_body
 list_of_cross_items ::= cross_item , cross_item { , cross_item }
 cross_item ::= cover_point_identifier

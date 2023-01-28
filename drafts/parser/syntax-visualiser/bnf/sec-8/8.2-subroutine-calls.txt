@@ -1,7 +1,7 @@
 constant_function_call ::= function_subroutine_call
 tf_call37 ::= ps_or_hierarchical_tf_identifier { attribute_instance } [ ( list_of_arguments ) ]
 system_tf_call ::= system_tf_identifier [ ( list_of_arguments ) ]
-| system_tf_identifier(data_type[,expression])
+| system_tf_identifier ( data_type[ , expression ] )
 subroutine_call ::= tf_call
 | system_tf_call
 | method_call

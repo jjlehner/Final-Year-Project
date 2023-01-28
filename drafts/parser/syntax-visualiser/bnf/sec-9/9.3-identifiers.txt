@@ -71,7 +71,7 @@ ps_or_hierarchical_tf_identifier ::= [ package_scope ] tf_identifier
 | hierarchical_tf_identifier
 ps_parameter_identifier ::= [ package_scope | class_scope ] parameter_identifier
 | { generate_block_identifier [ \[ constant_expression \] ] . } parameter_identifier
-ps_type_identifier ::= [ local:: | package_scope ] type_identifier
+ps_type_identifier ::= [ local :: | package_scope ] type_identifier
 sequence_identifier ::= identifier
 signal_identifier ::= identifier
 simple_identifier ::= [ a-zA-Z_ ] { [ a-zA-Z0-9_$ ] }

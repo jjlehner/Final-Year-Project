@@ -1,10 +1,10 @@
 module V2H.Ast.Sec5.UdpDeclaration where
 
 -- | Incomplete production rule
-data UdpNonAnsiDeclaration = UdpNonAnsiDeclaration
+data UdpNonAnsiDeclaration = UdpNonAnsiDeclaration deriving (Show)
 
 -- | Incomplete production rule
-data UdpAnsiDeclaration = UdpAnsiDeclaration
+data UdpAnsiDeclaration = UdpAnsiDeclaration deriving (Show)
 
 -- | Incomplete production rule
-data UdpDeclaration = UdpDeclaration
+data UdpDeclaration = UdpDeclaration deriving (Show)

@@ -8,7 +8,7 @@ svStyle = LanguageDef {
     commentEnd = "*/",
     commentLine = "//",
     nestedComments = True,
-    identStart =  letter <|> try (char '\\' *> alphaNum),
+    identStart =  letter,
     identLetter = alphaNum <|> char '_',
     opStart = opLetter svStyle,
     opLetter = oneOf ":!#$%&*+./<=>?@\\^|-~",
@@ -19,3 +19,4 @@ svStyle = LanguageDef {
 
 svLexer = makeTokenParser svStyle
 svLexeme = lexeme svLexer
+svIdentifier = identifier svLexer
