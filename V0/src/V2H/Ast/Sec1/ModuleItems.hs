@@ -10,6 +10,35 @@ import V2H.Ast.Sec6.ProceduralBlocksAndAssignments
 -- | Incomplete production rule
 data BindDirective = BindDirective deriving (Show)
 
+data ModuleCommonItem =
+    MCIModuleOrGenerateItemDeclaration {
+        moduleOrGenerateItemDeclaration :: ModuleOrGenerateItemDeclaration
+    } | MCIInterfaceInstantiation {
+        interfaceInstantiation :: InterfaceInstantiation
+    } | MCIProgramInstantiation {
+        programInstantiation :: ProgramInstantiation
+    } | MCIAssertionItem {
+        assertionItem :: AssertionItem
+    } | MCIBindDirective {
+        bindDirective :: BindDirective
+    } | MCIContinuousAssign {
+        continuousAssign :: ContinuousAssign
+    } | MCINetAlias {
+        netAlias :: NetAlias
+    } | MCIInitialConstruct {
+        initialConstruct :: InitialConstruct
+    } | MCIFinalConstruct {
+        finalConstruct :: FinalConstruct
+    } | MCIAlwaysConstruct {
+        alwaysConstruct :: AlwaysConstruct
+    } | MCILoopGenerateConstruct {
+        loopGenerateConstruct :: LoopGenerateConstruct
+    } | MCIConditionalGenerateConstruct {
+        conditionalGenerateConstruct :: ConditionalGenerateConstruct
+    } | MCIElaborationSystemTask {
+        elaborationSystemTask :: ElaborationSystemTask
+    } deriving (Show)
+
 data ModuleItem =
     MIPort_Declaration {
         portDeclaration :: PortDeclaration
@@ -17,34 +46,31 @@ data ModuleItem =
         nonPortModuleItem :: NonPortModuleItem
     } deriving (Show)
 
+-- | Incomplete production rule
+data ModuleOrGenerateItem = MORGIModuleCommonItem{
+        attributeInstances :: [AttributeInstance],
+        moduleCommonItem :: ModuleCommonItem
+    }
+
 data NonPortModuleItem =
-    NPMIModuleOrGenerateItemDeclaration {
-       moduleOrGenerateItemDeclaration :: ModuleOrGenerateItemDeclaration
-    } | NPMIInterfaceInstantiation {
-        interfaceInstantiation :: InterfaceInstantiation
-    } | NPMIProgramInstantiation {
-        programInstantiation :: ProgramInstantiation
-    } | NPMIAssertionItem {
-        assertionItem :: AssertionItem
-    } | NPMIBindDirective {
-        bindDirective :: BindDirective
-    } | NPMIContinuousAssign {
-        continuousAssign :: ContinuousAssign
-    } | NPMINetAlias {
-        netAlias :: NetAlias
-    } | NPMIInitialConstruct {
-        initialConstruct :: InitialConstruct
-    } | NPMIFinalConstruct {
-        finalConstruct :: FinalConstruct
-    } | NPMIAlwaysConstruct {
-        alwaysConstruct :: AlwaysConstruct
-    } | NPMILoopGenerateConstruct {
-        loopGenerateConstruct :: LoopGenerateConstruct
-    } | NPMIConditionalGenerateConstruct {
-        conditionalGenerateConstruct :: ConditionalGenerateConstruct
-    } | NPMIElaborationSystemTask {
-        elaborationSystemTask :: ElaborationSystemTask
-    } deriving (Show)
+    NPMIGenerateRegion {
+        generateRegion :: GenerateRegion
+    } | NPMIModuleOrGenerateItem {
+        moduleOrGenerateItem :: ModuleOrGenerateItem
+    } | NPMISpecifyBlock {
+        specifyBlock :: SpecifyBlock
+    } | NPMISpecparamDeclaration {
+        attributeInstances :: [AttributeInstance]
+    } | NPMIProgramDeclaration {
+        programDeclaration :: ProgramDeclaration
+    } | NPMIModuleDeclaration {
+        moduleDeclaration :: ModuleDeclartion
+    } | NPMIInterfaceDeclaration {
+        interfaceDeclaration :: InterfaceDeclaration
+    } | NPMITimeunitsDeclaration {
+        timeunitsDeclaration :: TimeunitsDeclaration
+    }
+
 -- | Incomplete production rule
 data ModuleOrGenerateItemDeclaration = ModuleOrGenerateItemDeclaration deriving (Show)
 

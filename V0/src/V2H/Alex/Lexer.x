@@ -14,25 +14,31 @@ import qualified Data.ByteString.Lazy.Char8 as BS
 }
 %wrapper "monadUserState-bytestring"
 $alpha = [a-zA-Z]
-$digit = [0-9]
+$decimalDigit = [0-9]
 
-@identifier = ($alpha | \_) ($alpha | $digit | \_ | \$)*
+@identifier = ($alpha | \_) ($alpha | $decimalDigit | \_ | \$)*
 
 tokens :-
 
 <0> $white+ ;
 
 -- Keywords
-<0> "accept_on"               { tok AcceptOn }
-<0> "alias"                   { tok Alias }
-<0> "always"                  { tok Always }
-<0> "always_comb"             { tok AlwaysComb }
-<0> "always_ff"               { tok AlwaysFf }
-<0> "always_latch"            { tok AlwaysLatch}
+<0> "accept_on"                 { tok AcceptOn }
+<0> "alias"                     { tok Alias }
+<0> "always"                    { tok Always }
+<0> "always_comb"               { tok AlwaysComb }
+<0> "always_ff"                 { tok AlwaysFf }
+<0> "always_latch"              { tok AlwaysLatch}
 
-<0> "endmodule"               { tok Endmodule }
-<0> "module"                  { tok Module }
+<0> "automatic"                 { tok Automatic }
 
+<0> "endmodule"                 { tok Endmodule }
+
+<0> "module"                    { tok Module }
+
+<0> "static"                    { tok Static }
+
+<0> $decimalDigit+            { tokDecimal }
 {
 data UnaryOp =  PlusUOp
                 | MinusUOp
@@ -76,8 +82,8 @@ data BinaryOp = PlusBOp
                 | DashGreaterBOp
                 | LessDashGreaterBOp
 
-data IncOrDecOp = IncOp
-                        | DecOp
+data IncOrDecOp =   IncOp
+                    | DecOp
 
 data UnaryModulePathOp =    ExclamationUMPOp
                             | TildeUMPOp
@@ -98,6 +104,7 @@ data BinaryModulePathOp =   EqualEqualBMPOp
                             | CaretBMPOp
                             | CaretTildeBMPOp
                             | TildeCaretBMPOp
+
 data Token =
             -- Alex Required
             EOF
@@ -369,6 +376,14 @@ data Token =
             | OpenSquareBracket
             | CloseSquareBracket
             | Semicolon
+            | Colon
+            | FullStop
+            | Asterisk
+            | ColonColon
+            -- Time_unit
+            | TimeUnitOperator TimeUnit
+            -- Numbers
+            | UnsignedNumberToken UnsignedNumber
             deriving (Eq, Show)
 
 alexEOF :: Alex RangedToken
@@ -409,4 +424,11 @@ tok ctor inp len =
         rtRange = mkRange inp len
     }
 
+tokDecimal inp@(_, _, str, _) len =
+  pure RangedToken
+    { rtToken = UnsignedNumberToken $ read $ BS.unpack $ BS.take len str
+    , rtRange = mkRange inp len
+    }
+
 }
+

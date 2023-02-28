@@ -50,7 +50,7 @@ moduleDeclarationNT =
 
 moduleKeywordNT :: ParserSV ModuleKeyword
 moduleKeywordNT =   svLexeme (string "module") *> pure Module
-                    <|> svLexeme (string "macromodule") *> pure MacroModule
+                    <|> svLexeme (string "macromodule") *> pure Macromodule
 
 -- | Incomplete production rule
 interfaceDeclarationNT :: ParserSV InterfaceDeclaration

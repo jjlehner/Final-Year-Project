@@ -78,7 +78,7 @@ data ModuleDeclaration =
         moduleAnsiHeader :: ModuleAnsiHeader
     } deriving (Show)
 
-data ModuleKeyword = Module | MacroModule deriving (Show)
+data ModuleKeyword = Module | Macromodule deriving (Show)
 
 -- | Incomplete production rule
 data InterfaceDeclaration = InterfaceDeclaration deriving (Show)
