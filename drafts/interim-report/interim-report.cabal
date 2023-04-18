@@ -154,6 +154,47 @@ executable queues
     default-extensions: DuplicateRecordFields
 
     -- Other library packages from which modules are imported.
+    build-depends:    base ^>=4.17.0.0,
+                      criterion ^>= 1.6.0.0
+
+    -- Directories containing source files.
+    hs-source-dirs:   app
+
+    -- Base language which the package is written in.
+    default-language: GHC2021
+
+executable aivika
+    -- .hs or .lhs file containing the Main module.
+    main-is:          aivika_project.hs
+
+    -- Modules included in this executable, other than Main.
+    -- other-modules:
+
+    -- LANGUAGE extensions used by modules in this package.
+    default-extensions: DuplicateRecordFields
+
+    -- Other library packages from which modules are imported.
+    build-depends:    base ^>=4.17.0.0,
+                      aivika ^>= 5.9.1,
+                      mtl ^>= 2.3.1
+
+    -- Directories containing source files.
+    hs-source-dirs:   app
+
+    -- Base language which the package is written in.
+    default-language: GHC2021
+
+executable fib
+    -- .hs or .lhs file containing the Main module.
+    main-is:          fib.hs
+
+    -- Modules included in this executable, other than Main.
+    -- other-modules:
+
+    -- LANGUAGE extensions used by modules in this package.
+    default-extensions: DuplicateRecordFields
+
+    -- Other library packages from which modules are imported.
     build-depends:    base ^>=4.17.0.0
 
     -- Directories containing source files.

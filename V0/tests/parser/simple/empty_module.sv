@@ -1,3 +1,3 @@
-module empty_module();
+module fish();
 
 endmodule

@@ -14,13 +14,6 @@ balance Black a x (T Red (T Red b y c) z d) = T Red (T Black a x b) y (T Black c
 balance Black a x (T Red b y (T Red c z d)) = T Red (T Black a x b) y (T Black c z d)
 balance color a x b = T color a x b
 
-empty = E
-member _ E = False
-member x (T _ a y b) =
-    if x < y then member x a
-    else if x > y then member x b
-    else True
-
 insert :: Ord a => a -> RedBlackSet a -> RedBlackSet a
 insert x (T color a y b) = T Black q w e
     where
@@ -31,3 +24,11 @@ insert x (T color a y b) = T Black q w e
             else (T color a y b)
         T _ q w e = ins $ T color a y b
 insert x E = T Black E x E
+
+
+empty = E
+member _ E = False
+member x (T _ a y b) =
+    if x < y then member x a
+    else if x > y then member x b
+    else True

@@ -49,6 +49,11 @@ executable syntax-visualiser
 
 executable symbol-visualiser
     main-is:          symbol-visualiser.hs
+    ghc-options:
+        -rtsopts
+        -fprof-auto
+        "-with-rtsopts=-p -s -h -i0.001"
+
     build-depends:
         base ^>=4.17.0,
         parsec == 3.1.15.1,

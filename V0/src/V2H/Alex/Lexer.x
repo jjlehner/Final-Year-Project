@@ -1,5 +1,5 @@
 {
-module V2H.AlexLexer.Lexer (
+module V2H.Alex.Lexer (
     Alex,
     AlexPosn (..),
     Range (..),
@@ -8,9 +8,16 @@ module V2H.AlexLexer.Lexer (
     alexGetInput,
     alexError,
     runAlex,
-    alexMonadScan
+    alexMonadScan,
+    unTok,
+    unTokDecimal,
+    unTokTimeUnit,
+    unTokIdentifier,
+    tokDecimal,
+    scanMany
 ) where
 import qualified Data.ByteString.Lazy.Char8 as BS
+import qualified V2H.Ast as Ast
 }
 %wrapper "monadUserState-bytestring"
 $alpha = [a-zA-Z]
@@ -37,8 +44,11 @@ tokens :-
 <0> "module"                    { tok Module }
 
 <0> "static"                    { tok Static }
-
-<0> $decimalDigit+            { tokDecimal }
+<0> ";"                         { tok Semicolon }
+<0> "("                         { tok OpenBracket }
+<0> ")"                         { tok CloseBracket }
+<0> @identifier                 { tokId }
+<0> $decimalDigit+              { tokDecimal }
 {
 data UnaryOp =  PlusUOp
                 | MinusUOp
@@ -50,7 +60,7 @@ data UnaryOp =  PlusUOp
                 | TildePipeUOp
                 | CaretUOp
                 | TildeCaretUOp
-                | CaretTildeUOp
+                | CaretTildeUOp deriving (Eq, Show)
 
 data BinaryOp = PlusBOp
                 | MinusBOp
@@ -80,10 +90,10 @@ data BinaryOp = PlusBOp
                 | GreaterGreaterGreaterBOp
                 | LessLessLessBOp
                 | DashGreaterBOp
-                | LessDashGreaterBOp
+                | LessDashGreaterBOp deriving (Eq, Show)
 
 data IncOrDecOp =   IncOp
-                    | DecOp
+                    | DecOp deriving (Eq, Show)
 
 data UnaryModulePathOp =    ExclamationUMPOp
                             | TildeUMPOp
@@ -93,7 +103,7 @@ data UnaryModulePathOp =    ExclamationUMPOp
                             | TildePipeUMPOp
                             | CaretUMPOp
                             | TildeCaretUMPOp
-                            | CaretTildeUMPOp
+                            | CaretTildeUMPOp deriving (Eq, Show)
 
 data BinaryModulePathOp =   EqualEqualBMPOp
                             | ExclamationEqualBMPOp
@@ -103,7 +113,7 @@ data BinaryModulePathOp =   EqualEqualBMPOp
                             | PipeBMPOp
                             | CaretBMPOp
                             | CaretTildeBMPOp
-                            | TildeCaretBMPOp
+                            | TildeCaretBMPOp deriving (Eq, Show)
 
 data Token =
             -- Alex Required
@@ -380,10 +390,13 @@ data Token =
             | FullStop
             | Asterisk
             | ColonColon
+            | Equals
+            | Comma
+            | Backslash
             -- Time_unit
-            | TimeUnitOperator TimeUnit
+            | TimeUnitOperator Ast.TimeUnit
             -- Numbers
-            | UnsignedNumberToken UnsignedNumber
+            | UnsignedNumberT Ast.UnsignedNumber
             deriving (Eq, Show)
 
 alexEOF :: Alex RangedToken
@@ -424,11 +437,27 @@ tok ctor inp len =
         rtRange = mkRange inp len
     }
 
+unTok :: RangedToken -> (Range -> Token -> a) -> a
+unTok (RangedToken tok range) ctor = ctor range tok
+
+unTokDecimal rangedToken = unTok rangedToken (\range (UnsignedNumberT num)-> num)
+unTokTimeUnit rangedToken = unTok rangedToken (\range (TimeUnitOperator num)-> num)
+unTokIdentifier rangedToken = unTok rangedToken (\range (Identifier str) -> BS.unpack str)
+
 tokDecimal inp@(_, _, str, _) len =
   pure RangedToken
-    { rtToken = UnsignedNumberToken $ read $ BS.unpack $ BS.take len str
+    { rtToken = UnsignedNumberT $ read $ BS.unpack $ BS.take len str
     , rtRange = mkRange inp len
     }
+
+scanMany :: BS.ByteString -> Either String [RangedToken]
+scanMany input = runAlex input go
+  where
+    go = do
+      output <- alexMonadScan
+      if rtToken output == EOF
+        then pure [output]
+        else (output :) <$> go
 
 }
 

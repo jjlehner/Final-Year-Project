@@ -47,75 +47,24 @@ extra-source-files: CHANGELOG.md
 executable verilog-to-haskell
     -- .hs or .lhs file containing the Main module.
     main-is:          Main.hs
-
+    build-tool-depends: alex:alex
     -- Modules included in this executable, other than Main.
-    other-modules:    V2H.Parser,
-                      V2H.Ast,
-                      V2H.Lexer,
-                      V2H.Ast.Sec1.LibrarySourceText,
-                      V2H.Ast.Sec1.SourceText,
-                      V2H.Ast.Sec1.ModuleParametersAndPorts,
-                      V2H.Ast.Sec1.ModuleItems,
-                      V2H.Ast.Sec1.PackageItems,
-                      V2H.Ast.Sec1.ConfigurationSourceText,
-                      V2H.Ast.Sec2.TypeDeclarations,
-                      V2H.Ast.Sec2.DeclarationAssignments,
-                      V2H.Ast.Sec5.UdpDeclaration,
-                      V2H.Ast.Sec8.Primaries,
-                      V2H.Ast.Sec9.Identifiers,
-                      V2H.Ast.Sec9.Attributes,
-                      V2H.Ast.Sec4.InterfaceInstantiation,
-                      V2H.Ast.Sec4.ProgramInstantiation,
-                      V2H.Ast.Sec6.AssertionStatements,
-                      V2H.Ast.Sec6.ContinuousAssignmentAndNetAliasStatements,
-                      V2H.Ast.Sec6.ProceduralBlocksAndAssignments,
-                      V2H.Ast.Sec4.GeneratedInstantiation,
-                      V2H.Ast.Sec6.Statements,
-                      V2H.Parser.Sec1.LibrarySourceText,
-                      V2H.Parser.Sec1.SourceText,
-                      V2H.Parser.Sec1.ModuleParametersAndPorts,
-                      V2H.Parser.Sec1.ModuleItems,
-                      V2H.Parser.Sec1.PackageItems,
-                      V2H.Parser.Sec1.ConfigurationSourceText,
-                      V2H.Parser.Sec2.TypeDeclarations,
-                      V2H.Parser.Sec2.DeclarationAssignments,
-                      V2H.Parser.Sec5.UdpDeclaration,
-                      V2H.Parser.Sec8.Primaries,
-                      V2H.Parser.Sec9.Identifiers,
-                      V2H.Parser.Sec9.Attributes,
-                      V2H.Parser.Sec4.InterfaceInstantiation,
-                      V2H.Parser.Sec4.ProgramInstantiation,
-                      V2H.Parser.Sec6.AssertionStatements,
-                      V2H.Parser.Sec6.ContinuousAssignmentAndNetAliasStatements,
-                      V2H.Parser.Sec6.ProceduralBlocksAndAssignments,
-                      V2H.Parser.Sec4.GeneratedInstantiation
-                      V2H.Parser.Sec6.Statements
-
+    other-modules:    V2H.Alex.Lexer,
+                      V2H.Happy.Parser
+                      V2H.Ast
 
     -- LANGUAGE extensions used by modules in this package.
     default-extensions:    DuplicateRecordFields
     -- Other library packages from which modules are imported.
     build-depends:    base ^>=4.17.0.0,
                       containers ^>= 0.6.6,
-                      parsec ^>= 3.1.15.1
+                      parsec ^>= 3.1.15.1,
+                      bytestring ^>= 0.11.4.0,
+                      array ^>= 0.5.4.0
 
     -- Directories containing source files.
     hs-source-dirs:    src,
-                       src/V2H,
-                       src/V2H/Ast/Sec1,
-                       src/V2H/Ast/Sec2,
-                       src/V2H/Ast/Sec4,
-                       src/V2H/Ast/Sec5,
-                       src/V2H/Ast/Sec6,
-                       src/V2H/Ast/Sec8,
-                       src/V2H/Ast/Sec9,
-                       src/V2H/Parser/Sec1,
-                       src/V2H/Parser/Sec2,
-                       src/V2H/Parser/Sec4,
-                       src/V2H/Parser/Sec5,
-                       src/V2H/Parser/Sec6,
-                       src/V2H/Parser/Sec8,
-                       src/V2H/Parser/Sec9
+                       src/V2H
 
 
     -- Base language which the package is written in.

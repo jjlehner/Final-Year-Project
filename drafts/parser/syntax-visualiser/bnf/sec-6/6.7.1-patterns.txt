@@ -17,5 +17,5 @@ assignment_pattern_expression_type ::= ps_type_identifier
 | integer_atom_type
 | type_reference
 constant_assignment_pattern_expression ::= assignment_pattern_expression
-assignment_pattern_net_lvalue ::= '{ net_lvalue {, net_lvalue } }
+assignment_pattern_net_lvalue ::= '\{ net_lvalue {, net_lvalue } \}
 assignment_pattern_variable_lvalue ::= '{ variable_lvalue {, variable_lvalue } }

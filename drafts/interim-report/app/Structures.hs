@@ -14,6 +14,7 @@ tail :: List a -> List a
 tail Nil = undefined
 tail (Cons (x,s)) = s
 
+isEmpty :: List a -> Bool
 isEmpty Nil = True
 isEmpty _ = False
 

@@ -4,3 +4,4 @@ dist-newstyle/*
 .direnv/*
 .ghci_history
 .vscode/*
+.src/V2H/AlexLexer/Lexer.hs

@@ -1,9 +1,14 @@
 module Main where
-import V2H.Parser
+import Prelude hiding (readFile)
 import Data.Functor.Identity
+import Data.ByteString.Lazy.Char8 (readFile)
+import V2H.Alex.Lexer
+import V2H.Happy.Parser
+
+
 main = do
     s <- readFile "tests/parser/simple/empty_module.sv"
-    let top = parseSource "simple_module" s
-    case runIdentity top of
-        Left left -> print left
-        Right right -> print right
+    print $ scanMany s
+    print $ runAlex s parseSV
+
+
