@@ -31,7 +31,7 @@ import V2H.Ast
     always_ff                   { L.RangedToken L.AlwaysFf _ }
     always_latch                { L.RangedToken L.AlwaysLatch _ }
     and                         { L.RangedToken L.And _ }
-    assert                      { L.RangedToken L.Assert }
+    assert                      { L.RangedToken L.Assert _ }
     assign                      { L.RangedToken L.Assign _ }
     assume                      { L.RangedToken L.Assume _ }
     automatic                   { L.RangedToken L.Automatic _ }
@@ -57,7 +57,7 @@ import V2H.Ast
     cmos                        { L.RangedToken L.Cmos _ }
     config                      { L.RangedToken L.Config _ }
     constraint                  { L.RangedToken L.Constraint _ }
-    context                     { L.RangedToken L.Context }
+    context                     { L.RangedToken L.Context _ }
     continue                    { L.RangedToken L.Continue _ }
     cover                       { L.RangedToken L.Cover _ }
     covergroup                  { L.RangedToken L.Covergroup _ }
@@ -334,10 +334,10 @@ description :: { Description }
 module_ansi_header :: { ModuleAnsiHeader }
     : many(attribute_instance) module_keyword optional(lifetime) module_identifier many(package_import_declaration) optional(parameter_ports) optional(port_declarations) ';' {
         ModuleAnsiHeader {
-            attributeInstances=$1,
-            moduleKeyword=$2,
-            lifetime=$3,
-            moduleIdentifier=$4,
+            attributeInstances = $1,
+            moduleKeyword = $2,
+            lifetime = $3,
+            moduleIdentifier = $4,
             packageImportDeclarations = $5,
             parameterPorts = $6,
             portDeclarations = $7
@@ -378,13 +378,13 @@ timeunits_declaration :: { TimeunitsDeclaration }
 parameter_ports :: { ParameterPorts }
     : '#' '(' param_assignments many(snd(',', parameter_port_declaration)) ')' {
         ParameterPorts {
-            parameterAssignments = $1,
-            parameterPortDeclaration = $2
+            parameterAssignments = $3,
+            parameterPortDeclaration = $4
         }}
     | '#' '(' parameter_port_declaration many(snd(',', parameter_port_declaration)) ')' {
         ParameterPorts {
             parameterAssignments = [],
-            parameterPortDeclaration = $1:$2
+            parameterPortDeclaration = $3:$4
         }}
     | '#' '(' ')' {
         ParameterPorts {
@@ -399,7 +399,8 @@ parameter_port_declaration :: { ParameterPortDeclaration }
     | type type_assignments         { PPDTypeAssignments $2 }
 
 port_declarations :: { [PortDeclarationsItem] }
-    :  '(' many(port_declarations_item) ')'                     { $2 }
+    : '(' ')'                                                  { [] }
+    | '(' port_declarations_item many(snd(',', port_declarations_item)) ')'                 { $2:$3 }
 
 port_declarations_item :: { PortDeclarationsItem }
     : many(attribute_instance) ansi_port_declaration            { PortDeclarationsItem $1 $2 }
@@ -416,7 +417,9 @@ port_direction :: { PortDirection }
 
 net_port_header :: { NetPortHeader }
     : optional(port_direction) net_port_type                    { NetPortHeader $1 $2 }
--- variable_port_header :: { VariablePortHeader }
+
+variable_port_header :: { VariablePortHeader }
+    : optional(port_direction) variable_port_type                       { VariablePortHeader $1 $2 }
 
 interface_port_header :: { InterfacePortHeader }
     : interface_identifier optional(snd('.', modport_identifier))       { IPDNamed $1 $2 }
@@ -429,6 +432,13 @@ ansi_port_declaration :: { AnsiPortDeclaration }
             netOrInterfacePortHeader = $1,
             portIdentifier = $2,
             unpackedDimensions = $3,
+            constantExpression = $4
+        }}
+    | optional(variable_port_header) port_identifier many(variable_dimension) optional(snd('=',constant_expression))
+        { APDVariableHeader {
+            variablePortHeader = $1,
+            portIdentifier = $2,
+            variableDimensions = $3,
             constantExpression = $4
         }}
 
@@ -563,10 +573,10 @@ parameter_declaration :: { ParameterDeclaration }
 ---- 2.1.3 - Type Declarations ----
 -- data_declaration :: { DataDeclaration }
 package_import_declaration :: { PackageImportDeclaration }
-    : import package_import_item many(snd(',', package_import_item)) ';' { PackageImportDeclaration $2:$3 }
+    : import package_import_item many(snd(',', package_import_item)) ';' { PackageImportDeclaration ($2:$3) }
 
 package_import_item :: { PackageImportItem }
-    : package_identifier "::" identifier          { PIIIdentifier $1 $2 }
+    : package_identifier "::" identifier          { PIIIdentifier $1 $3 }
     | package_identifier "::" '*'                   { PIIWildcard $1 }
 -- package_export_declaration :: { PackageExportDeclaration }
 -- genvar_declaration :: { GenvarDeclaration }
@@ -624,9 +634,15 @@ net_type :: { NetType }
     | wor       { Wor }
 
 net_port_type :: { NetPortType }
-    : optional(net_type) data_type_or_implicit { NetPortType $1 $2 }
--- variable_port_type :: { VariablePortType }
--- var_data_type :: { VarDataType }
+    : optional(net_type) data_type_or_implicit { NPTDataOrImplicit $1 $2 }
+
+variable_port_type :: { VariablePortType }
+    : var_data_type { VariablePortType $1 }
+
+var_data_type :: { VarDataType }
+    : data_type                     { VDT $1 }
+    | var data_type_or_implicit     { VDTOrImplicit $2 }
+
 signing :: { Signing }
     : signed                                    { SSigned }
     | unsigned                                  { SUnsigned }
@@ -686,10 +702,12 @@ unpacked_dimension :: { UnpackedDimension }
 
 packed_dimension :: { PackedDimension }
     : '[' constant_range ']'            { PDConstantRange $2 }
-    | unsized_dimension                 { PDUnsizedDimension $1 }
+    | unsized_dimension                 { PDUnsized $1 }
 
 -- associative_dimension :: { AssociativeDimension }
--- variable_dimension :: { VariableDimension }
+variable_dimension :: { VariableDimension }
+    : unsized_dimension                 { VDUnsized $1 }
+
 -- queue_dimension :: { QueueDimension }
 unsized_dimension :: { UnsizedDimension }
     : '[' ']'       { UnsizedDimension }
@@ -1244,14 +1262,14 @@ net_lvalue :: { NetLValue }
 
 -- Incomplete production rule
 number :: { Number }
-    : integral_number   { NumberIntegral $1 }
+    : integral_number   { NIntegral $1 }
 
 -- Incomplete production rule
 integral_number :: { IntegralNumber }
-    : decimal_number    { IntegralNumber $1 }
+    : decimal_number    { INDecimal $1 }
 
 decimal_number :: { DecimalNumber }
-     :unsigned_number   { DecimalNumber $1 }
+     : unsigned_number   { DNUnsigned (L.unTokDecimal $1) }
 
 ---- 8.8 - Strings ----
 

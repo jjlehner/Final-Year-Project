@@ -155,7 +155,7 @@ type PortDeclarations = [PortDeclarationsItem]
 data PortDeclarationsItem =
     PortDeclarationsItem {
         attributeInstances :: [AttributeInstance],
-        ansiPortDeclaration :: [AnsiPortDeclaration]
+        ansiPortDeclaration :: AnsiPortDeclaration
     } deriving (Show)
 
 -- | Incomplete production rule
@@ -189,8 +189,10 @@ data NetPortHeader = NetPortHeader {
         netPortType :: NetPortType
     } deriving (Show)
 
--- | Incomplete production rule
-data VariablePortHeader = VariablePortHeader deriving (Show)
+data VariablePortHeader = VariablePortHeader {
+        portDirection :: Maybe PortDirection,
+        variablePortType :: VariablePortType
+    } deriving (Show)
 
 -- | Incomplete production rule
 data InterfacePortHeader =
@@ -209,7 +211,7 @@ data AnsiPortDeclaration =
         unpackedDimensions :: [UnpackedDimension],
         constantExpression :: Maybe ConstantExpression
     } | APDVariableHeader {
-        variablePortHeader :: VariablePortHeader,
+        variablePortHeader :: Maybe VariablePortHeader,
         portIdentifier :: PortIdentifier,
         variableDimensions :: [VariableDimension],
         constantExpression :: Maybe ConstantExpression
@@ -346,7 +348,7 @@ data PackageImportItem =
 data Lifetime = Static | Automatic deriving (Show)
 
 -- | Incomplete production rule
-data PackageImportDeclaration = PackageImportDeclaration deriving (Show)
+data PackageImportDeclaration = PackageImportDeclaration [PackageImportItem] deriving (Show)
 ---- 2.2.1 - Net and Variable Types ----
 data DataType = DTIntegerVector {
         integerVectorType :: IntegerVectorType,
@@ -399,7 +401,11 @@ data ParamAssignment = ParamAssignment {
 data SpecparamAssignment = SpecparamAssignment deriving (Show)
 
 -- | Incomplete production rule
-data TypeAssignment = TypeAssignment deriving (Show)
+data TypeAssignment =
+    TypeAssignment {
+        identifier :: TypeIdentifier,
+        dataType :: Maybe DataType
+    } deriving (Show)
 
 -- | Incomplete production rule
 data PulseControlSpecparam = PulseControlSpecparam deriving (Show)
@@ -430,7 +436,7 @@ data UnpackedDimension =
 data PackedDimension =
     PDConstantRange {
         constantRange :: ConstantRange
-    } | PDUnsizedDimension {
+    } | PDUnsized {
         unsizedDimension :: UnsizedDimension
     } deriving (Show)
 -- | Incomplete production rule
@@ -577,11 +583,23 @@ data IncOrDecExpression = IncOrDecExpression deriving (Show)
 -- | Incomplete production rule
 data ConditionalExpression = ConditionalExpressions deriving (Show)
 -- | Incomplete production rule
-data ConstantExpression = ConstantExpression deriving (Show)
+data ConstantExpression =
+    CEPrimary {
+        constantPrimary :: ConstantPrimary
+    } deriving (Show)
 -- | Incomplete production rule
-data ConstantMintypmaxExpression = ConstantMintypmaxExpression deriving (Show)
+data ConstantMintypmaxExpression =
+    CMESingle ConstantExpression
+    | CMETriple ConstantExpression ConstantExpression ConstantExpression deriving (Show)
+
 -- | Incomplete production rule
-data ConstantParamExpression = ConstantParamExpression deriving (Show)
+data ConstantParamExpression =
+    CPEMintypmax {
+        constantMintypmaxExpression :: ConstantMintypmaxExpression
+    } | CPEDataType {
+        dataType :: DataType
+    } | CPEDollar deriving (Show)
+
 -- | Incomplete production rule
 data ParamExpression = ParamExpression deriving (Show)
 -- | Incomplete production rule
@@ -589,7 +607,7 @@ data ConstantRangeExpression = ConstantRangeExpression deriving (Show)
 -- | Incomplete production rule
 data ConstantPartSelectRange = ConstantPartSelectRange deriving (Show)
 -- | Incomplete production rule
-data ConstantRange = ConstantRange deriving (Show)
+data ConstantRange = CRExpression {constantExpression :: ConstantExpression }deriving (Show)
 -- | Incomplete production rule
 data ConstantIndexedRange = ConstantIndexedRange deriving (Show)
 -- | Incomplete production rule
@@ -653,7 +671,7 @@ data Number =
 
 -- | Incomplete production rule
 data IntegralNumber =
-    INDecimalNumber {
+    INDecimal {
         decimalNumber :: DecimalNumber
     } deriving (Show)
 

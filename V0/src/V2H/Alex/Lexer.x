@@ -42,14 +42,19 @@ tokens :-
 <0> "bit"                       { tok Bit }
 
 <0> "endmodule"                 { tok Endmodule }
-
+<0> "input"                     { tok Input}
 <0> "localparam"                { tok Localparam }
 <0> "logic"                     { tok Logic }
 
 <0> "module"                    { tok Module }
+<0> "output"                    { tok Output }
 <0> "reg"                       { tok Reg }
 
 <0> "static"                    { tok Static }
+
+<0> "wire"                      { tok Wire }
+
+<0> ","                         { tok Comma }
 <0> ";"                         { tok Semicolon }
 <0> "("                         { tok OpenBracket }
 <0> ")"                         { tok CloseBracket }
