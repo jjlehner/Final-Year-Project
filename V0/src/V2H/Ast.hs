@@ -132,7 +132,7 @@ data TimeunitsDeclaration = TimeunitsDeclaration {} deriving (Show)
 ---- 1.3 - Module parameters and Ports ----
 data ParameterPorts =
     ParameterPorts {
-        parameterAssignments :: [ParameterAssignment],
+        parameterAssignments :: [ParamAssignment],
         parameterPortDeclaration :: [ParameterPortDeclaration]
     } deriving (Show)
 
@@ -144,14 +144,26 @@ data ParameterPortDeclaration =
         localParameterDeclaration :: LocalParameterDeclaration
     } | PPDDataTypeParamAssignments {
         dataType :: DataType,
-        parameterAssignments :: parameterAssignments
+        parameterAssignments :: [ParamAssignment]
     } | PPDTypeAssignments {
         typeAssignments :: [TypeAssignment]
     } deriving (Show)
 
 -- | Incomplete production rule
 -- Referred to as list_of_port_declarations in System Verilog Official Grammar
-type AnsiPortDeclarations = [(Maybe AttributeInstance,AnsiPortDeclaration)]
+type PortDeclarations = [PortDeclarationsItem]
+data PortDeclarationsItem =
+    PortDeclarationsItem {
+        attributeInstances :: [AttributeInstance],
+        ansiPortDeclaration :: [AnsiPortDeclaration]
+    } deriving (Show)
+
+-- | Incomplete production rule
+data PortDeclaration =
+    PDInputDeclaration {
+        attributeInstances :: [AttributeInstance],
+        inputDeclaration :: InputDeclaration
+    } deriving (Show)
 
 data Port =
     PUnamed {
@@ -172,9 +184,8 @@ data PortReference =
 
 data PortDirection = PDInput | PDOutput | PDInout | PDRef deriving (Show)
 
--- | Incomplete production rule
 data NetPortHeader = NetPortHeader {
-        portDirection :: PortDirection,
+        portDirection :: Maybe PortDirection,
         netPortType :: NetPortType
     } deriving (Show)
 
@@ -182,17 +193,23 @@ data NetPortHeader = NetPortHeader {
 data VariablePortHeader = VariablePortHeader deriving (Show)
 
 -- | Incomplete production rule
-data InterfacePortHeader = InterfacePortHeader deriving (Show)
+data InterfacePortHeader =
+    IPDNamed {
+        interfaceIdentifier :: InterfaceIdentifier,
+        modportIdentifier :: Maybe ModportIdentifier
+    } | IPDAnonymous {
+        modportIdentifier :: Maybe ModportIdentifier
+    } deriving (Show)
 
 -- | Incomplete production rule
 data AnsiPortDeclaration =
-    APDNetInterfaceHeader {
-        portHeader :: Maybe (Either NetPortHeader InterfacePortHeader),
+    APDNetOrInterfaceHeader {
+        netOrInterfacePortHeader :: Maybe (Either NetPortHeader InterfacePortHeader),
         portIdentifier :: PortIdentifier,
         unpackedDimensions :: [UnpackedDimension],
         constantExpression :: Maybe ConstantExpression
     } | APDVariableHeader {
-        portHeader :: VariablePortHeader,
+        variablePortHeader :: VariablePortHeader,
         portIdentifier :: PortIdentifier,
         variableDimensions :: [VariableDimension],
         constantExpression :: Maybe ConstantExpression
@@ -287,21 +304,81 @@ data PackageItem = PackageItem deriving (Show)
 ----- Sec 2 -----
 ---- 2.1.1 - Module Parameter Declarations ----
 -- | Incomplete production rule
-data LocalParameterDeclaration = LocalParameterDeclaration deriving (Show)
+data LocalParameterDeclaration = LPDParamAssignments {
+        dataTypeOrImplicit :: DataTypeOrImplicit,
+        paramAssignments :: [ParamAssignment]
+    } | LPDTypeAssignments {
+        typeAssignments :: [TypeAssignment]
+    } deriving (Show)
 
--- | Incomplete production rule
-data ParameterDeclaration = ParameterDeclaration deriving (Show)
+data ParameterDeclaration =
+    PDDataTypeOrImplicit {
+        dataTypeOrImplicit :: DataTypeOrImplicit,
+        paramAssignments :: [ParamAssignment]
+    }
+    | PDTypeAssignments {
+        typeAssignments :: [TypeAssignment]
+    } deriving (Show)
 
 -- | Incomplete production rule
 data SpecparamDeclaration = SpecparamDeclaration deriving (Show)
 
 ---- 2.1.2 - Port Declarations ----
+
+data InputDeclaration =
+    IDNetIdentifiers {
+        netPortType :: NetPortType,
+        portIdentifiers :: [PortIdentifier]
+    } | IDVariableIdentifiers {
+        variablePortType :: VariablePortType,
+        variableIdentifiers :: [VariableIdentifier]
+    } deriving (Show)
+
 ---- 2.1.3 - Type Declarations ----
+data PackageImportItem =
+    PIIIdentifier {
+        packageIdentifier :: PackageIdentifier,
+        identifier :: Identifier
+    } | PIIWildcard {
+        packageIdentifier :: PackageIdentifier
+    } deriving (Show)
+
 data Lifetime = Static | Automatic deriving (Show)
 
 -- | Incomplete production rule
 data PackageImportDeclaration = PackageImportDeclaration deriving (Show)
 ---- 2.2.1 - Net and Variable Types ----
+data DataType = DTIntegerVector {
+        integerVectorType :: IntegerVectorType,
+        signing :: Maybe Signing,
+        packedDimension :: [PackedDimension]
+    } deriving (Show)
+
+type DataTypeOrImplicit = Either DataType ImplicitDataType
+data ImplicitDataType =
+    ImplicitDataType {
+        signing :: Maybe Signing,
+        packedDimensions :: [PackedDimension]
+    } deriving (Show)
+
+data IntegerVectorType = Bit | Logic | Reg deriving (Show)
+
+data NetType = Supply0 | Supply1 | Tri | Triand | Trior | Trireg| Tri0 | Tri1 | Uwire| Wire | Wand | Wor deriving (Show)
+
+-- | Incomplete production rule
+data NetPortType =
+    NPTDataOrImplicit {
+        netType :: Maybe NetType,
+        dataTypeOrImplicit :: DataTypeOrImplicit
+    } deriving (Show)
+
+data VariablePortType = VariablePortType VarDataType deriving (Show)
+data VarDataType =
+    VDT { dataType :: DataType }
+    | VDTOrImplicit { dataTypeOrImplicit :: DataTypeOrImplicit } deriving (Show)
+
+data Signing = SSigned | SUnsigned deriving (Show)
+
 ---- 2.2.2 - Strengths ----
 data DriveStrength = DriveStrength deriving (Show)
 
@@ -312,7 +389,11 @@ data DriveStrength = DriveStrength deriving (Show)
 data DefparamAssignment = DefparamAssignment deriving (Show)
 
 -- | Incomplete production rule
-data ParameterAssignment = ParameterAssignment deriving (Show)
+data ParamAssignment = ParamAssignment {
+        parameterIdentifier :: ParameterIdentifier,
+        unpackedDimensions :: [UnpackedDimension],
+        constantParamExpression :: Maybe ConstantParamExpression
+    } deriving (Show)
 
 -- | Incomplete production rule
 data SpecparamAssignment = SpecparamAssignment deriving (Show)
@@ -346,6 +427,15 @@ data UnpackedDimension =
         constantExpression :: ConstantExpression
     } deriving (Show)
 
+data PackedDimension =
+    PDConstantRange {
+        constantRange :: ConstantRange
+    } | PDUnsizedDimension {
+        unsizedDimension :: UnsizedDimension
+    } deriving (Show)
+-- | Incomplete production rule
+data VariableDimension = VDUnsized UnsizedDimension deriving (Show)
+data UnsizedDimension = UnsizedDimension deriving (Show)
 ---- 2.6 - Function Declarations ----
 ---- 2.7 - Task Declarations ----
 ---- 2.8 - Block Item Declarations ----
@@ -481,8 +571,6 @@ data SpecifyBlock = SpecifyBlock deriving (Show)
 ---- 8.1 - Concatenations ----
 ---- 8.2 - Subroutine Calls ---
 ---- 8.3 - Expressions ----
--- | Incomplete production rule
-data Expression = Expression deriving (Show)
 
 -- | Incomplete production rule
 data IncOrDecExpression = IncOrDecExpression deriving (Show)
@@ -527,8 +615,16 @@ data IndexedRange = IndexedRanged deriving (Show)
 
 data GenvarExpression = GenvarExpression ConstantExpression deriving (Show)
 ---- 8.4 - Primaries ----
+-- | Incomplete production rule
+data ConstantPrimary =
+    CPLiteral {
+        primaryLiteral :: PrimaryLiteral
+    } deriving (Show)
+
 data ConstantSelect = ConstantSelect deriving (Show)
 
+-- | Incomplete production rule
+data PrimaryLiteral = PLNumber { number :: Number } deriving (Show)
 data TimeLiteral =  TLUnsigned UnsignedNumber TimeUnit
                     | TLFixedPoint UnsignedNumber UnsignedNumber TimeUnit
 
@@ -544,6 +640,28 @@ data NetLValue =
 
 ---- 8.6 - Operators ----
 ---- 8.7 - Numbers ----
+
+-- | Incomplete production rule
+data Number =
+    NIntegral {
+        integralNumber :: IntegralNumber
+    }
+    -- | NReal {
+    --     realNumber :: RealNumber
+    -- }
+    deriving (Show)
+
+-- | Incomplete production rule
+data IntegralNumber =
+    INDecimalNumber {
+        decimalNumber :: DecimalNumber
+    } deriving (Show)
+
+-- | Incomplete production rule
+data DecimalNumber =
+    DNUnsigned {
+        unsignedNumber :: UnsignedNumber
+    } deriving (Show)
 type UnsignedNumber = Word
 
 ---- 8.8 - Strings ----
@@ -568,9 +686,11 @@ newtype AttrName = AttrName Identifier deriving (Show)
 ---- 9.3 - Identifiers ----
 --- Identifier may change to be more complex/not lazy
 type Identifier = String
-
+newtype InterfaceIdentifier = InterfaceIdentifier Identifier deriving (Show)
+newtype ParameterIdentifier = ParameterIdentifier Identifier deriving (Show)
 newtype PortIdentifier = PortIdentifier Identifier deriving (Show)
 newtype ModuleIdentifier = ModuleIdentifier Identifier deriving (Show)
+newtype ModportIdentifier = ModportIdentifier Identifier deriving (Show)
 newtype PackageIdentifier = PackageIdentifier Identifier deriving (Show)
 data PackageScope =
     PSIdentifier PackageIdentifier
@@ -585,5 +705,7 @@ data PsOrHierachicalNetIdentifier =
 
 newtype NetIdentifier = NetIdentifier Identifier deriving (Show)
 
+newtype TypeIdentifier = TypeIdentifier Identifier deriving (Show)
+newtype VariableIdentifier = VariableIdentifier Identifier deriving (Show)
 -- | Incorrect
 ---- 9.4 - White space ----

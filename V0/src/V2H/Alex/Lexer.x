@@ -39,9 +39,15 @@ tokens :-
 
 <0> "automatic"                 { tok Automatic }
 
+<0> "bit"                       { tok Bit }
+
 <0> "endmodule"                 { tok Endmodule }
 
+<0> "localparam"                { tok Localparam }
+<0> "logic"                     { tok Logic }
+
 <0> "module"                    { tok Module }
+<0> "reg"                       { tok Reg }
 
 <0> "static"                    { tok Static }
 <0> ";"                         { tok Semicolon }
@@ -195,7 +201,7 @@ data Token =
             | Extends
             | Extern
             | Final
-            | First_match
+            | FirstMatch
             | For
             | Force
             | Foreach
@@ -211,8 +217,8 @@ data Token =
             | If
             | Iff
             | Ifnone
-            | Ignore_bins
-            | Illegal_bins
+            | IgnoreBins
+            | IllegalBins
             | Implements
             | Implies
             | Import
@@ -229,8 +235,8 @@ data Token =
             | Interface
             | Intersect
             | Join
-            | Join_any
-            | Join_none
+            | JoinAny
+            | JoinNone
             | Large
             | Let
             | Liblist
@@ -272,8 +278,8 @@ data Token =
             | Pull1
             | Pulldown
             | Pullup
-            | Pulsestyle_ondetect
-            | Pulsestyle_onevent
+            | PulsestyleOndetect
+            | PulsestyleOnevent
             | Pure
             | Rand
             | Randc
@@ -284,7 +290,7 @@ data Token =
             | Realtime
             | Ref
             | Reg
-            | Reject_on
+            | RejectOn
             | Release
             | Repeat
             | Restrict
@@ -294,11 +300,11 @@ data Token =
             | Rtran
             | Rtranif0
             | Rtranif1
-            | S_always
-            | S_eventually
-            | S_nexttime
-            | S_until
-            | S_until_with
+            | SAlways
+            | SEventually
+            | SNexttime
+            | SUntil
+            | SUntilWith
             | Scalared
             | Sequence
             | Shortint
@@ -319,8 +325,8 @@ data Token =
             | Super
             | Supply0
             | Supply1
-            | Sync_accept_on
-            | Sync_reject_on
+            | SyncAcceptOn
+            | SyncRejectOn
             | Table
             | Tagged
             | Task
@@ -345,7 +351,7 @@ data Token =
             | Unique0
             | Unsigned
             | Until
-            | Until_with
+            | UntilWith
             | Untyped
             | Use
             | Uwire
@@ -354,7 +360,7 @@ data Token =
             | Virtual
             | Void
             | Wait
-            | Wait_order
+            | WaitOrder
             | Wand
             | Weak
             | Weak0
@@ -379,6 +385,7 @@ data Token =
             -- BinaryModulePathOperator
             | BinaryModulePathOperator BinaryModulePathOp
             -- Punctuation
+            | Dollar
             | OpenBracket
             | CloseBracket
             | OpenCurlyBracket
@@ -393,6 +400,7 @@ data Token =
             | Equals
             | Comma
             | Backslash
+            | Hashtag
             -- Time_unit
             | TimeUnitOperator Ast.TimeUnit
             -- Numbers

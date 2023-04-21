@@ -28,22 +28,250 @@ import V2H.Ast
     alias                       { L.RangedToken L.Alias _ }
     always                      { L.RangedToken L.Always _ }
     always_comb                 { L.RangedToken L.AlwaysComb _ }
-    always_latch                { L.RangedToken L.AlwaysFf _ }
-
-
+    always_ff                   { L.RangedToken L.AlwaysFf _ }
+    always_latch                { L.RangedToken L.AlwaysLatch _ }
+    and                         { L.RangedToken L.And _ }
+    assert                      { L.RangedToken L.Assert }
     assign                      { L.RangedToken L.Assign _ }
+    assume                      { L.RangedToken L.Assume _ }
     automatic                   { L.RangedToken L.Automatic _ }
-
+    before                      { L.RangedToken L.Before _ }
+    begin                       { L.RangedToken L.Begin _ }
+    bind                        { L.RangedToken L.Bind _ }
+    bins                        { L.RangedToken L.Bins _ }
+    binsof                      { L.RangedToken L.Binsof _ }
+    bit                         { L.RangedToken L.Bit _ }
+    break                       { L.RangedToken L.Break _ }
+    buf                         { L.RangedToken L.Buf _ }
+    bufif0                      { L.RangedToken L.Bufif0 _ }
+    bufif1                      { L.RangedToken L.Bufif1 _ }
+    byte                        { L.RangedToken L.Byte _ }
+    case                        { L.RangedToken L.Case _ }
+    casex                       { L.RangedToken L.Casex _ }
+    casez                       { L.RangedToken L.Casez _ }
+    cell                        { L.RangedToken L.Cell _ }
+    chandle                     { L.RangedToken L.Chandle _ }
+    checker                     { L.RangedToken L.Checker _ }
+    class                       { L.RangedToken L.Class _ }
+    clocking                    { L.RangedToken L.Clocking _ }
+    cmos                        { L.RangedToken L.Cmos _ }
+    config                      { L.RangedToken L.Config _ }
+    constraint                  { L.RangedToken L.Constraint _ }
+    context                     { L.RangedToken L.Context }
+    continue                    { L.RangedToken L.Continue _ }
+    cover                       { L.RangedToken L.Cover _ }
+    covergroup                  { L.RangedToken L.Covergroup _ }
+    coverpoint                  { L.RangedToken L.Coverpoint _ }
+    cross                       { L.RangedToken L.Cross _ }
+    deassign                    { L.RangedToken L.Deassign _ }
+    default                     { L.RangedToken L.Default _ }
+    defparam                    { L.RangedToken L.Defparam _ }
+    design                      { L.RangedToken L.Design _ }
+    disable                     { L.RangedToken L.Disable _ }
+    dist                        { L.RangedToken L.Dist _ }
+    do                          { L.RangedToken L.Do _ }
+    edge                        { L.RangedToken L.Edge _ }
+    else                        { L.RangedToken L.Else _ }
+    end                         { L.RangedToken L.End _ }
+    endcase                     { L.RangedToken L.Endcase _ }
+    endchecker                  { L.RangedToken L.Endchecker _ }
+    endclass                    { L.RangedToken L.Endclass _ }
+    endclocking                 { L.RangedToken L.Endclocking _ }
+    endconfig                   { L.RangedToken L.Endconfig _ }
+    endfunction                 { L.RangedToken L.Endfunction _ }
+    endgenerate                 { L.RangedToken L.Endgenerate _ }
+    endgroup                    { L.RangedToken L.Endgroup _ }
+    endinterface                { L.RangedToken L.Endinterface _ }
     endmodule                   { L.RangedToken L.Endmodule _ }
-
-    module                      { L.RangedToken L.Module _ }
+    endpackage                  { L.RangedToken L.Endpackage _ }
+    endprimitive                { L.RangedToken L.Endprimitive _ }
+    endprogram                  { L.RangedToken L.Endprogram _ }
+    endproperty                 { L.RangedToken L.Endproperty _ }
+    endspecify                  { L.RangedToken L.Endspecify _ }
+    endsequence                 { L.RangedToken L.Endsequence _ }
+    endtable                    { L.RangedToken L.Endtable _ }
+    endtask                     { L.RangedToken L.Endtask _ }
+    enum                        { L.RangedToken L.Enum _ }
+    event                       { L.RangedToken L.Event _ }
+    eventually                  { L.RangedToken L.Eventually _ }
+    expect                      { L.RangedToken L.Expect _ }
+    export                      { L.RangedToken L.Export _ }
+    extends                     { L.RangedToken L.Extends _ }
+    extern                      { L.RangedToken L.Extern _ }
+    final                       { L.RangedToken L.Final _ }
+    first_match                 { L.RangedToken L.FirstMatch _ }
+    for                         { L.RangedToken L.For _ }
+    force                       { L.RangedToken L.Force _ }
+    foreach                     { L.RangedToken L.Foreach _ }
+    forever                     { L.RangedToken L.Forever _ }
+    fork                        { L.RangedToken L.Fork _ }
+    forkjoin                    { L.RangedToken L.Forkjoin _ }
+    function                    { L.RangedToken L.Function _ }
+    generate                    { L.RangedToken L.Generate _ }
+    genvar                      { L.RangedToken L.Genvar _ }
+    global                      { L.RangedToken L.Global _ }
+    highz0                      { L.RangedToken L.Highz0 _ }
+    highz1                      { L.RangedToken L.Highz1 _ }
+    if                          { L.RangedToken L.If _ }
+    iff                         { L.RangedToken L.Iff _ }
+    ifnone                      { L.RangedToken L.Ifnone _ }
+    ignore_bins                 { L.RangedToken L.IgnoreBins _ }
+    illegal_bins                { L.RangedToken L.IllegalBins _ }
+    implements                  { L.RangedToken L.Implements _ }
+    implies                     { L.RangedToken L.Implies _ }
+    import                      { L.RangedToken L.Import _ }
+    incdir                      { L.RangedToken L.Incdir _ }
+    include                     { L.RangedToken L.Include _ }
+    initial                     { L.RangedToken L.Initial _ }
+    inout                       { L.RangedToken L.Inout _ }
+    input                       { L.RangedToken L.Input _ }
+    inside                      { L.RangedToken L.Inside _ }
+    instance                    { L.RangedToken L.Instance _ }
+    int                         { L.RangedToken L.Int _ }
+    integer                     { L.RangedToken L.Integer _ }
+    interconnect                { L.RangedToken L.Interconnect _ }
+    interface                   { L.RangedToken L.Interface _ }
+    intersect                   { L.RangedToken L.Intersect _ }
+    join                        { L.RangedToken L.Join _ }
+    join_any                    { L.RangedToken L.JoinAny _ }
+    large                       { L.RangedToken L.Large _ }
+    let                         { L.RangedToken L.Let _ }
+    liblist                     { L.RangedToken L.Liblist _ }
+    library                     { L.RangedToken L.Library _ }
+    local                       { L.RangedToken L.Local _ }
+    localparam                  { L.RangedToken L.Localparam _ }
+    logic                       { L.RangedToken L.Logic _ }
+    longint                     { L.RangedToken L.Longint _ }
     macromodule                 { L.RangedToken L.Macromodule _ }
-
+    matches                     { L.RangedToken L.Matches _ }
+    medium                      { L.RangedToken L.Medium _ }
+    modport                     { L.RangedToken L.Modport _ }
+    module                      { L.RangedToken L.Module _ }
+    nand                        { L.RangedToken L.Nand _ }
+    negedge                     { L.RangedToken L.Negedge _ }
+    nettype                     { L.RangedToken L.Nettype _ }
+    new                         { L.RangedToken L.New _ }
+    nexttime                    { L.RangedToken L.Nexttime _ }
+    nmos                        { L.RangedToken L.Nmos _ }
+    nor                         { L.RangedToken L.Nor _ }
+    noshowcancelled             { L.RangedToken L.Noshowcancelled _ }
+    not                         { L.RangedToken L.Not _ }
+    notif0                      { L.RangedToken L.Notif0 _ }
+    notif1                      { L.RangedToken L.Notif1 _ }
+    null                        { L.RangedToken L.Null _ }
+    or                          { L.RangedToken L.Or _ }
+    output                      { L.RangedToken L.Output _ }
+    package                     { L.RangedToken L.Package _ }
+    packed                      { L.RangedToken L.Packed _ }
+    parameter                   { L.RangedToken L.Parameter _ }
+    pmos                        { L.RangedToken L.Pmos _ }
+    posedge                     { L.RangedToken L.Posedge _ }
+    primitive                   { L.RangedToken L.Primitive _ }
+    priority                    { L.RangedToken L.Priority _ }
+    program                     { L.RangedToken L.Program _ }
+    property                    { L.RangedToken L.Property _ }
+    protected                   { L.RangedToken L.Protected _ }
+    pull0                       { L.RangedToken L.Pull0 _ }
+    pull1                       { L.RangedToken L.Pull1 _ }
+    pulldown                    { L.RangedToken L.Pulldown _ }
+    pullup                      { L.RangedToken L.Pullup _ }
+    pulsestyle_ondetect         { L.RangedToken L.PulsestyleOndetect _ }
+    pulsestyle_onevent          { L.RangedToken L.PulsestyleOnevent _ }
+    pure                        { L.RangedToken L.Pure _ }
+    rand                        { L.RangedToken L.Rand _ }
+    randc                       { L.RangedToken L.Randc _ }
+    randcase                    { L.RangedToken L.Randcase _ }
+    randsequence                { L.RangedToken L.Randsequence _ }
+    rcmos                       { L.RangedToken L.Rcmos _ }
+    real                        { L.RangedToken L.Real _ }
+    realtime                    { L.RangedToken L.Realtime _ }
+    ref                         { L.RangedToken L.Ref _ }
+    reg                         { L.RangedToken L.Reg _ }
+    reject_on                   { L.RangedToken L.RejectOn _ }
+    release                     { L.RangedToken L.Release _ }
+    repeat                      { L.RangedToken L.Repeat _ }
+    restrict                    { L.RangedToken L.Restrict _ }
+    return                      { L.RangedToken L.Return _ }
+    rnmos                       { L.RangedToken L.Rnmos _ }
+    rpmos                       { L.RangedToken L.Rpmos _ }
+    rtran                       { L.RangedToken L.Rtran _ }
+    rtranif0                    { L.RangedToken L.Rtranif0 _ }
+    rtranif1                    { L.RangedToken L.Rtranif1 _ }
+    s_always                    { L.RangedToken L.SAlways _ }
+    s_eventually                { L.RangedToken L.SEventually _ }
+    s_nexttime                  { L.RangedToken L.SNexttime _ }
+    s_until                     { L.RangedToken L.SUntil _ }
+    s_until_with                { L.RangedToken L.SUntilWith _ }
+    scalared                    { L.RangedToken L.Scalared _ }
+    sequence                    { L.RangedToken L.Sequence _ }
+    shortint                    { L.RangedToken L.Shortint _ }
+    shortreal                   { L.RangedToken L.Shortreal _ }
+    showcancelled               { L.RangedToken L.Showcancelled _ }
+    signed                      { L.RangedToken L.Signed _ }
+    small                       { L.RangedToken L.Small _ }
+    soft                        { L.RangedToken L.Soft _ }
+    solve                       { L.RangedToken L.Solve _ }
+    specify                     { L.RangedToken L.Specify _ }
+    specparam                   { L.RangedToken L.Specparam _ }
     static                      { L.RangedToken L.Static _ }
-
+    string                      { L.RangedToken L.String _ }
+    strong                      { L.RangedToken L.Strong _ }
+    strong0                     { L.RangedToken L.Strong0 _ }
+    strong1                     { L.RangedToken L.Strong1 _ }
+    struct                      { L.RangedToken L.Struct _ }
+    super                       { L.RangedToken L.Super _ }
+    supply0                     { L.RangedToken L.Supply0 _ }
+    supply1                     { L.RangedToken L.Supply1 _ }
+    sync_accept_on              { L.RangedToken L.SyncAcceptOn _ }
+    sync_reject_on              { L.RangedToken L.SyncRejectOn _ }
+    table                       { L.RangedToken L.Table _ }
+    tagged                      { L.RangedToken L.Tagged _ }
+    task                        { L.RangedToken L.Task _ }
+    this                        { L.RangedToken L.This _ }
+    throughout                  { L.RangedToken L.Throughout _ }
+    time                        { L.RangedToken L.Time _ }
+    timeprecision               { L.RangedToken L.Timeprecision _ }
     timeunit                    { L.RangedToken L.Timeunit _ }
+    tran                        { L.RangedToken L.Tran _ }
+    tranif0                     { L.RangedToken L.Tranif0 _ }
+    tranif1                     { L.RangedToken L.Tranif1 _ }
+    tri                         { L.RangedToken L.Tri _ }
+    tri0                        { L.RangedToken L.Tri0 _ }
+    tri1                        { L.RangedToken L.Tri1 _ }
+    triand                      { L.RangedToken L.Triand _ }
+    trior                       { L.RangedToken L.Trior _ }
+    trireg                      { L.RangedToken L.Trireg _ }
+    type                        { L.RangedToken L.Type _ }
+    typedef                     { L.RangedToken L.Typedef _ }
+    union                       { L.RangedToken L.Union _ }
+    unique                      { L.RangedToken L.Unique _ }
+    unique0                     { L.RangedToken L.Unique0 _ }
+    unsigned                    { L.RangedToken L.Unsigned _ }
+    until                       { L.RangedToken L.Until _ }
+    until_with                  { L.RangedToken L.UntilWith _ }
+    untyped                     { L.RangedToken L.Untyped _ }
+    use                         { L.RangedToken L.Use _ }
+    uwire                       { L.RangedToken L.Uwire _ }
+    var                         { L.RangedToken L.Var _ }
+    vectored                    { L.RangedToken L.Vectored _ }
+    virtual                     { L.RangedToken L.Virtual _ }
+    void                        { L.RangedToken L.Void _ }
+    wait                        { L.RangedToken L.Wait _ }
+    wait_order                  { L.RangedToken L.WaitOrder _ }
+    wand                        { L.RangedToken L.Wand _ }
+    weak                        { L.RangedToken L.Weak _ }
+    weak0                       { L.RangedToken L.Weak0 _ }
+    weak1                       { L.RangedToken L.Weak1 _ }
+    while                       { L.RangedToken L.While _ }
+    wildcard                    { L.RangedToken L.Wildcard _ }
+    wire                        { L.RangedToken L.Wire _ }
+    with                        { L.RangedToken L.With _ }
+    within                      { L.RangedToken L.Within _ }
+    wor                         { L.RangedToken L.Wor _ }
+    xnor                        { L.RangedToken L.Xnor _ }
+    xor                         { L.RangedToken L.Xor _ }
+
     time_unit                   { L.RangedToken (L.TimeUnitOperator _ ) _ }
-    type                        { L.RangedToken L.Type}
     unary_operator              { L.RangedToken (L.UnaryOperator _) _ }
     binary_operator             { L.RangedToken (L.BinaryOperator _) _ }
     inc_or_dec_operator         { L.RangedToken (L.IncOrDecOperator _) _ }
@@ -65,6 +293,7 @@ import V2H.Ast
     ','                         { L.RangedToken L.Comma _ }
     '/'                         { L.RangedToken L.Backslash _ }
     '#'                         { L.RangedToken L.Hashtag _ }
+    '$'                         { L.RangedToken L.Dollar _ }
     unsigned_number             { L.RangedToken (L.UnsignedNumberT _) _}
 %%
 many_rev(p)
@@ -169,16 +398,43 @@ parameter_port_declaration :: { ParameterPortDeclaration }
     | data_type param_assignments   { PPDDataTypeParamAssignments $1 $2 }
     | type type_assignments         { PPDTypeAssignments $2 }
 
+port_declarations :: { [PortDeclarationsItem] }
+    :  '(' many(port_declarations_item) ')'                     { $2 }
+
+port_declarations_item :: { PortDeclarationsItem }
+    : many(attribute_instance) ansi_port_declaration            { PortDeclarationsItem $1 $2 }
+
 -- port_declaration :: { PortDeclaration }
 -- port :: { Port }
 -- port_expression :: { PortExpression }
 -- port_reference :: { PortReference }
--- port_direction :: { PortDirection }
--- net_port_header :: { NetPortHeader }
--- variable_port_header :: { VariablePortHeader }
--- interface_port_header :: { InterfacePortHeader }
--- ansi_port_declaration :: { AnsiPortDeclaration }
+port_direction :: { PortDirection }
+    : input                                                     { PDInput }
+    | output                                                    { PDOutput }
+    | inout                                                     { PDInout }
+    | ref                                                       { PDRef }
 
+net_port_header :: { NetPortHeader }
+    : optional(port_direction) net_port_type                    { NetPortHeader $1 $2 }
+-- variable_port_header :: { VariablePortHeader }
+
+interface_port_header :: { InterfacePortHeader }
+    : interface_identifier optional(snd('.', modport_identifier))       { IPDNamed $1 $2 }
+    | interface optional(snd('.', modport_identifier))                  { IPDAnonymous $2 }
+
+-- Incomplete Production Rule
+ansi_port_declaration :: { AnsiPortDeclaration }
+    : optional(net_or_interface_port_header) port_identifier many(unpacked_dimension) optional(snd('=',constant_expression))
+        { APDNetOrInterfaceHeader{
+            netOrInterfacePortHeader = $1,
+            portIdentifier = $2,
+            unpackedDimensions = $3,
+            constantExpression = $4
+        }}
+
+net_or_interface_port_header :: { Either NetPortHeader InterfacePortHeader }
+    : net_port_header { Left $1 }
+    | interface_port_header { Right $1 }
 ---- 1.4 - Module Items ----
 -- elaboration_system_task :: { ElaborationSystemTask }
 -- finish_number :: { FinishNumber }
@@ -271,15 +527,26 @@ non_port_module_item :: { NonPortModuleItem }
 
 ----- Sec 2 -----
 ---- 2.1.1 - Module Parameter Declarations ----
--- local_parameter_declaration :: { LocalParameterDeclaration }
+local_parameter_declaration :: { LocalParameterDeclaration }
+    : localparam data_type_or_implicit param_assignments {
+        LPDParamAssignments {
+            dataTypeOrImplicit = $2,
+            paramAssignments = $3
+        }
+    } | localparam type type_assignments {
+        LPDTypeAssignments {
+            typeAssignments = $3
+        }
+    }
+
 parameter_declaration :: { ParameterDeclaration }
     : parameter data_type_or_implicit param_assignments  {
         PDDataTypeOrImplicit {
             dataTypeOrImplicit = $2,
-            parameterAssignments = $3
+            paramAssignments = $3
         }
     }
-    | parameter type list_of_type_assignments                   {
+    | parameter type type_assignments                   {
         PDTypeAssignments {
             typeAssignments = $3
         }
@@ -295,35 +562,74 @@ parameter_declaration :: { ParameterDeclaration }
 
 ---- 2.1.3 - Type Declarations ----
 -- data_declaration :: { DataDeclaration }
--- package_import_declaration :: { PackageImportDeclaration }
--- package_import_item :: { PackageImportItem }
+package_import_declaration :: { PackageImportDeclaration }
+    : import package_import_item many(snd(',', package_import_item)) ';' { PackageImportDeclaration $2:$3 }
+
+package_import_item :: { PackageImportItem }
+    : package_identifier "::" identifier          { PIIIdentifier $1 $2 }
+    | package_identifier "::" '*'                   { PIIWildcard $1 }
 -- package_export_declaration :: { PackageExportDeclaration }
 -- genvar_declaration :: { GenvarDeclaration }
 -- net_declaration :: { NetDeclaration }
 -- type_declaration :: { TypeDeclaration }
 -- net_type_declaration :: { NetTypeDeclaration }
--- lifetime :: { Lifetime }
---     : automatic                                         { Automatic }
---     | static                                            { Static }
+lifetime :: { Lifetime }
+    : automatic                                         { Automatic }
+    | static                                            { Static }
 
 ---- 2.2.1 - Net and Variable Types ----
 -- casting_type :: { CastingType }
 -- data_type :: { DataType }
--- data_type_or_implicit :: { DataTypeOrImplicit }
--- implicit_data_type :: { ImplicitDataType }
+
+-- | Incomplete Production Rule
+data_type :: { DataType }
+    : integer_vector_type optional(signing) many(packed_dimension) {
+        DTIntegerVector {
+            integerVectorType = $1,
+            signing = $2,
+            packedDimension = $3
+        }
+    }
+
+data_type_or_implicit :: { DataTypeOrImplicit }
+    : data_type             { Left $1 }
+    | implicit_data_type    { Right $1 }
+
+implicit_data_type :: { ImplicitDataType }
+    :  optional(signing) many(packed_dimension)                 { ImplicitDataType { signing=$1, packedDimensions=$2} }
+
 -- enum_base_type :: { EnumBaseType }
 -- enum_name_declaration :: { EnumNameDeclaration }
 -- class_scope :: { ClassScope }
 -- class_type :: { ClassType }
 -- integer_type :: { IntegerType }
 -- integer_atom_type :: { IntegerAtomType }
--- integer_vector_type :: { IntegerVectorType }
+integer_vector_type :: { IntegerVectorType }
+    : bit { Bit }
+    | logic { Logic }
+    | reg { Reg }
 -- non_integer_type :: { NonIntegerType }
--- net_type :: { NetType }
--- net_port_type :: { NetPortType }
+net_type :: { NetType }
+    : supply0   { Supply0 }
+    | supply1   { Supply1 }
+    | tri       { Tri }
+    | triand    { Triand }
+    | trior     { Trior }
+    | trireg    { Trireg }
+    | tri0      { Tri0 }
+    | tri1      { Tri1 }
+    | uwire     { Uwire }
+    | wire      { Wire }
+    | wand      { Wand }
+    | wor       { Wor }
+
+net_port_type :: { NetPortType }
+    : optional(net_type) data_type_or_implicit { NetPortType $1 $2 }
 -- variable_port_type :: { VariablePortType }
 -- var_data_type :: { VarDataType }
--- signing :: { Signing }
+signing :: { Signing }
+    : signed                                    { SSigned }
+    | unsigned                                  { SUnsigned }
 -- simple_type :: { SimpleType }
 -- struct_union_member :: { StructUnionMember }
 -- data_type_or_void :: { DataTypeOrVoid }
@@ -347,7 +653,8 @@ drive_strength :: { DriveStrength }
 ---- 2.3 - Declarations Lists ----
 param_assignments :: { [ParamAssignment] }
     : param_assignment many(snd(',',param_assignment)) { $1:$2 }
-
+type_assignments :: { [TypeAssignment] }
+    : type_assignment many(snd(',', type_assignment)) { $1:$2 }
 
 ---- 2.4 - Declarations Assignments ----
 -- defparam_assignment :: { DefparamAssignment }
@@ -356,12 +663,14 @@ param_assignment :: { ParamAssignment }
     : parameter_identifier many(unpacked_dimension) optional(snd('=',constant_param_expression)) {
         ParamAssignment {
             parameterIdentifier = $1,
-            unpackedDimension = $2,
+            unpackedDimensions = $2,
             constantParamExpression = $3
         }
     }
 -- specparam_assignment :: { SpecparamAssignment }
--- type_assignment :: { TypeAssignment }
+type_assignment :: { TypeAssignment }
+    : type_identifier optional(snd('=', data_type))   { TypeAssignment $1 $2 }
+
 -- pulse_control_specparam :: { PulseControlSpecparam }
 -- error_limit_value :: { ErrorLimitValue }
 -- reject_limit_value :: { RejectLimitValue }
@@ -371,13 +680,19 @@ param_assignment :: { ParamAssignment }
 -- dynamic_array_new :: { DynamicArrayNew }
 
 ---- 2.5 - Declaration Ranges ----
--- unpacked_dimension :: { UnpackedDimension }
--- packed_dimension :: { PackedDimension }
+unpacked_dimension :: { UnpackedDimension }
+    : '[' constant_range ']'            { UDConstantRange $2 }
+    | '[' constant_expression ']'       { UDConstantExpression $2 }
+
+packed_dimension :: { PackedDimension }
+    : '[' constant_range ']'            { PDConstantRange $2 }
+    | unsized_dimension                 { PDUnsizedDimension $1 }
+
 -- associative_dimension :: { AssociativeDimension }
 -- variable_dimension :: { VariableDimension }
 -- queue_dimension :: { QueueDimension }
--- unsized_dimension :: { UnsizedDimension }
-
+unsized_dimension :: { UnsizedDimension }
+    : '[' ']'       { UnsizedDimension }
 ---- 2.6 - Function Declarations ----
 -- function_data_type_or_implicit :: { FunctionDataTypeOrImplicit }
 -- function_declaration :: { FunctionDeclaration }
@@ -608,8 +923,7 @@ continuous_assign :: { ContinuousAssign }
 
 -- net_alias :: { NetAlias }
 net_assignment :: { NetAssignment }
-    : net_lvalue '=' expression                            { NetAssignment }
-
+    : net_lvalue '=' expression                                 { NetAssignment }
 
 ---- 6.2 - Procedural Blocks And Assignments ----
 -- initial_construct :: { InitialConstruct }
@@ -857,12 +1171,24 @@ net_assignment :: { NetAssignment }
 ---- 8.3 - Expressions ----
 -- inc_or_dec_expression :: { IncOrDecExpression }
 -- conditional_expression :: { ConditionalExpression }
--- constant_expression :: { ConstantExpression }
--- constant_mintypmax_expression :: { ConstantMintypmaxExpression }
+constant_expression :: { ConstantExpression }
+    : constant_primary              { CEPrimary $1 }
+
+constant_mintypmax_expression :: { ConstantMintypmaxExpression }
+    : constant_expression                                                   { CMESingle  $1 }
+    | constant_expression ':' constant_expression ':' constant_expression   { CMETriple $1 $3 $5 }
+
+constant_param_expression :: { ConstantParamExpression }
+    : constant_mintypmax_expression         { CPEMintypmax $1 }
+    | data_type                             { CPEDataType $1 }
+    | '$'                                   { CPEDollar }
 -- param_expression :: { ParamExpression }
 -- constant_range_expression :: { ConstantRangeExpression }
 -- constant_part_select_range :: { ConstantPartSelectRange }
--- constant_range :: { ConstantRange }
+
+-- | Incomplete production rule
+constant_range :: { ConstantRange }
+    : constant_expression                   { CRExpression $1 }
 -- constant_indexed_range ::{ ConstantIndexedRange }
 -- | Incorrect production rule
 expression :: { Expression }
@@ -879,12 +1205,14 @@ expression :: { Expression }
 -- genvar_expression :: { GenvarExpression}
 
 ---- 8.4 - Primaries ----
--- constant_primary :: { ConstantPrimary }
+constant_primary :: { ConstantPrimary }
+    : primary_literal { CPLiteral $1 }
 -- module_path_primary :: { ModulePathPrimary }
 -- primary :: { Primary }
 -- class_qualifier :: { ClassQualifier}
 -- range_expression :: { RangeExpression }
--- primary_literal :: { PrimaryLiteral }
+primary_literal :: { PrimaryLiteral }
+    : number                                                    { PLNumber $1 }
 time_literal :: { TimeLiteral }
     : unsigned_number time_unit                                 { TLUnsigned (L.unTokDecimal $1) (L.unTokTimeUnit $2) }
     | unsigned_number '.' unsigned_number time_unit             { TLFixedPoint (L.unTokDecimal $1) (L.unTokDecimal $3) (L.unTokTimeUnit $4) }
@@ -913,6 +1241,18 @@ net_lvalue :: { NetLValue }
 
 ---- 8.6 - Operators ----
 ---- 8.7 - Numbers ----
+
+-- Incomplete production rule
+number :: { Number }
+    : integral_number   { NumberIntegral $1 }
+
+-- Incomplete production rule
+integral_number :: { IntegralNumber }
+    : decimal_number    { IntegralNumber $1 }
+
+decimal_number :: { DecimalNumber }
+     :unsigned_number   { DecimalNumber $1 }
+
 ---- 8.8 - Strings ----
 
 ---- Sec 9 ----
@@ -932,7 +1272,8 @@ attr_name :: { AttrName }
 -- comment_text :: { CommonText }
 
 ---- 9.3 - Identifiers ----
-
+interface_identifier :: { InterfaceIdentifier }
+    : identifier                                            { InterfaceIdentifier $1 }
 parameter_identifier :: { ParameterIdentifier }
     : identifier                                            { ParameterIdentifier $1 }
 
@@ -950,8 +1291,17 @@ package_scope :: { PackageScope }
 package_identifier :: { PackageIdentifier }
     : identifier                                            { PackageIdentifier $1 }
 
+port_identifier :: { PortIdentifier }
+    : identifier                                            { PortIdentifier $1 }
+
+modport_identifier :: { ModportIdentifier }
+    : identifier                                            { ModportIdentifier $1 }
+
 net_identifier :: { NetIdentifier }
     : identifier                                            { NetIdentifier $1 }
+
+type_identifier :: { TypeIdentifier }
+    : identifier                                            { TypeIdentifier $1 }
 ----------------------------
 
 {
