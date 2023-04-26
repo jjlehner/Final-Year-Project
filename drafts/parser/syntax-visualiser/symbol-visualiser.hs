@@ -235,13 +235,12 @@ findSymbolIdentifierInNonTerminal allNonTerminals exploredNonTerminals symbolIde
     exploredParents = parents `intersection` exploredNonTerminals
 
 makeEdges :: SymbolIdentifier -> Set NonTerminal -> Set GraphEdge
-makeEdges startingSymbol parents =
-    Data.Set.map (\parent -> (name parent, startingSymbol, ())) parents
+makeEdges startingSymbol = Data.Set.map (\parent -> (name parent, startingSymbol, ()))
 
 parentEdgesFolder :: Set NonTerminal -> (Set GraphEdge, Set NonTerminal) -> SymbolIdentifier -> (Set GraphEdge, Set ExploredNonTerminal)
 parentEdgesFolder allNonTerminals (edges, exploredNonTerminals) symbolIdentifier =
     let (newTerminals, newExplored) = findSymbolIdentifierInNonTerminal allNonTerminals exploredNonTerminals symbolIdentifier
-        (parentEdges, finalExplored) =  Data.Set.map (name) newTerminals
+        (parentEdges, finalExplored) =  Data.Set.map name newTerminals
                                         & findAllGrammarTreeEdges allNonTerminals (newTerminals `Data.Set.union` newExplored `Data.Set.union` exploredNonTerminals)
     in  (makeEdges symbolIdentifier newTerminals
         & Data.Set.union (makeEdges symbolIdentifier newExplored)
@@ -250,8 +249,7 @@ parentEdgesFolder allNonTerminals (edges, exploredNonTerminals) symbolIdentifier
         , exploredNonTerminals `Data.Set.union` newExplored `Data.Set.union` finalExplored)
 
 findAllGrammarTreeEdges :: Set NonTerminal -> Set NonTerminal -> Set SymbolIdentifier -> (Set GraphEdge, Set ExploredNonTerminal)
-findAllGrammarTreeEdges allNonTerminals exploredNonTerminals startingSymbols =
-    Data.Set.foldl (parentEdgesFolder allNonTerminals) (Data.Set.empty, exploredNonTerminals) startingSymbols
+findAllGrammarTreeEdges allNonTerminals exploredNonTerminals = Data.Set.foldl (parentEdgesFolder allNonTerminals) (Data.Set.empty, exploredNonTerminals)
 
 runPathFinding :: SymbolIdentifier -> Maybe SymbolIdentifier -> [GraphEdge] -> Maybe [GraphEdge]
 runPathFinding start (Just root) graphEdges =

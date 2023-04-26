@@ -69,3 +69,32 @@ executable verilog-to-haskell
 
     -- Base language which the package is written in.
     default-language: GHC2021
+
+executable parse-tree-visualiser
+    -- .hs or .lhs file containing the Main module.
+    main-is:          ParseTreeVisualiser.hs
+    build-tool-depends: alex:alex
+    -- Modules included in this executable, other than Main.
+    other-modules:    V2H.Alex.Lexer,
+                      V2H.Happy.Parser
+                      V2H.Ast
+
+    -- LANGUAGE extensions used by modules in this package.
+    default-extensions:    DuplicateRecordFields
+    -- Other library packages from which modules are imported.
+    build-depends:    base ^>=4.17.0.0,
+                      containers ^>= 0.6.6,
+                      parsec ^>= 3.1.15.1,
+                      bytestring ^>= 0.11.4.0,
+                      array ^>= 0.5.4.0,
+                      graphviz ^>=  2999.20.1.0,
+                      aeson
+
+    -- Directories containing source files.
+    hs-source-dirs:    src,
+                       src/V2H
+                       src/V2H/ParseTreeVisualiser
+
+
+    -- Base language which the package is written in.
+    default-language: GHC2021

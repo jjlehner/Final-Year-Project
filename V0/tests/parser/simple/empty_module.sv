@@ -1,6 +1,6 @@
-module fish (
-    input logic porty,
-    output wire fishy
+module Pineapple (
+    input logic jonah,
+    output wire kathryn
 );
-
+logic fish;
 endmodule
