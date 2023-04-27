@@ -4,7 +4,7 @@ module V2H.Happy.Parser
   ) where
 
 import Data.ByteString.Lazy.Char8 (ByteString)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isJust)
 import Data.Monoid (First (..))
 import Data.List
 import qualified V2H.Alex.Lexer as L
@@ -56,6 +56,7 @@ import V2H.Ast
     clocking                    { L.RangedToken L.Clocking _ }
     cmos                        { L.RangedToken L.Cmos _ }
     config                      { L.RangedToken L.Config _ }
+    const                       { L.RangedToken L.Const _ }
     constraint                  { L.RangedToken L.Constraint _ }
     context                     { L.RangedToken L.Context _ }
     continue                    { L.RangedToken L.Continue _ }
@@ -451,15 +452,17 @@ net_or_interface_port_header :: { Either NetPortHeader InterfacePortHeader }
 
 -- Incomplete Production Rule
 module_common_item :: { ModuleCommonItem }
-    : continuous_assign                                 { MCIContinuousAssign $1 }
+    : module_or_generate_item_declaration               { MCIModuleOrGenerateItemDeclaration $1 }
+    | continuous_assign                                 { MCIContinuousAssign $1 }
 
 -- module_item :: { ModuleItem }
 -- Incomplete Production Rule
 module_or_generate_item :: { ModuleOrGenerateItem }
     : many(attribute_instance) module_common_item   { MOGIModuleCommonItem $1 $2 }
 
--- module_or_generate_item_declaration :: { ModuleOrGenerateItemDeclaration }
-
+-- Incomplete Production Rule
+module_or_generate_item_declaration :: { ModuleOrGenerateItemDeclaration }
+    : package_or_generate_item_declaration          { MOGIDPackageOrGenerateItemDeclaration $1}
 -- Incomplete Production Rule
 non_port_module_item :: { NonPortModuleItem }
     : module_or_generate_item                           { NPMIModuleOrGenerateItem $1 }
@@ -531,7 +534,10 @@ non_port_module_item :: { NonPortModuleItem }
 
 ---- 1.11 - Package Items ----
 -- packageItem :: { PackageItem }
--- package_or_generate_item_declaration :: { PackageOrGenerateItemDeclaration }
+
+-- | Incomplete Production Rule
+package_or_generate_item_declaration :: { PackageOrGenerateItemDeclaration }
+    : data_declaration                  { POGIDData $1 }
 -- anonymous_program :: { AnonymousProgram }
 -- anonymous_program_item :: { AnonymousProgramItem }
 
@@ -571,7 +577,10 @@ parameter_declaration :: { ParameterDeclaration }
 -- ref_declaration :: { RefDeclaration }
 
 ---- 2.1.3 - Type Declarations ----
--- data_declaration :: { DataDeclaration }
+-- | Incomplete production rule
+data_declaration :: { DataDeclaration }
+    : optional(const) optional(var) optional(lifetime) data_type_or_implicit variable_decl_assignments ';' { DD (isJust $1) (isJust $2) $3 $4 $5 }
+
 package_import_declaration :: { PackageImportDeclaration }
     : import package_import_item many(snd(',', package_import_item)) ';' { PackageImportDeclaration ($2:$3) }
 
@@ -671,7 +680,8 @@ param_assignments :: { [ParamAssignment] }
     : param_assignment many(snd(',',param_assignment)) { $1:$2 }
 type_assignments :: { [TypeAssignment] }
     : type_assignment many(snd(',', type_assignment)) { $1:$2 }
-
+variable_decl_assignments :: { [VariableDeclAssignment] }
+    : variable_decl_assignment  many(snd(',', variable_decl_assignment)) { $1:$2 }
 ---- 2.4 - Declarations Assignments ----
 -- defparam_assignment :: { DefparamAssignment }
 -- net_decl_assignment :: { NetDeclAssignment }
@@ -691,7 +701,9 @@ type_assignment :: { TypeAssignment }
 -- error_limit_value :: { ErrorLimitValue }
 -- reject_limit_value :: { RejectLimitValue }
 -- limit_value :: { LimitValue }
--- variable_decl_assignment :: { VariableDeclAssignment }
+variable_decl_assignment :: { VariableDeclAssignment }
+    : variable_identifier many(variable_dimension) optional(expression)     { VDA $1 $2 $3 }
+
 -- class_new :: { ClassNew }
 -- dynamic_array_new :: { DynamicArrayNew }
 
@@ -1320,6 +1332,9 @@ net_identifier :: { NetIdentifier }
 
 type_identifier :: { TypeIdentifier }
     : identifier                                            { TypeIdentifier $1 }
+
+variable_identifier :: { VariableIdentifier }
+    : identifier                                            { VariableIdentifier $1 }
 ----------------------------
 
 {

@@ -286,7 +286,9 @@ data NonPortModuleItem =
     } deriving (Show, Generic)
 
 -- | Incomplete production rule
-data ModuleOrGenerateItemDeclaration = ModuleOrGenerateItemDeclaration deriving (Show, Generic)
+data ModuleOrGenerateItemDeclaration = MOGIDPackageOrGenerateItemDeclaration {
+    packageOrGenerateItemDeclaration :: PackageOrGenerateItemDeclaration
+} deriving (Show, Generic)
 
 -- | Incomplete production rule
 data ElaborationSystemTask = ElaborationSystemTask deriving (Show, Generic)
@@ -303,6 +305,9 @@ data ConfigDeclaration = ConfigDeclaration deriving (Show, Generic)
 ---- 1.11 - Package Items ----
 -- | Incomplete production rule
 data PackageItem = PackageItem deriving (Show, Generic)
+data PackageOrGenerateItemDeclaration = POGIDData {
+    dataDeclaration :: DataDeclaration
+} deriving (Show, Generic)
 ----- Sec 2 -----
 ---- 2.1.1 - Module Parameter Declarations ----
 -- | Incomplete production rule
@@ -337,6 +342,15 @@ data InputDeclaration =
     } deriving (Show, Generic)
 
 ---- 2.1.3 - Type Declarations ----
+-- | Incomplete production rule
+data DataDeclaration = DD {
+    const :: Bool,
+    var :: Bool,
+    lifetime :: Maybe Lifetime,
+    dataTypeOrImplicit :: DataTypeOrImplicit,
+    variableDeclAssignments :: [VariableDeclAssignment]
+} deriving (Show, Generic)
+
 data PackageImportItem =
     PIIIdentifier {
         packageIdentifier :: PackageIdentifier,
@@ -417,7 +431,11 @@ data ErrorLimitValue = ErrorLimitValue deriving (Show, Generic)
 data LimitValue = LimitValue deriving (Show, Generic)
 
 -- | Incomplete production rule
-data VariableDeclAssignment = VariableDeclAssignment deriving (Show, Generic)
+data VariableDeclAssignment = VDA {
+    variableIdentifier :: VariableIdentifier,
+    variableDimensions :: [VariableDimension],
+    expression :: Maybe Expression
+} deriving (Show, Generic)
 
 -- | Incomplete production rule
 data ClassNew = ClassNew deriving (Show, Generic)
