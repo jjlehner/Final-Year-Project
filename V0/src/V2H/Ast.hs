@@ -1,5 +1,5 @@
 module V2H.Ast where
-import GHC.Generics
+import           GHC.Generics
 ----- Sec 1 -----
 ---- 1.1 - Library Source Text ----
 -- | Incomplete production rule
@@ -18,7 +18,7 @@ data IncludeStatement = IncludeStatement deriving (Show, Generic)
 
 data SourceText = SourceText {
     timeunitsDeclaration :: Maybe TimeunitsDeclaration,
-    description           :: [Description]
+    description          :: [Description]
 } deriving (Show, Generic)
 
 data Description =
@@ -34,51 +34,51 @@ data Description =
         packageDeclaration :: PackageDeclaration
     } | DPackageItem {
         attributeInstances :: [AttributeInstance],
-        packageItem :: PackageItem
+        packageItem        :: PackageItem
     } | DBindDirective {
         attributeInstances :: [AttributeInstance],
-        bindDirective :: BindDirective
+        bindDirective      :: BindDirective
     } | DConfigDeclaration {
         configDeclaration :: ConfigDeclaration
     } deriving (Show, Generic)
 
 data ModuleNonAnsiHeader =
     ModuleNonAnsiHeader {
-        attributeInstances :: [AttributeInstance],
-        moduleKeyword :: ModuleKeyword,
-        lifetime :: Maybe Lifetime,
-        moduleIdentifier :: ModuleIdentifier,
+        attributeInstances        :: [AttributeInstance],
+        moduleKeyword             :: ModuleKeyword,
+        lifetime                  :: Maybe Lifetime,
+        moduleIdentifier          :: ModuleIdentifier,
         packageImportDeclarations :: [PackageImportDeclaration],
-        parameterPorts :: Maybe ParameterPorts,
-        ports :: [Port]
+        parameterPorts            :: Maybe ParameterPorts,
+        ports                     :: [Port]
     } deriving (Show, Generic)
 
 data ModuleAnsiHeader =
     ModuleAnsiHeader {
-        attributeInstances :: [AttributeInstance],
-        moduleKeyword :: ModuleKeyword,
-        lifetime :: Maybe Lifetime,
-        moduleIdentifier :: ModuleIdentifier,
+        attributeInstances        :: [AttributeInstance],
+        moduleKeyword             :: ModuleKeyword,
+        lifetime                  :: Maybe Lifetime,
+        moduleIdentifier          :: ModuleIdentifier,
         packageImportDeclarations :: [PackageImportDeclaration],
-        parameterPorts :: Maybe ParameterPorts,
-        portDeclarations :: Maybe PortDeclarations
+        parameterPorts            :: Maybe ParameterPorts,
+        portDeclarations          :: Maybe PortDeclarations
     } deriving (Show, Generic)
 
 data ModuleDeclaration =
     MDNonAnsiHeader {
-        moduleNonAnsiHeader :: ModuleNonAnsiHeader,
+        moduleNonAnsiHeader   :: ModuleNonAnsiHeader,
         timeunitsDeclarations :: Maybe TimeunitsDeclaration,
-        moduleItems :: [ModuleItem]
+        moduleItems           :: [ModuleItem]
     } | MDAnsiHeader {
-        moduleAnsiHeader :: ModuleAnsiHeader,
+        moduleAnsiHeader      :: ModuleAnsiHeader,
         timeunitsDeclarations :: Maybe TimeunitsDeclaration,
-        nonPortModuleItems :: [NonPortModuleItem]
+        nonPortModuleItems    :: [NonPortModuleItem]
     } | MDAttributes {
-        attributeInstances :: [AttributeInstance],
-        lifetime :: Maybe Lifetime,
-        moduleIdentifier :: ModuleIdentifier,
+        attributeInstances   :: [AttributeInstance],
+        lifetime             :: Maybe Lifetime,
+        moduleIdentifier     :: ModuleIdentifier,
         timeunitsDeclaration :: Maybe TimeunitsDeclaration,
-        moduleItems :: [ModuleItem]
+        moduleItems          :: [ModuleItem]
     } | MDNonAnsiExtern {
         moduleNonAnsiHeader :: ModuleNonAnsiHeader
     } | MDAnsiExtern {
@@ -132,7 +132,7 @@ data TimeunitsDeclaration = TimeunitsDeclaration {} deriving (Show, Generic)
 ---- 1.3 - Module parameters and Ports ----
 data ParameterPorts =
     ParameterPorts {
-        parameterAssignments :: [ParamAssignment],
+        parameterAssignments     :: [ParamAssignment],
         parameterPortDeclaration :: [ParameterPortDeclaration]
     } deriving (Show, Generic)
 
@@ -143,7 +143,7 @@ data ParameterPortDeclaration =
     } | PPDLocal {
         localParameterDeclaration :: LocalParameterDeclaration
     } | PPDDataTypeParamAssignments {
-        dataType :: DataType,
+        dataType             :: DataType,
         parameterAssignments :: [ParamAssignment]
     } | PPDTypeAssignments {
         typeAssignments :: [TypeAssignment]
@@ -154,7 +154,7 @@ data ParameterPortDeclaration =
 type PortDeclarations = [PortDeclarationsItem]
 data PortDeclarationsItem =
     PortDeclarationsItem {
-        attributeInstances :: [AttributeInstance],
+        attributeInstances  :: [AttributeInstance],
         ansiPortDeclaration :: AnsiPortDeclaration
     } deriving (Show, Generic)
 
@@ -162,7 +162,7 @@ data PortDeclarationsItem =
 data PortDeclaration =
     PDInputDeclaration {
         attributeInstances :: [AttributeInstance],
-        inputDeclaration :: InputDeclaration
+        inputDeclaration   :: InputDeclaration
     } deriving (Show, Generic)
 
 data Port =
@@ -186,11 +186,11 @@ data PortDirection = PDInput | PDOutput | PDInout | PDRef deriving (Show, Generi
 
 data NetPortHeader = NetPortHeader {
         portDirection :: Maybe PortDirection,
-        netPortType :: NetPortType
+        netPortType   :: NetPortType
     } deriving (Show, Generic)
 
 data VariablePortHeader = VariablePortHeader {
-        portDirection :: Maybe PortDirection,
+        portDirection    :: Maybe PortDirection,
         variablePortType :: VariablePortType
     } deriving (Show, Generic)
 
@@ -198,7 +198,7 @@ data VariablePortHeader = VariablePortHeader {
 data InterfacePortHeader =
     IPDNamed {
         interfaceIdentifier :: InterfaceIdentifier,
-        modportIdentifier :: Maybe ModportIdentifier
+        modportIdentifier   :: Maybe ModportIdentifier
     } | IPDAnonymous {
         modportIdentifier :: Maybe ModportIdentifier
     } deriving (Show, Generic)
@@ -212,13 +212,13 @@ data AnsiPortDeclaration =
         constantExpression :: Maybe ConstantExpression
     } | APDVariableHeader {
         variablePortHeader :: Maybe VariablePortHeader,
-        portIdentifier :: PortIdentifier,
+        portIdentifier     :: PortIdentifier,
         variableDimensions :: [VariableDimension],
         constantExpression :: Maybe ConstantExpression
     } | APDDirection {
-        portDirection :: Maybe PortDirection,
+        portDirection  :: Maybe PortDirection,
         portIdentifier :: PortIdentifier,
-        expression :: Maybe Expression
+        expression     :: Maybe Expression
     } deriving (Show, Generic)
 ---- 1.4 - Module Items ----
 -- | Incomplete production rule
@@ -263,7 +263,7 @@ data ModuleItem =
 -- | Incomplete production rule
 data ModuleOrGenerateItem = MOGIModuleCommonItem{
         attributeInstances :: [AttributeInstance],
-        moduleCommonItem :: ModuleCommonItem
+        moduleCommonItem   :: ModuleCommonItem
     } deriving (Show, Generic)
 
 data NonPortModuleItem =
@@ -313,7 +313,7 @@ data PackageOrGenerateItemDeclaration = POGIDData {
 -- | Incomplete production rule
 data LocalParameterDeclaration = LPDParamAssignments {
         dataTypeOrImplicit :: DataTypeOrImplicit,
-        paramAssignments :: [ParamAssignment]
+        paramAssignments   :: [ParamAssignment]
     } | LPDTypeAssignments {
         typeAssignments :: [TypeAssignment]
     } deriving (Show, Generic)
@@ -321,7 +321,7 @@ data LocalParameterDeclaration = LPDParamAssignments {
 data ParameterDeclaration =
     PDDataTypeOrImplicit {
         dataTypeOrImplicit :: DataTypeOrImplicit,
-        paramAssignments :: [ParamAssignment]
+        paramAssignments   :: [ParamAssignment]
     }
     | PDTypeAssignments {
         typeAssignments :: [TypeAssignment]
@@ -334,27 +334,27 @@ data SpecparamDeclaration = SpecparamDeclaration deriving (Show, Generic)
 
 data InputDeclaration =
     IDNetIdentifiers {
-        netPortType :: NetPortType,
+        netPortType     :: NetPortType,
         portIdentifiers :: [PortIdentifier]
     } | IDVariableIdentifiers {
-        variablePortType :: VariablePortType,
+        variablePortType    :: VariablePortType,
         variableIdentifiers :: [VariableIdentifier]
     } deriving (Show, Generic)
 
 ---- 2.1.3 - Type Declarations ----
 -- | Incomplete production rule
 data DataDeclaration = DD {
-    const :: Bool,
-    var :: Bool,
-    lifetime :: Maybe Lifetime,
-    dataTypeOrImplicit :: DataTypeOrImplicit,
+    const                   :: Bool,
+    var                     :: Bool,
+    lifetime                :: Maybe Lifetime,
+    dataTypeOrImplicit      :: DataTypeOrImplicit,
     variableDeclAssignments :: [VariableDeclAssignment]
 } deriving (Show, Generic)
 
 data PackageImportItem =
     PIIIdentifier {
         packageIdentifier :: PackageIdentifier,
-        identifier :: Identifier
+        identifier        :: Identifier
     } | PIIWildcard {
         packageIdentifier :: PackageIdentifier
     } deriving (Show, Generic)
@@ -366,25 +366,46 @@ data PackageImportDeclaration = PackageImportDeclaration [PackageImportItem] der
 ---- 2.2.1 - Net and Variable Types ----
 data DataType = DTIntegerVector {
         integerVectorType :: IntegerVectorType,
-        signing :: Maybe Signing,
-        packedDimension :: [PackedDimension]
+        signing           :: Maybe Signing,
+        packedDimension   :: [PackedDimension]
     } deriving (Show, Generic)
 
 type DataTypeOrImplicit = Either DataType ImplicitDataType
 data ImplicitDataType =
     ImplicitDataType {
-        signing :: Maybe Signing,
+        signing          :: Maybe Signing,
         packedDimensions :: [PackedDimension]
     } deriving (Show, Generic)
 
-data IntegerVectorType = Bit | Logic | Reg deriving (Show, Generic)
+data ClassScope = ClassScope { classType :: ClassType } deriving (Show, Generic)
+data ClassType =
+    ClassType {
+        psClassIdentifier :: PsClassIdentifier,
+        parameterValueAssignment :: Maybe ParameterValueAssignment,
+        classIdentifierParameterValueAssignments :: [ClassIdentifierParameterValueAssignment]
+    } deriving (Show, Generic)
+
+data ClassIdentifierParameterValueAssignment =
+    ClassIdentifierParameterValueAssignment {
+        classIdentifier :: ClassIdentifier,
+        parameterValueAssignment :: Maybe ParameterValueAssignment
+    } deriving (Show, Generic)
+
+data IntegerType =
+    ITVector   { integerVectorType :: IntegerVectorType }
+    | ITAtom   { integerAtomType :: IntegerAtomType } deriving (Show, Generic)
+
+data IntegerAtomType = IATByte | IATShortint | IATInt | IATLongint | IATInteger | IATTime deriving (Show, Generic)
+
+data IntegerVectorType = IVTBit | IVTLogic | IVTReg deriving (Show, Generic)
+data NonIntegerType = NITShortreal | NITReal | NITRealtime deriving (Show, Generic)
 
 data NetType = Supply0 | Supply1 | Tri | Triand | Trior | Trireg| Tri0 | Tri1 | Uwire| Wire | Wand | Wor deriving (Show, Generic)
 
 -- | Incomplete production rule
 data NetPortType =
     NPTDataOrImplicit {
-        netType :: Maybe NetType,
+        netType            :: Maybe NetType,
         dataTypeOrImplicit :: DataTypeOrImplicit
     } deriving (Show, Generic)
 
@@ -394,6 +415,18 @@ data VarDataType =
     | VDTOrImplicit { dataTypeOrImplicit :: DataTypeOrImplicit } deriving (Show, Generic)
 
 data Signing = SSigned | SUnsigned deriving (Show, Generic)
+data SimpleType =
+    STInteger { integerType :: IntegerType }
+    | STNonInteger { nonIntegerType :: NonIntegerType }
+    | STPsIdentifier { psTypeIdentifier :: PsTypeIdentifier }
+    | STPsParameterIdentifier { psParameterIdentifier :: PsParameterIdentifier } deriving (Show, Generic)
+
+data TypeReference =
+    TRExpression {
+        expression :: Expression
+    } | TRDataType {
+        dataType :: DataType
+    } deriving (Show, Generic)
 
 ---- 2.2.2 - Strengths ----
 data DriveStrength = DriveStrength deriving (Show, Generic)
@@ -406,8 +439,8 @@ data DefparamAssignment = DefparamAssignment deriving (Show, Generic)
 
 -- | Incomplete production rule
 data ParamAssignment = ParamAssignment {
-        parameterIdentifier :: ParameterIdentifier,
-        unpackedDimensions :: [UnpackedDimension],
+        parameterIdentifier     :: ParameterIdentifier,
+        unpackedDimensions      :: [UnpackedDimension],
         constantParamExpression :: Maybe ConstantParamExpression
     } deriving (Show, Generic)
 
@@ -418,7 +451,7 @@ data SpecparamAssignment = SpecparamAssignment deriving (Show, Generic)
 data TypeAssignment =
     TypeAssignment {
         identifier :: TypeIdentifier,
-        dataType :: Maybe DataType
+        dataType   :: Maybe DataType
     } deriving (Show, Generic)
 
 -- | Incomplete production rule
@@ -434,7 +467,7 @@ data LimitValue = LimitValue deriving (Show, Generic)
 data VariableDeclAssignment = VDA {
     variableIdentifier :: VariableIdentifier,
     variableDimensions :: [VariableDimension],
-    expression :: Maybe Expression
+    expression         :: Maybe Expression
 } deriving (Show, Generic)
 
 -- | Incomplete production rule
@@ -458,11 +491,17 @@ data PackedDimension =
         unsizedDimension :: UnsizedDimension
     } deriving (Show, Generic)
 -- | Incomplete production rule
-data VariableDimension = VDUnsized UnsizedDimension deriving (Show, Generic)
+data VariableDimension = VDUnsized UnsizedDimension | VDUnpacked UnpackedDimension deriving (Show, Generic)
 data UnsizedDimension = UnsizedDimension deriving (Show, Generic)
 ---- 2.6 - Function Declarations ----
 ---- 2.7 - Task Declarations ----
 ---- 2.8 - Block Item Declarations ----
+
+data BlockItemDeclaration = BIDData {
+    attributeInstances :: [AttributeInstance],
+    dataDeclaration :: DataDeclaration
+} deriving (Show, Generic)
+
 ---- 2.9 - Interface Declarations ----
 ---- 2.10 - Assertion Declarations ----
 ---- 2.11 - Covergroup Declarations ----
@@ -475,6 +514,23 @@ data UnsizedDimension = UnsizedDimension deriving (Show, Generic)
 
 ---- Sec 4 ----
 ---- 4.1.1 - Module Instantiation ----
+data ParameterValueAssignment = ParameterValueAssignment {
+    parameterAssignments :: Maybe ParameterAssignments
+} deriving (Show, Generic)
+data ParameterAssignments = PAOrdered {
+    orderedParameterAssignments :: [OrderedParameterAssignment]
+} | PANamed {
+    namedParameterAssignments :: [NamedParameterAssignment]
+} deriving (Show, Generic)
+
+data OrderedParameterAssignment = OrderedParameterAssignment {
+    paramExpression :: ParamExpression
+} deriving (Show, Generic)
+
+data NamedParameterAssignment = NamedParameterAssignment {
+    parameterIdentifier :: ParameterIdentifier,
+    paramExpression :: Maybe ParamExpression
+} deriving (Show, Generic)
 ---- 4.1.2 - Interface Instantiation ----
 data InterfaceInstantiation = InterfaceInstantiation deriving (Show, Generic)
 ---- 4.1.3 - Program Instantiation ----
@@ -525,25 +581,45 @@ data InitialConstruct = InitialConstruct deriving (Show, Generic)
 data AlwaysConstruct =
     AlwaysConstruct {
         alwaysKeyword :: AlwaysKeyword,
-        statement :: Statement
+        statement     :: Statement
     } deriving (Show, Generic)
 
 -- | Incomplete production rule
 data FinalConstruct = FinalConstruct deriving (Show, Generic)
 
-data AlwaysKeyword = Always | AlwaysComb | AlwaysLatch | AlwaysFF deriving (Show, Generic)
+data AlwaysKeyword = Always | AlwaysComb | AlwaysLatch | AlwaysFf deriving (Show, Generic)
 
 -- | Incomplete production rule
-data BlockingAssignment = BlockingAssignment deriving (Show, Generic)
+data BlockingAssignment = BAOperator { operatorAssignment :: OperatorAssignment }deriving (Show, Generic)
 
 -- | Incomplete production rule
-data OperatorAssignment = OperatorAssignment deriving (Show, Generic)
+data OperatorAssignment = OperatorAssignment {
+    variableLvalue :: VariableLvalue,
+    assignmentOperator :: AssignmentOperator,
+    expression :: Expression
+} deriving (Show, Generic)
 
 -- | Incomplete production rule
-data AssignmentOperator = AssignmentOperator deriving (Show, Generic)
+data AssignmentOperator =
+    AOEqual
+    | AOPlusEqual
+    | AOMinusEqual
+    | AOAsteriskEqual
+    | AOForwardslashEqual
+    | AOPercentageEqual
+    | AOAmpersandEqual
+    | AOPipeEqual
+    | AOCaretEqual
+    | AOLesserLesserEqual
+    | AOGreaterGreaterEqual
+    | AOLesserLesserLesserEqual
+    | AOGreaterGreaterGreaterEqual deriving (Show, Generic)
 
--- | Incomplete production rule
-data NonblockingAssignment = NonblockingAssignment deriving (Show, Generic)
+data NonblockingAssignment =
+    NonblockingAssignment {
+        variableLvalue :: VariableLvalue,
+        expression :: Expression
+    } deriving (Show, Generic)
 
 -- | Incomplete production rule
 data ProceduralContinuousAssignment = ProceduralContinuousAssignment deriving (Show, Generic)
@@ -551,15 +627,38 @@ data ProceduralContinuousAssignment = ProceduralContinuousAssignment deriving (S
 -- | Incomplete production rule
 data VariableAssignment = VariableAssignment deriving (Show, Generic)
 ---- 6.3 - Parallel And Sequential Blocks ----
+
+data SeqBlock = SeqBlock {
+    blockIdentifier :: Maybe BlockIdentifier,
+    blockItemDeclarations :: [BlockItemDeclaration],
+    statementsOrNull :: [StatementOrNull],
+    startBlockIdentifier :: Maybe BlockIdentifier,
+    endBlockIdentifier :: Maybe BlockIdentifier
+} deriving (Show, Generic)
+
 ---- 6.4 - Statements ----
 -- | Incomplete production rule
-data StatementOrNull = StatementOrNull deriving (Show, Generic)
+type StatementOrNull = Either Statement [AttributeInstance]
 
 -- | Incomplete production rule
-data Statement = Statement deriving (Show, Generic)
+data Statement =
+    Statement {
+        blockIdentifier :: Maybe BlockIdentifier,
+        attributeInstances :: [AttributeInstance],
+        statementItem :: StatementItem
+    } deriving (Show, Generic)
 
 -- | Incomplete production rule
-data StatementItem = StatementItem deriving (Show, Generic)
+data StatementItem =
+    SIBlockingAssignment {
+        blockingAssignment :: BlockingAssignment
+    } | SINonblockingAssignment {
+        nonblockingAssignment :: NonblockingAssignment
+    } | SIProceduralTimingControlStatement {
+        proceduralTimingControlStatement :: ProceduralTimingControlStatement
+    } | SISeqBlock {
+        seqBlock :: SeqBlock
+    } deriving (Show, Generic)
 
 -- | Incomplete production rule
 data FunctionStatement = FunctionStatement deriving (Show, Generic)
@@ -570,9 +669,50 @@ data FunctionStatementOrNull = FunctionStatementOrNull deriving (Show, Generic)
 -- | Incomplete production rule
 data VariableIdentifierList = VariableIndentifierList deriving (Show, Generic)
 ---- 6.5 - Timing Control Statements ----
+data ProceduralTimingControlStatement =
+    ProceduralTimingControlStatement {
+        proceduralTimingControl :: ProceduralTimingControl,
+        statementOrNull :: StatementOrNull
+    } deriving (Show, Generic)
+
+-- | Incomplete production rule
+data ProceduralTimingControl =
+    PTCEvent {
+        eventControl :: EventControl
+    } deriving (Show, Generic)
+
+
+data EventControl =
+    ECExpression {
+        eventExpression :: EventExpression
+    } | ECAsterisk deriving (Show, Generic)
+
+data EventExpression =
+    EE {
+        edgeIdentifier :: Maybe EdgeIdentifier,
+        expression :: Expression,
+        iffExpression :: Maybe Expression
+    } deriving (Show, Generic)
 ---- 6.6 - Conditional Statements ----
 ---- 6.7 - Case Statements ----
 ---- 6.7.1 - Patterns ----
+
+data AssignmentPatternExpressionType =
+    APETPsTypeIdentifier {
+        psTypeIdentifier :: PsTypeIdentifier
+    } | APETPsParameterIdentifier {
+        psParameterIdentifier :: PsParameterIdentifier
+    } | APETIntegerAtomType {
+        integerAtomType :: IntegerAtomType
+    } | APETTypeReference {
+        typeReference :: TypeReference
+    } deriving (Show, Generic)
+
+data AssignmentPatternVariableLvalue =
+    AssignmentPatternVariableLvalue {
+        variableLvalues :: [VariableLvalue]
+    } deriving (Show, Generic)
+
 ---- 6.8 - Looping Statements ----
 ---- 6.9 - Subroutine Call Statements ----
 ---- 6.10 - Assertion Statements ----
@@ -587,12 +727,48 @@ data SpecifyBlock = SpecifyBlock deriving (Show, Generic)
 ---- 7.2 - Specify Path Declarations ----
 ---- 7.3 - Specify Block Terminals ----
 ---- 7.4 - Specify Path Delays ----
+
+data EdgeIdentifier = EIPosedge | EINegedge | EIEdge deriving (Show, Generic)
+
 ---- 7.5 - System Timing Checks ----
 ---- 7.5.2 - System Timing Check Command Arguments ----
 ---- 7.5.3 - System Timing Check Event Definitions ----
 
 ---- Sec 8 ----
 ---- 8.1 - Concatenations ----
+data StreamingConcatenation =
+    StreamingConcatenation {
+        streamOperator :: StreamOperator,
+        sliceSize :: Maybe SliceSize,
+        streamConcatenation :: StreamConcatenation
+    } deriving (Show, Generic)
+
+data StreamExpression = StreamExpression {
+    expression :: Expression,
+    arrayRangeExpression :: Maybe ArrayRangeExpression
+} deriving (Show, Generic)
+
+data SliceSize =
+    SSSimpleType {
+        simpleType :: SimpleType
+    } | SSConstantExpression {
+        constantExpression :: ConstantExpression
+    } deriving (Show, Generic)
+
+data StreamOperator =
+    SOGreater | SOLesser deriving (Show, Generic)
+
+data StreamConcatenation =
+    StreamConcatenation {
+        streamExpressions :: [StreamExpression]
+    } deriving (Show, Generic)
+
+data ArrayRangeExpression =
+    ARE { expression :: Expression }
+    | AREColon { start :: Expression, end :: Expression}
+    | AREPlusColon { start :: Expression, end :: Expression}
+    | AREMinusColon { start :: Expression, end :: Expression} deriving (Show, Generic)
+
 ---- 8.2 - Subroutine Calls ---
 ---- 8.3 - Expressions ----
 
@@ -619,17 +795,28 @@ data ConstantParamExpression =
     } | CPEDollar deriving (Show, Generic)
 
 -- | Incomplete production rule
-data ParamExpression = ParamExpression deriving (Show, Generic)
+data ParamExpression =
+    PEMintypmax {
+        mintypmaxExpression :: MintypmaxExpression
+    } | PEDataType {
+        dataType :: DataType
+    } | PEDollar deriving (Show, Generic)
 -- | Incomplete production rule
 data ConstantRangeExpression = ConstantRangeExpression deriving (Show, Generic)
 -- | Incomplete production rule
 data ConstantPartSelectRange = ConstantPartSelectRange deriving (Show, Generic)
 -- | Incomplete production rule
-data ConstantRange = CRExpression {constantExpression :: ConstantExpression }deriving (Show, Generic)
+data ConstantRange = CRExpression {
+    start :: ConstantExpression,
+    end :: ConstantExpression
+}deriving (Show, Generic)
 -- | Incomplete production rule
 data ConstantIndexedRange = ConstantIndexedRange deriving (Show, Generic)
 -- | Incomplete production rule
-data Expression = Expression deriving (Show, Generic)
+data Expression =
+    EPrimary {
+        primary :: Primary
+    } deriving (Show, Generic)
 -- | Incomplete production rule
 data TaggedUnionExpression = TaggedUnionExpression deriving (Show, Generic)
 -- | Incomplete production rule
@@ -637,7 +824,14 @@ data InsideExpression = InsideExpression deriving (Show, Generic)
 -- | Incomplete production rule
 data ValueRange = ValueRange deriving (Show, Generic)
 -- | Incomplete production rule
-data MintypmaxExpression = MintypmaxExpression deriving (Show, Generic)
+data MintypmaxExpression =
+    MESingle {
+        expression :: Expression
+    } | METripple {
+        start :: Expression,
+        mid :: Expression,
+        end :: Expression
+    }deriving (Show, Generic)
 -- | Incomplete production rule
 data ModulePathConditionalExpression = ModulePathConditionalExpression deriving (Show, Generic)
 -- | Incomplete production rule
@@ -645,9 +839,9 @@ data ModulePathExpression = ModulePathExpression deriving (Show, Generic)
 -- | Incomplete production rule
 data ModulePathMintypmaxExpression = ModulePathMintypmaxExpression deriving (Show, Generic)
 -- | Incomplete production rule
-data PartSelectRange = PartSelectRange deriving (Show, Generic)
+data PartSelectRange = PSRConstant { constantRange :: ConstantRange } | PSRIndexed {indexedRange :: IndexedRange } deriving (Show, Generic)
 -- | Incomplete production rule
-data IndexedRange = IndexedRanged deriving (Show, Generic)
+data IndexedRange = IRPlusColon {expression :: Expression, constantExpression :: ConstantExpression} | IRMinusColon {expression :: Expression, constantExpression :: ConstantExpression} deriving (Show, Generic)
 
 data GenvarExpression = GenvarExpression { constantExpression :: ConstantExpression} deriving (Show, Generic)
 ---- 8.4 - Primaries ----
@@ -657,7 +851,33 @@ data ConstantPrimary =
         primaryLiteral :: PrimaryLiteral
     } deriving (Show, Generic)
 
+data ImplicitClassHandle = ICHThisSuper | ICHSuper | ICHThis deriving (Show, Generic)
+data BitSelect =
+    BitSelect {
+        expressions :: [Expression]
+    } deriving (Show, Generic)
+
+data Select =
+    Select {
+        memberIdentifierBitSelects :: MemberIdentifierBitSelects,
+        partSelectRange :: Maybe PartSelectRange
+    } | SelectAlt { bitSelectsOrPartSelectRanges :: [Either Expression PartSelectRange] }deriving (Show, Generic)
+
+data MemberIdentifierBitSelects = MIBSList { list :: [(MemberIdentifier, BitSelect)]} | MIBSSingleton { singleton :: BitSelect } deriving (Show, Generic)
+
+data ConstantBitSelect =
+    ConstantBitSelect {
+        constantExpressions :: [ConstantExpression]
+    } deriving (Show, Generic)
 data ConstantSelect = ConstantSelect deriving (Show, Generic)
+
+data Primary =
+    PLiteral {
+        primaryLiteral :: PrimaryLiteral
+    } | PHierarchicalIdentifier {
+        hierarchicalIdentifier :: HierarchicalIdentifier,
+        select :: Select
+     } deriving (Show, Generic)
 
 -- | Incomplete production rule
 data PrimaryLiteral = PLNumber { number :: Number } deriving (Show, Generic)
@@ -671,9 +891,23 @@ data TimeUnit = Second | Millisecond | Microsecond | Nanosecond | Picosecond | F
 data NetLValue =
     NetLValue {
             psOrHierachicalNetIdentifier :: PsOrHierachicalNetIdentifier,
-            constantSelect :: ConstantSelect
+            constantSelect               :: ConstantSelect
     } deriving (Show, Generic)
 
+data VariableLvalue = VLHierarchical {
+    implicitClassHandleOrPackageScope :: Maybe ImplicitClassHandleOrPackageScope,
+    hierarchicalVariableIdentifier :: HierarchicalVariableIdentifier,
+    select :: Select
+} | VLList {
+    variableLvalues :: [VariableLvalue]
+} | VLAssignmentPattern {
+    assignmentPatternExpressionType :: Maybe AssignmentPatternExpressionType,
+    assignmentPatternVariableLvalue :: AssignmentPatternVariableLvalue
+} | VLStreamingConcatenation {
+    streamingConcatenation :: StreamingConcatenation
+} deriving (Show, Generic)
+
+type ImplicitClassHandleOrPackageScope = Either ImplicitClassHandle PackageScope
 ---- 8.6 - Operators ----
 ---- 8.7 - Numbers ----
 
@@ -713,7 +947,7 @@ data AttributeInstance =
 -- | Incorrect production rule (Constant Expression should not be Maybe Identifier)
 data AttrSpec =
     AttrSpec{
-        attrName :: AttrName,
+        attrName           :: AttrName,
         constantExpression :: Maybe Identifier
     }   deriving (Show, Generic)
 
@@ -722,22 +956,53 @@ newtype AttrName = AttrName Identifier deriving (Show, Generic)
 ---- 9.3 - Identifiers ----
 --- Identifier may change to be more complex/not lazy
 type Identifier = String
+newtype BlockIdentifier = BlockIdentifier Identifier deriving (Show, Generic)
+newtype ClassIdentifier = ClassIdentifier Identifier deriving (Show, Generic)
+data HierarchicalIdentifier = HierarchicalIdentifier {
+    root :: Bool,
+    hierarchy :: [(Identifier, ConstantBitSelect)],
+    identifier :: Identifier
+} deriving (Show, Generic)
+newtype HierarchicalVariableIdentifier = HierarchicalVariableIdentifier HierarchicalIdentifier deriving (Show, Generic)
 newtype InterfaceIdentifier = InterfaceIdentifier Identifier deriving (Show, Generic)
 newtype ParameterIdentifier = ParameterIdentifier Identifier deriving (Show, Generic)
 newtype PortIdentifier = PortIdentifier Identifier deriving (Show, Generic)
 newtype ModuleIdentifier = ModuleIdentifier Identifier deriving (Show, Generic)
+newtype MemberIdentifier = MemberIdentifier Identifier deriving (Show, Generic)
 newtype ModportIdentifier = ModportIdentifier Identifier deriving (Show, Generic)
 newtype PackageIdentifier = PackageIdentifier Identifier deriving (Show, Generic)
 data PackageScope =
     PSIdentifier PackageIdentifier
     | PSUnit deriving (Show, Generic)
+data PsClassIdentifier =
+    PsClassIdentifier {
+        packageScope :: Maybe PackageScope,
+        classIdentifier :: ClassIdentifier
+    } deriving (Show, Generic)
+
 data PsOrHierachicalNetIdentifier =
     POHNINet {
         maybePackageScope :: Maybe PackageScope,
-        netIdentifier :: NetIdentifier
+        netIdentifier     :: NetIdentifier
     } | POHNIHierachicalNet {
 
     } deriving (Show, Generic)
+
+-- | Incomplete production rule
+data PsParameterIdentifier =
+    PPIScoped {
+        packageOrClassScope :: Maybe (Either PackageScope ClassScope),
+        parameterIdentifier :: ParameterIdentifier
+    } deriving (Show, Generic)
+
+data PsTypeIdentifier =
+    PsTypeIdentifier {
+        localOrPackageScope :: Maybe LocalOrPackageScope,
+        typeIdentifier :: TypeIdentifier
+    } deriving (Show, Generic)
+
+data LocalOrPackageScope =
+    LOPSLocal | LOPSPackageScope { packageScope :: PackageScope } deriving (Show, Generic)
 
 newtype NetIdentifier = NetIdentifier Identifier deriving (Show, Generic)
 
