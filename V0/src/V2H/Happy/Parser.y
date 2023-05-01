@@ -10,10 +10,10 @@ import Data.List
 import qualified V2H.Alex.Lexer as L
 
 import V2H.Ast
-
+import Debug.Trace
 }
 
-%name parseSV source_text
+%name parseSV variable_lvalue
 %tokentype { L.RangedToken }
 %error { parseError }
 %monad { L.Alex } { >>= } { pure }
@@ -279,6 +279,7 @@ import V2H.Ast
     unary_module_path_operator  { L.RangedToken (L.UnaryModulePathOperator _) _ }
     binary_module_path_operator { L.RangedToken (L.BinaryModulePathOperator _) _ }
 
+    '@'                         { L.RangedToken (L.AtSign) _ }
     '('                         { L.RangedToken L.OpenBracket _ }
     ')'                         { L.RangedToken L.CloseBracket _ }
     '{'                         { L.RangedToken L.OpenCurlyBracket _ }
@@ -289,13 +290,36 @@ import V2H.Ast
     ':'                         { L.RangedToken L.Colon _ }
     '.'                         { L.RangedToken L.FullStop _ }
     '*'                         { L.RangedToken L.Asterisk _ }
-    "::"                        { L.RangedToken L.ColonColon _ }
-    '='                         { L.RangedToken L.Equals _ }
+    '::'                        { L.RangedToken L.ColonColon _ }
+    '='                         { L.RangedToken L.Equal _ }
     ','                         { L.RangedToken L.Comma _ }
-    '/'                         { L.RangedToken L.Backslash _ }
+    '/'                         { L.RangedToken L.Forwardslash _ }
     '#'                         { L.RangedToken L.Hashtag _ }
     '$'                         { L.RangedToken L.Dollar _ }
+    '+='                        { L.RangedToken L.PlusEqual _ }
+    '-='                        { L.RangedToken L.MinusEqual _ }
+    '*='                        { L.RangedToken L.AsteriskEqual _ }
+    '/='                        { L.RangedToken L.ForwardslashEqual _ }
+    '%='                        { L.RangedToken L.PercentageEqual _ }
+    '&='                        { L.RangedToken L.AmpersandEqual _ }
+    '|='                        { L.RangedToken L.PipeEqual _ }
+    '^='                        { L.RangedToken L.CaretEqual _ }
+    '<='                        { L.RangedToken L.LesserEqual _ }
+    '<<'                        { L.RangedToken L.LesserLesser _ }
+    '>>'                        { L.RangedToken L.GreaterGreater _ }
+    '<<='                       { L.RangedToken L.LesserLesserEqual _ }
+    '>>='                       { L.RangedToken L.GreaterGreaterEqual _ }
+    '<<<='                      { L.RangedToken L.LesserLesserLesserEqual _ }
+    '>>>='                      { L.RangedToken L.GreaterGreaterGreaterEqual _ }
+    '\''                        { L.RangedToken L.Apostrophe _ }
+
+    '$root'                     { L.RangedToken L.DollarRoot _ }
+    '+:'                        { L.RangedToken L.PlusColon _ }
+    '-:'                        { L.RangedToken L.MinusColon _ }
+    'local::'                   { L.RangedToken L.LocalColonColon _ }
     unsigned_number             { L.RangedToken (L.UnsignedNumberT _) _}
+
+%left '.'
 %%
 many_rev(p)
     :               { [] }
@@ -314,11 +338,19 @@ snd(p,q)
     : p q                 { $2 }
 both(p,q)
     : p q                 { ($1,$2) }
-
+inner(x,y,z)
+    : x y z               { $2 }
+getThirdFromFour(w,x,y,z)
+    : w x y z             { $3 }
 sep1(p,q)
     : p many(snd(q,p))    { $1 : $2 }
+
+either(p, q)
+    : p { Left $1 }
+    | q { Right $1 }
+
 identifier :: { Identifier }
-    : identifier_rt { L.unTokIdentifier $1}
+    : identifier_rt { L.unTokIdentifier $1 }
 
 ----- Sec 1 -----
 ---- 1.1 - Library Source Text ----
@@ -333,17 +365,28 @@ description :: { Description }
 
 -- Incomplete production rule
 module_ansi_header :: { ModuleAnsiHeader }
-    : many(attribute_instance) module_keyword optional(lifetime) module_identifier many(package_import_declaration) optional(parameter_ports) optional(port_declarations) ';' {
+    : module_keyword optional(lifetime) module_identifier many(package_import_declaration) optional(parameter_ports) optional(port_declarations) ';' {
         ModuleAnsiHeader {
-            attributeInstances = $1,
-            moduleKeyword = $2,
-            lifetime = $3,
-            moduleIdentifier = $4,
-            packageImportDeclarations = $5,
-            parameterPorts = $6,
-            portDeclarations = $7
+            attributeInstances = [],
+            moduleKeyword = $1,
+            lifetime = $2,
+            moduleIdentifier = $3,
+            packageImportDeclarations = $4,
+            parameterPorts = $5,
+            portDeclarations = $6
         }
     }
+    -- : many(attribute_instance) module_keyword optional(lifetime) module_identifier many(package_import_declaration) optional(parameter_ports) optional(port_declarations) ';' {
+    --     ModuleAnsiHeader {
+    --         attributeInstances = $1,
+    --         moduleKeyword = $2,
+    --         lifetime = $3,
+    --         moduleIdentifier = $4,
+    --         packageImportDeclarations = $5,
+    --         parameterPorts = $6,
+    --         portDeclarations = $7
+    --     }
+    -- }
 
 module_declaration :: { ModuleDeclaration }
     : module_ansi_header optional(timeunits_declaration) many(non_port_module_item) endmodule optional(snd(':', module_identifier)) { MDAnsiHeader {
@@ -454,6 +497,7 @@ net_or_interface_port_header :: { Either NetPortHeader InterfacePortHeader }
 module_common_item :: { ModuleCommonItem }
     : module_or_generate_item_declaration               { MCIModuleOrGenerateItemDeclaration $1 }
     | continuous_assign                                 { MCIContinuousAssign $1 }
+    | always_construct                                  { MCIAlwaysConstruct $1 }
 
 -- module_item :: { ModuleItem }
 -- Incomplete Production Rule
@@ -585,8 +629,8 @@ package_import_declaration :: { PackageImportDeclaration }
     : import package_import_item many(snd(',', package_import_item)) ';' { PackageImportDeclaration ($2:$3) }
 
 package_import_item :: { PackageImportItem }
-    : package_identifier "::" identifier          { PIIIdentifier $1 $3 }
-    | package_identifier "::" '*'                   { PIIWildcard $1 }
+    : package_identifier '::' identifier          { PIIIdentifier $1 $3 }
+    | package_identifier '::' '*'                   { PIIWildcard $1 }
 -- package_export_declaration :: { PackageExportDeclaration }
 -- genvar_declaration :: { GenvarDeclaration }
 -- net_declaration :: { NetDeclaration }
@@ -619,15 +663,37 @@ implicit_data_type :: { ImplicitDataType }
 
 -- enum_base_type :: { EnumBaseType }
 -- enum_name_declaration :: { EnumNameDeclaration }
--- class_scope :: { ClassScope }
--- class_type :: { ClassType }
--- integer_type :: { IntegerType }
--- integer_atom_type :: { IntegerAtomType }
+class_scope :: { ClassScope }
+    : class_type '::' { ClassScope $1 }
+
+class_type :: { ClassType }
+    : ps_class_identifier optional(parameter_value_assignment) many(class_identifier_parameter_value_assignment) { ClassType $1 $2 $3 }
+
+class_identifier_parameter_value_assignment :: { ClassIdentifierParameterValueAssignment }
+    : '::' class_identifier optional(parameter_value_assignment) { ClassIdentifierParameterValueAssignment $2 $3 }
+
+integer_type :: { IntegerType }
+    : integer_vector_type   { ITVector $1 }
+    | integer_atom_type     { ITAtom $1 }
+
+integer_atom_type :: { IntegerAtomType }
+    : byte              { IATByte }
+    | shortint          { IATShortint }
+    | int               { IATInt }
+    | longint           { IATLongint }
+    | integer           { IATInteger }
+    | time              { IATTime }
+
 integer_vector_type :: { IntegerVectorType }
-    : bit { Bit }
-    | logic { Logic }
-    | reg { Reg }
--- non_integer_type :: { NonIntegerType }
+    : bit { IVTBit }
+    | logic { IVTLogic }
+    | reg { IVTReg }
+
+non_integer_type :: { NonIntegerType }
+    : shortreal { NITShortreal}
+    | real      { NITReal }
+    | realtime  { NITRealtime }
+
 net_type :: { NetType }
     : supply0   { Supply0 }
     | supply1   { Supply1 }
@@ -655,11 +721,19 @@ var_data_type :: { VarDataType }
 signing :: { Signing }
     : signed                                    { SSigned }
     | unsigned                                  { SUnsigned }
--- simple_type :: { SimpleType }
+
+simple_type :: { SimpleType }
+    : integer_type                              { STInteger $1 }
+    | non_integer_type                          { STNonInteger $1 }
+    | ps_type_identifier                        { STPsIdentifier $1 }
+    | ps_parameter_identifier                   { STPsParameterIdentifier $1 }
+
 -- struct_union_member :: { StructUnionMember }
 -- data_type_or_void :: { DataTypeOrVoid }
 -- struct_union :: { StructUnion }
--- type_reference :: { TypeReference }
+type_reference :: { TypeReference }
+    : type '(' expression ')'        { TRExpression $3 }
+    | type '(' data_type ')'        { TRDataType $3 }
 
 ---- 2.2.2 - Strengths ----
 -- | Incorrect Production Rule
@@ -719,6 +793,7 @@ packed_dimension :: { PackedDimension }
 -- associative_dimension :: { AssociativeDimension }
 variable_dimension :: { VariableDimension }
     : unsized_dimension                 { VDUnsized $1 }
+    | unpacked_dimension                { VDUnpacked $1 }
 
 -- queue_dimension :: { QueueDimension }
 unsized_dimension :: { UnsizedDimension }
@@ -745,7 +820,9 @@ unsized_dimension :: { UnsizedDimension }
 -- task_prototype :: { TaskPrototype }
 
 ---- 2.8 - Block Item Declarations ----
--- block_item_declaration :: { BlockItemDeclaration }
+-- | Incomplete production rule
+block_item_declaration :: { BlockItemDeclaration }
+    : many(attribute_instance) data_declaration {BIDData $1 $2 }
 -- overload_declaration :: { OverloadDeclaration }
 -- overload_operator :: { OverloadOperator }
 
@@ -877,10 +954,19 @@ unsized_dimension :: { UnsizedDimension }
 ---- Sec 4 ----
 ---- 4.1.1 - Module Instantiation ----
 -- module_instantiation :: { ModuleInstantiation }
--- parameter_value_assignment :: { ParameterValueAssignment }
--- parameter_assignments :: { ParameterAssignments }
--- ordered_parameter_assignment :: { OrderedParameterAssignment}
--- named_parameter_assignment :: { NamedParameterAssignment }
+parameter_value_assignment :: { ParameterValueAssignment }
+    : '#' '(' optional(parameter_assignments) ')' { ParameterValueAssignment $3 }
+
+parameter_assignments :: { ParameterAssignments }
+    : ordered_parameter_assignment many(snd(',', ordered_parameter_assignment)) { PAOrdered ($1:$2) }
+    | named_parameter_assignment many(snd(',', named_parameter_assignment)) { PANamed ($1:$2) }
+
+ordered_parameter_assignment :: { OrderedParameterAssignment }
+    : param_expression  { OrderedParameterAssignment $1  }
+
+named_parameter_assignment :: { NamedParameterAssignment }
+    : '.' parameter_identifier '(' optional(param_expression) ')' { NamedParameterAssignment $2 $4 }
+
 -- hierarchical_instance :: { HierarchicalInstance }
 -- name_of_instance :: { NameOfInstance }
 -- port_connections :: { PortConnections }
@@ -957,36 +1043,99 @@ net_assignment :: { NetAssignment }
 
 ---- 6.2 - Procedural Blocks And Assignments ----
 -- initial_construct :: { InitialConstruct }
--- always_construct :: { AlwaysConstruct }
--- always_keyword :: { AlwaysKeyword }
+always_construct :: { AlwaysConstruct }
+    : always_keyword statement                                  { AlwaysConstruct $1 $2 }
+always_keyword :: { AlwaysKeyword }
+    : always                                                    { Always }
+    | always_comb                                               { AlwaysComb }
+    | always_latch                                              { AlwaysLatch }
+    | always_ff                                                 { AlwaysFf }
 -- final_construct :: { FinalConstruct }
--- blocking_assignment :: { BlockingAssignment }
--- operator_assignment :: { OperatorAssignment }
--- assignment_operator ::= { AssignmentOperator }
--- nonblocking_assignment :: { NonblockingAssignment }
+-- | Incomplete production rule
+blocking_assignment :: { BlockingAssignment }
+    : operator_assignment       { BAOperator $1 }
+
+operator_assignment :: { OperatorAssignment }
+    : variable_lvalue assignment_operator expression { OperatorAssignment $1 $2 $3 }
+
+assignment_operator :: { AssignmentOperator }
+    : '='       { AOEqual }
+    | '+='      { AOPlusEqual }
+    | '-='      { AOMinusEqual}
+    | '*='      { AOAsteriskEqual }
+    | '/='      { AOForwardslashEqual}
+    | '%='      { AOPercentageEqual }
+    | '&='      { AOAmpersandEqual }
+    | '|='      { AOPipeEqual }
+    | '^='      { AOCaretEqual }
+    | '<<='     { AOLesserLesserEqual }
+    | '>>='     { AOGreaterGreaterEqual }
+    | '<<<='    { AOLesserLesserLesserEqual }
+    | '>>>='    { AOGreaterGreaterGreaterEqual }
+
+nonblocking_assignment :: { NonblockingAssignment }
+    : variable_lvalue '<=' expression { NonblockingAssignment $1 $3 }
 -- procedural_continuous_assignment :: { ProceduralContinousAssignment }
 -- variable_assignment :: { VariableAssignment }
 
 ---- 6.3 - Parallel And Sequential Blocks ----
 -- action_block :: { ActionBlock }
--- seq_block :: { SeqBlock }
+seq_block :: { SeqBlock }
+    :begin optional(snd(':', block_identifier)) many(statement_or_null) end optional(snd(':', block_identifier))    {
+        SeqBlock {
+            blockIdentifier = $2 `orElse` $5,
+            blockItemDeclarations = [],
+            statementsOrNull = $3,
+            startBlockIdentifier = $2,
+            endBlockIdentifier = $5
+        }
+    }
+    -- : begin optional(snd(':', block_identifier)) many(block_item_declaration) many(statement_or_null) end optional(snd(':', block_identifier))    {
+    --     SeqBlock {
+    --         blockIdentifier = $2 `orElse` $6,
+    --         blockItemDeclarations = $3,
+    --         statementsOrNull = $4,
+    --         startBlockIdentifier = $2,
+    --         endBlockIdentifier = $6
+    --     }
+    -- }
 -- par_block :: { ParBlock }
 -- join_keyword :: { JoinKeyword }
 
 ---- 6.4 - Statements ----
--- statement_or_null :: { StatementOrNull }
--- statement :: { Statement }
--- statement_item :: { StatementItem }
+statement_or_null :: { StatementOrNull }
+    : statement                             { Left $1 }
+    | many(attribute_instance) ';'              { Right $1 }
+
+statement :: { Statement }
+    : statement_item    { Statement Nothing [] $1}
+    -- | optional(fst(block_identifier, ':')) many(attribute_instance) statement_item { Statement $1 $2 $3 }
+
+-- | Incomplete production rule
+statement_item :: { StatementItem }
+    : blocking_assignment ';'       { SIBlockingAssignment $1 }
+    | nonblocking_assignment ';'    { SINonblockingAssignment $1 }
+    | seq_block                     { SISeqBlock $1 }
+    | procedural_timing_control_statement { SIProceduralTimingControlStatement $1 }
 -- function_statement :: { FunctionStatement }
 -- function_statement_or_null :: { FunctionStatementOrNull }
 
 ---- 6.5 - Timing Control Statements ----
--- procedural_timing_control_statement :: { ProceduralTimingControlStatement }
+procedural_timing_control_statement :: { ProceduralTimingControlStatement }
+    : procedural_timing_control statement_or_null { ProceduralTimingControlStatement $1 $2 }
 -- delay_or_event_control :: { DelayOrEventControl }
 -- delay_control :: { DelayControl }
--- event_control :: { EventControl }
--- event_expression :: { EventExpression }
--- procedural_timing_control :: { ProceduralTimingControl }
+event_control :: { EventControl }
+    : '@' '(' event_expression ')'      { ECExpression $3 }
+    | '@' '(' '*' ')'                   { ECAsterisk }
+
+-- | Incomplete Expression
+event_expression :: { EventExpression }
+    : expression { EE Nothing $1 Nothing}
+    | edge_identifier expression    { EE (Just $1) $2 Nothing}
+
+procedural_timing_control :: { ProceduralTimingControl }
+    : event_control { PTCEvent $1 }
 -- jump_statement :: { JumpStatement }
 -- wait_statement :: { WaitStatement }
 -- event_trigger :: { EventTrigger }
@@ -1019,10 +1168,16 @@ net_assignment :: { NetAssignment }
 -- array_pattern_key :: { ArrayPatternKey }
 -- assignment_pattern_key :: { AssignmentPatternKey }
 -- assignment_pattern_expression :: { AssignmentPatternExpression }
--- assignment_pattern_expression_type :: { AssignmentPatternExpressionType }
+assignment_pattern_expression_type :: { AssignmentPatternExpressionType }
+    : ps_type_identifier        { APETPsTypeIdentifier $1 }
+    | ps_parameter_identifier   { APETPsParameterIdentifier $1}
+    | integer_atom_type         { APETIntegerAtomType $1 }
+    | type_reference            { APETTypeReference $1 }
+
 -- constant_assignment_pattern_expression :: { ConstantAssignmentPatternExpression }
 -- assignment_pattern_net_lvalue :: { AssignmentPatternNetLvalue }
--- assignment_pattern_variable_lvalue :: { AssignmentPatternVariableLvalue }
+assignment_pattern_variable_lvalue :: { AssignmentPatternVariableLvalue }
+    : '\'' '{' variable_lvalue many(snd(',', variable_lvalue )) '}' { AssignmentPatternVariableLvalue ($3:$4) }
 
 ---- 6.8 - Looping Statements ----
 -- loop_statement :: { LoopStatement }
@@ -1119,7 +1274,10 @@ net_assignment :: { NetAssignment }
 -- parallel_edge_sensitive_path_description :: { ParallelEdgeSensitivePathDescription }
 -- full_edge_sensitive_path_description :: { FullEdgeSensitivePathDescription }
 -- data_source_expression :: { DataSourceExpression }
--- edge_identifier :: { EdgeIdentifier }
+edge_identifier :: { EdgeIdentifier }
+    : posedge       { EIPosedge }
+    | negedge       { EINegedge }
+    | edge          { EIEdge }
 -- state_dependent_path_declaration :: { StateDependentPathDeclaration }
 -- polarity_operator :: { PolarityOperator }
 
@@ -1175,12 +1333,30 @@ net_assignment :: { NetAssignment }
 -- module_path_concatenation ::= { ModulePathConcatenation }
 -- module_path_multiple_concatenation :: { ModulePathMultipleConcatenation }
 -- multiple_concatenation :: { MultipleConcatenation }
--- streaming_concatenation :: { StreamingConcatenation }
--- stream_operator :: { StreamOperator }
--- slice_size :: { SliceSize }
--- stream_concatenation :: { StreamConcatenation }
--- stream_expression :: { StreamExpression }
--- array_range_expression :: { ArrayRangeExpression }
+
+streaming_concatenation :: { StreamingConcatenation }
+    : '{' stream_operator optional(slice_size) stream_concatenation '}' { StreamingConcatenation $2 $3 $4 }
+
+stream_operator :: { StreamOperator }
+    : '>>'          { SOGreater }
+    | '<<'          { SOLesser }
+
+slice_size :: { SliceSize }
+    : simple_type           { SSSimpleType $1 }
+    | constant_expression   { SSConstantExpression $1 }
+
+stream_concatenation :: { StreamConcatenation }
+    : '{' stream_expression many(snd(',', stream_expression)) '}' { StreamConcatenation ($2:$3) }
+
+stream_expression :: { StreamExpression }
+    : expression optional(getThirdFromFour(with,'[', array_range_expression, ']'))  { StreamExpression $1 $2 }
+
+array_range_expression :: { ArrayRangeExpression }
+    : expression                    { ARE $1 }
+    | expression ':' expression     { AREColon $1 $3 }
+    | expression '+:' expression    { AREPlusColon $1 $3 }
+    | expression '-:' expression    { AREMinusColon $1 $3 }
+
 -- empty_queue :: { EmptyQueue }
 
 ---- 8.2 - Subroutine Calls ---
@@ -1212,33 +1388,47 @@ constant_param_expression :: { ConstantParamExpression }
     : constant_mintypmax_expression         { CPEMintypmax $1 }
     | data_type                             { CPEDataType $1 }
     | '$'                                   { CPEDollar }
--- param_expression :: { ParamExpression }
+
+param_expression :: { ParamExpression }
+    : mintypmax_expression          { PEMintypmax $1 }
+    | data_type                     { PEDataType $1 }
+    | '$'                           { PEDollar }
 -- constant_range_expression :: { ConstantRangeExpression }
 -- constant_part_select_range :: { ConstantPartSelectRange }
 
 -- | Incomplete production rule
 constant_range :: { ConstantRange }
-    : constant_expression                   { CRExpression $1 }
+    : constant_expression ':' constant_expression                   { CRExpression $1 $3 }
 -- constant_indexed_range ::{ ConstantIndexedRange }
 -- | Incorrect production rule
 expression :: { Expression }
-    : '[' ']'                                               { Expression }
+    : primary                                               { EPrimary $1 }
 -- tagged_union_expression :: { TaggedUnionExpression}
 -- inside_expression :: { InsideExpression }
 -- value_range :: { ValueRange }
--- mintypmax_expression :: { MintypmaxExpression }
+mintypmax_expression :: { MintypmaxExpression }
+    : expression                                  { MESingle $1 }
+    | expression ':' expression ':' expression  { METripple $1 $3 $5 }
 -- module_path_conditional_expression :: { ModulePathConditionalExpression }
 -- module_path_expression :: { ModulePathExpression }
 -- module_path_mintypmax_expression :: { ModulePathMintypmaxExpression}
--- part_select_range :: {PartSelectRange }
--- indexed_range :: { IndexedRange }
+part_select_range :: { PartSelectRange }
+    : constant_range    { PSRConstant $1 }
+    | indexed_range     { PSRIndexed $1 }
+
+indexed_range :: { IndexedRange }
+    : expression '+:' constant_expression       { IRPlusColon $1 $3 }
+    | expression '-:' constant_expression       { IRMinusColon $1 $3 }
 -- genvar_expression :: { GenvarExpression}
 
 ---- 8.4 - Primaries ----
 constant_primary :: { ConstantPrimary }
     : primary_literal { CPLiteral $1 }
 -- module_path_primary :: { ModulePathPrimary }
--- primary :: { Primary }
+primary :: { Primary }
+    : primary_literal                   { PLiteral $1}
+    | hierarchical_identifier select    { PHierarchicalIdentifier $1 $2 }
+
 -- class_qualifier :: { ClassQualifier}
 -- range_expression :: { RangeExpression }
 primary_literal :: { PrimaryLiteral }
@@ -1248,11 +1438,39 @@ time_literal :: { TimeLiteral }
     | unsigned_number '.' unsigned_number time_unit             { TLFixedPoint (L.unTokDecimal $1) (L.unTokDecimal $3) (L.unTokTimeUnit $4) }
 
 -- time_unit :: { TimeUnit }
--- implicit_class_handle :: { ImplicitClassHandle }
--- bit_select :: { BitSelect }
--- select :: { Select }
+implicit_class_handle :: { ImplicitClassHandle }
+    : this '.'              { ICHThis }
+    | super                 { ICHSuper }
+    | this '.' super        { ICHThisSuper }
+
+bit_select :: { BitSelect }
+    : many(inner('[', expression,']'))              { BitSelect $1 }
+
+bracketed_expression_or_part_select_range :: { Either Expression PartSelectRange }
+    : '[' expression ']'    { Left $2 }
+    | '[' part_select_range ']'{ Right $2 }
+
+select :: { Select }
+    -- : bit_select {Select (MIBSSingleton $1) Nothing }
+    -- | bit_select inner('[', part_select_range, ']') {Select (MIBSSingleton (BitSelect [])) (Just $1) }
+    : many(bracketed_expression_or_part_select_range) {SelectAlt $1 }
+    -- | optional(member_identifier_bit_selects) bit_select optional(inner('[', part_select_range, ']')) {
+    --     let helper = \mibs -> case mibs of
+    --                             Just (pairs, mi) -> MIBSList $ pairs ++ [(mi,$2)]
+    --                             Nothing ->    MIBSSingleton $2
+    --     in  Select { memberIdentifierBitSelects = helper $1, partSelectRange = $3 }
+    -- }
+
+member_identifier_bit_selects :: { ([(MemberIdentifier, BitSelect)], MemberIdentifier) }
+    : many(snd('.', member_identifier_bit_select)) '.' member_identifier { ($1, $3)}
+
+member_identifier_bit_select :: { (MemberIdentifier, BitSelect) }
+    : member_identifier bit_select { ($1,$2) }
+
 -- nonrange_select :: { NonrangeSelect }
--- constant_bit_select :: { ConstantBitSelect }
+constant_bit_select :: { ConstantBitSelect }
+    : many(inner('[', constant_expression, ']')) { ConstantBitSelect $1 }
+
 -- Incorrect production rule
 constant_select :: { ConstantSelect }
     : '[' ']'                                               { ConstantSelect }
@@ -1266,7 +1484,17 @@ constant_select :: { ConstantSelect }
 net_lvalue :: { NetLValue }
     : ps_or_hierarchical_net_identifier constant_select     { NetLValue $1 $2 }
 
--- variable_lvalue :: { VariableLvalue }
+variable_lvalue :: { VariableLvalue }
+    : hierarchical_variable_identifier select          { VLHierarchical Nothing $1 $2 }
+    -- : optional(implicit_class_handle_or_package_scope) hierarchical_variable_identifier select          { VLHierarchical $1 $2 (Just $3) }
+    -- | '{' variable_lvalue many(snd(',', variable_lvalue)) '}'                                           { VLList ($2:$3) }
+    -- | optional(assignment_pattern_expression_type) assignment_pattern_variable_lvalue                   { VLAssignmentPattern  $1 $2 }
+    -- | streaming_concatenation                                                                           { VLStreamingConcatenation $1 }
+
+implicit_class_handle_or_package_scope :: { ImplicitClassHandleOrPackageScope }
+    : implicit_class_handle             { Left $1 }
+    | package_scope                     { Right $1 }
+
 -- nonrange_variable_lvalue :: { NonrangeVariableLvalue }
 
 ---- 8.6 - Operators ----
@@ -1302,8 +1530,24 @@ attr_name :: { AttrName }
 -- comment_text :: { CommonText }
 
 ---- 9.3 - Identifiers ----
+block_identifier :: { BlockIdentifier }
+    : identifier                                            { BlockIdentifier $1 }
+class_identifier :: { ClassIdentifier }
+    : identifier                                            { ClassIdentifier $1 }
+
+hierarchical_identifier :: { HierarchicalIdentifier }
+    : identifier    { HierarchicalIdentifier False [] $1 }
+    -- | optional(fst('$root', '.')) many(identifier_constant_bit_select) identifier { HierarchicalIdentifier (isJust $1) $2 $3 }
+
+identifier_constant_bit_select :: {   (Identifier, ConstantBitSelect) }
+    : identifier constant_bit_select '.' { ($1,$2) }
+
+hierarchical_variable_identifier :: { HierarchicalVariableIdentifier }
+    : hierarchical_identifier                               { HierarchicalVariableIdentifier $1 }
+
 interface_identifier :: { InterfaceIdentifier }
     : identifier                                            { InterfaceIdentifier $1 }
+
 parameter_identifier :: { ParameterIdentifier }
     : identifier                                            { ParameterIdentifier $1 }
 
@@ -1311,18 +1555,34 @@ module_identifier :: { ModuleIdentifier }
     : identifier { ModuleIdentifier $1 }
 
 -- Incomplete production rule
-ps_or_hierarchical_net_identifier :: { PsOrHierachicalNetIdentifier }
-    : optional(package_scope) net_identifier                { POHNINet $1 $2 }
-
--- Incomplete production rule
 package_scope :: { PackageScope }
-    : package_identifier "::"                               { PSIdentifier $1 }
+    : package_identifier '::'                               { PSIdentifier $1 }
 
 package_identifier :: { PackageIdentifier }
     : identifier                                            { PackageIdentifier $1 }
 
 port_identifier :: { PortIdentifier }
     : identifier                                            { PortIdentifier $1 }
+
+ps_class_identifier :: { PsClassIdentifier }
+    : optional(package_scope) class_identifier              { PsClassIdentifier $1 $2 }
+-- Incomplete production rule SPELT WRONG!!
+ps_or_hierarchical_net_identifier :: { PsOrHierachicalNetIdentifier }
+    : optional(package_scope) net_identifier                { POHNINet $1 $2 }
+
+-- Incomplete production rule
+ps_parameter_identifier :: { PsParameterIdentifier }
+    : optional(either(package_scope,class_scope)) parameter_identifier    { PPIScoped $1 $2 }
+
+ps_type_identifier :: { PsTypeIdentifier }
+    : optional(local_or_package_scope) type_identifier    { PsTypeIdentifier $1 $2 }
+
+local_or_package_scope :: { LocalOrPackageScope }
+    :  'local::'                            { LOPSLocal }
+    | package_scope                         { LOPSPackageScope $1 }
+
+member_identifier :: { MemberIdentifier }
+    : identifier                                            { MemberIdentifier $1 }
 
 modport_identifier :: { ModportIdentifier }
     : identifier                                            { ModportIdentifier $1 }
@@ -1338,6 +1598,11 @@ variable_identifier :: { VariableIdentifier }
 ----------------------------
 
 {
+orElse :: Maybe a -> Maybe a -> Maybe a
+x `orElse` y = case x of
+                 Just _  -> x
+                 Nothing -> y
+
 parseError :: (L.RangedToken, [String]) -> L.Alex a
 parseError (_,b) = do
   (L.AlexPn _ line column, _, _, _) <- L.alexGetInput

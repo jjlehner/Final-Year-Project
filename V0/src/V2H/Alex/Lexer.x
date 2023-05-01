@@ -23,7 +23,7 @@ import qualified V2H.Ast as Ast
 $alpha = [a-zA-Z]
 $decimalDigit = [0-9]
 
-@identifier = ($alpha | \_) ($alpha | $decimalDigit | \_ | \$)*
+@identifier = ($alpha | \_)($alpha | $decimalDigit | \_ | \$)*
 
 tokens :-
 
@@ -38,26 +38,43 @@ tokens :-
 <0> "always_latch"              { tok AlwaysLatch}
 
 <0> "automatic"                 { tok Automatic }
-
+<0> "begin"                     { tok Begin }
 <0> "bit"                       { tok Bit }
 
+<0> "edge"                      { tok Edge }
+<0> "end"                       { tok End }
 <0> "endmodule"                 { tok Endmodule }
 <0> "input"                     { tok Input}
 <0> "localparam"                { tok Localparam }
 <0> "logic"                     { tok Logic }
 
 <0> "module"                    { tok Module }
+<0> "negedge"                   { tok Negedge }
 <0> "output"                    { tok Output }
+<0> "posedge"                   { tok Posedge }
 <0> "reg"                       { tok Reg }
 
 <0> "static"                    { tok Static }
-
+<0> "super"                     { tok Super }
+<0> "this"                      { tok This }
 <0> "wire"                      { tok Wire }
 
+<0> "@"                         { tok AtSign }
+<0> "*"                         { tok Asterisk }
 <0> ","                         { tok Comma }
 <0> ";"                         { tok Semicolon }
 <0> "("                         { tok OpenBracket }
 <0> ")"                         { tok CloseBracket }
+<0> "["                         { tok OpenSquareBracket }
+<0> "]"                         { tok CloseSquareBracket }
+<0> ":"                         { tok Colon }
+<0> "="                         { tok Equal }
+<0> "$root"                     { tok DollarRoot }
+<0> "+:"                        { tok PlusColon }
+<0> "-:"                        { tok MinusColon }
+<0> "local::"                   { tok LocalColonColon }
+<0> "."                         { tok FullStop }
+<0> "<="                        { tok LesserEqual }
 <0> @identifier                 { tokId }
 <0> $decimalDigit+              { tokDecimal }
 {
@@ -87,8 +104,8 @@ data BinaryOp = PlusBOp
                 | AmpersandAmpersandBOp
                 | PipePipeBOp
                 | AsteriskAsteriskBOp
-                | LessBOp
-                | LessEqualBOp
+                | LesserBOp
+                | LesserEqualBOp
                 | GreaterBop
                 | GreaterEqualBOp
                 | AmpersandBOp
@@ -390,6 +407,7 @@ data Token =
             -- BinaryModulePathOperator
             | BinaryModulePathOperator BinaryModulePathOp
             -- Punctuation
+            | AtSign
             | Dollar
             | OpenBracket
             | CloseBracket
@@ -401,11 +419,33 @@ data Token =
             | Colon
             | FullStop
             | Asterisk
+            | Apostrophe
             | ColonColon
-            | Equals
+            | Equal
             | Comma
+            | Forwardslash
             | Backslash
             | Hashtag
+            | PlusEqual
+            | MinusEqual
+            | AsteriskEqual
+            | ForwardslashEqual
+            | PercentageEqual
+            | AmpersandEqual
+            | PipeEqual
+            | CaretEqual
+            | CaretSymbol
+            | LesserEqual
+            | LesserLesserEqual
+            | GreaterGreaterEqual
+            | LesserLesserLesserEqual
+            | GreaterGreaterGreaterEqual
+            | PlusColon
+            | MinusColon
+            | LocalColonColon
+            | DollarRoot
+            | GreaterGreater
+            | LesserLesser
             -- Time_unit
             | TimeUnitOperator Ast.TimeUnit
             -- Numbers
