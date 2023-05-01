@@ -9,7 +9,7 @@ event_control ::= @ hierarchical_event_identifier
 | @*
 | @ (*)
 | @ ps_or_hierarchical_sequence_identifier
-event_expression31 ::= [ edge_identifier ] expression [ iff expression ]
+event_expression ::= [ edge_identifier ] expression [ iff expression ]
 | sequence_instance [ iff expression ]
 | event_expressionorevent_expression
 | event_expression,event_expression

@@ -40,7 +40,7 @@ primary_literal ::= number | time_literal | unbased_unsized_literal | string_lit
 time_literal ::= unsigned_number time_unit
 | fixed_point_number time_unit
 time_unit ::=s|ms|us|ns|ps|fs
-implicit_class_handle41 ::= this | super | this . super
+implicit_class_handle ::= this | super | this . super
 bit_select ::= { \[ expression \] }
 select ::= [ { . member_identifier bit_select } . member_identifier ] bit_select [ [ part_select_range ] ]
 nonrange_select ::= [ { . member_identifier bit_select } . member_identifier ] bit_select
