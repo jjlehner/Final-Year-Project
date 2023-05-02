@@ -710,69 +710,87 @@ assignment_operator :: { AssignmentOperator }
     | '<<<='    { AOLesserLesserLesserEqual }
     | '>>>='    { AOGreaterGreaterGreaterEqual }
 
-nonblocking_assignment :: { NonblockingAssignment }
-    : variable_lvalue '<=' expression { NonblockingAssignment $1 $3 }
+assignment_operator =
+    equal *> AOEqual
+    <|> plus_equal *> AOPlusEqual
+    <|> minus_equal *> AOMinusEqual
+    <|> AsteriskEqual *> AOAsteriskEqual
+    <|> ForwardslashEqual*> AOForwardslashEqual
+    <|> PercentageEqual *> AOPercentageEqual
+    <|> AmpersandEqual *> AOAmpersandEqual
+    <|> PipeEqual *> AOPipeEqual
+    <|> CaretEqual *> AOCaretEqual
+    <|> LesserLesserEqual *> AOLesserLesserEqual
+    <|> GreaterGreaterEqual *> AOGreaterGreaterEqual
+    <|> LesserLesserLesserEqual *> AOLesserLesserLesserEqual
+    <|> GreaterGreaterGreaterEqual *> AOGreaterGreaterGreaterEqual
+    <?> "assignment_opeartor"
+
+noblocking_assignment =
+    NonblockingAssignment
+    <$> variable_lvalue
+    <* lesser_equal
+    <*> expression
+    <?> "nonblocking_assignment"
 -- procedural_continuous_assignment :: { ProceduralContinousAssignment }
 -- variable_assignment :: { VariableAssignment }
 
 ---- 6.3 - Parallel And Sequential Blocks ----
 -- action_block :: { ActionBlock }
-seq_block :: { SeqBlock }
-    :begin optional(snd(':', block_identifier)) many(statement_or_null) end optional(snd(':', block_identifier))    {
-        SeqBlock {
-            blockIdentifier = $2 `orElse` $5,
-            blockItemDeclarations = [],
-            statementsOrNull = $3,
-            startBlockIdentifier = $2,
-            endBlockIdentifier = $5
-        }
-    }
-    -- : begin optional(snd(':', block_identifier)) many(block_item_declaration) many(statement_or_null) end optional(snd(':', block_identifier))    {
-    --     SeqBlock {
-    --         blockIdentifier = $2 `orElse` $6,
-    --         blockItemDeclarations = $3,
-    --         statementsOrNull = $4,
-    --         startBlockIdentifier = $2,
-    --         endBlockIdentifier = $6
-    --     }
-    -- }
+
+seq_block =
+    SeqBlock
+    <$> begin
+    *> optional (colon *> block_identifier)
+    <*> many block_item_declaration
+    <*> many statement_or_null
+    <* end
+    <*> optional(colon *> block_identifier)
+    <?> "seq_block"
+
 -- par_block :: { ParBlock }
 -- join_keyword :: { JoinKeyword }
 
 ---- 6.4 - Statements ----
-statement_or_null :: { StatementOrNull }
-    : statement                             { Left $1 }
-    | many(attribute_instance) ';'              { Right $1 }
-
-statement :: { Statement }
-    : statement_item    { Statement Nothing [] $1}
-    -- | optional(fst(block_identifier, ':')) many(attribute_instance) statement_item { Statement $1 $2 $3 }
+statement_or_null =
+    Left <$> statement
+    <|> Right <$> many(attribute_instance) <* semicolon
+    <?> "statement_or_null"
 
 -- | Incomplete production rule
-statement_item :: { StatementItem }
-    : blocking_assignment ';'       { SIBlockingAssignment $1 }
-    | nonblocking_assignment ';'    { SINonblockingAssignment $1 }
-    | seq_block                     { SISeqBlock $1 }
-    | procedural_timing_control_statement { SIProceduralTimingControlStatement $1 }
+statement =
+    Statement <$> many (block_identifier <* colon) <*> many attribute_instance <*> statement_item
+    <?> "statement"
+-- | Incomplete production rule
+statement_item =
+    SIBlockingAssignment <$> blocking_assignment <* semicolon
+    <|> SINonblockingAssignment <$> nonblocking_assignment <* semicolon
+    <|> SISeqBlock <$> seq_block
+    <|> SIProceduralTimingControlStatement <$> procedural_timing_control_statement
+    <?> "statement_item"
 -- function_statement :: { FunctionStatement }
 -- function_statement_or_null :: { FunctionStatementOrNull }
 
 ---- 6.5 - Timing Control Statements ----
-procedural_timing_control_statement :: { ProceduralTimingControlStatement }
-    : procedural_timing_control statement_or_null { ProceduralTimingControlStatement $1 $2 }
+procedural_timing_control_statement =
+    ProceduralTimingControlStatement <$> procedural_timing_control <*> statement_or_null
+    <?> "procedural_timing_control_statement"
+
 -- delay_or_event_control :: { DelayOrEventControl }
 -- delay_control :: { DelayControl }
-event_control :: { EventControl }
-    : '@' '(' event_expression ')'      { ECExpression $3 }
-    | '@' '(' '*' ')'                   { ECAsterisk }
+event_control =
+    ECExpression <$> at_sign *> ob *> event_expression <* cb
+    <|> at_sign *> ob *> asterisk <* cb <*> pure ECAsterisk
+    <?> "event_control"
 
 -- | Incomplete Expression
-event_expression :: { EventExpression }
-    : expression { EE Nothing $1 Nothing}
-    | edge_identifier expression    { EE (Just $1) $2 Nothing}
+event_expression =
+    EE <$> optional edge_identifier <*> expression <*> optional (iff *> expression)
+    <?> "event_expression"
 
-procedural_timing_control :: { ProceduralTimingControl }
-    : event_control { PTCEvent $1 }
+procedural_timing_control =
+    PTCEvent <$> event_control
+    <?> "procedural_timing_control"
 -- jump_statement :: { JumpStatement }
 -- wait_statement :: { WaitStatement }
 -- event_trigger :: { EventTrigger }
@@ -805,16 +823,17 @@ procedural_timing_control :: { ProceduralTimingControl }
 -- array_pattern_key :: { ArrayPatternKey }
 -- assignment_pattern_key :: { AssignmentPatternKey }
 -- assignment_pattern_expression :: { AssignmentPatternExpression }
-assignment_pattern_expression_type :: { AssignmentPatternExpressionType }
-    : ps_type_identifier        { APETPsTypeIdentifier $1 }
-    | ps_parameter_identifier   { APETPsParameterIdentifier $1}
-    | integer_atom_type         { APETIntegerAtomType $1 }
-    | type_reference            { APETTypeReference $1 }
+
+assignment_pattern_expression_type =
+    APETPsTypeIdentifier <$> ps_type_identifier
+    <|> APETPsParameterIdentifier <$> ps_parameter_identifier
+    <|> APETIntegerAtomType <$> integer_atom_type
+    <|> APETTypeReference <$> type_reference
+    <?> "assignment_pattern_expression_type"
 
 -- constant_assignment_pattern_expression :: { ConstantAssignmentPatternExpression }
 -- assignment_pattern_net_lvalue :: { AssignmentPatternNetLvalue }
-assignment_pattern_variable_lvalue :: { AssignmentPatternVariableLvalue }
-    : '\'' '{' variable_lvalue many(snd(',', variable_lvalue )) '}' { AssignmentPatternVariableLvalue ($3:$4) }
+-- assignment_pattern_variable_lvalue :: { AssignmentPatternVariableLvalue }
 
 ---- 6.8 - Looping Statements ----
 -- loop_statement :: { LoopStatement }
@@ -971,28 +990,34 @@ edge_identifier :: { EdgeIdentifier }
 -- module_path_multiple_concatenation :: { ModulePathMultipleConcatenation }
 -- multiple_concatenation :: { MultipleConcatenation }
 
-streaming_concatenation :: { StreamingConcatenation }
-    : '{' stream_operator optional(slice_size) stream_concatenation '}' { StreamingConcatenation $2 $3 $4 }
+streaming_concatenation =
+    StreamingConcatenation <$> ocb *> stream_operator <*> optional slice_size <*> stream_concatenation <* csb
+    <?> "streaming_concatenation"
+stream_operator =
+    greater_greater *> pure SOGreater
+    lesser_lesser *> pure SOLesser
 
-stream_operator :: { StreamOperator }
-    : '>>'          { SOGreater }
-    | '<<'          { SOLesser }
+slice_size =
+    SSSimpleType <$> simple_type
+    <|> SSConstantExpression constant_expression
+    <?> "slice_size"
 
-slice_size :: { SliceSize }
-    : simple_type           { SSSimpleType $1 }
-    | constant_expression   { SSConstantExpression $1 }
+stream_concatenation =
+    StreamConcatenation
+    <$> ocb *> stream_expression <*> many (comma *> stream_expression) <* csb
+    <?> "stream_concatenation"
+stream_expression =
+    StreamExpression
+    <$> expression
+    <*> optional (with *> osb *> array_range_expression <* csb)
+    <?> "stream_expression"
 
-stream_concatenation :: { StreamConcatenation }
-    : '{' stream_expression many(snd(',', stream_expression)) '}' { StreamConcatenation ($2:$3) }
-
-stream_expression :: { StreamExpression }
-    : expression optional(getThirdFromFour(with,'[', array_range_expression, ']'))  { StreamExpression $1 $2 }
-
-array_range_expression :: { ArrayRangeExpression }
-    : expression                    { ARE $1 }
-    | expression ':' expression     { AREColon $1 $3 }
-    | expression '+:' expression    { AREPlusColon $1 $3 }
-    | expression '-:' expression    { AREMinusColon $1 $3 }
+array_range_expression =
+    ARE <$> expression
+    <|> AREColon <$> expression <* colon <*> expression
+    <|> AREPlusColon <$> expression <* plus_colon <*> expression
+    <|> AREMinusColon <$> expression <* minus_colon <*> expression
+    <?> "array_range_expression"
 
 -- empty_queue :: { EmptyQueue }
 
@@ -1016,20 +1041,23 @@ array_range_expression :: { ArrayRangeExpression }
 -- conditional_expression :: { ConditionalExpression }
 constant_expression = AST.CEPrimary <$> constant_primary <?> "constant_expression"
 
+constant_mintypmax_expression =
+    CMESingle <$> constant_expression
+    <|> CMETriple <$> constant_expression <* colon <*> constant_expression <* colon <*> constant_expression
+    <?> "constant_mintypmax_expression"
 
-constant_mintypmax_expression :: { ConstantMintypmaxExpression }
-    : constant_expression                                                   { CMESingle  $1 }
-    | constant_expression ':' constant_expression ':' constant_expression   { CMETriple $1 $3 $5 }
+constant_param_expression =
+    CPEMintypmax <$> constant_mintypmax_expression
+    <|> CPEDataType <$> data_type
+    <|> dollar *> pure CPEDollar
+    <?> "constant_param_expression"
 
-constant_param_expression :: { ConstantParamExpression }
-    : constant_mintypmax_expression         { CPEMintypmax $1 }
-    | data_type                             { CPEDataType $1 }
-    | '$'                                   { CPEDollar }
+param_expression =
+    PEMintypmax <$> mintypmax_expression
+    <|> PEDataType <$> data_type
+    <|> dollar *> pure PEDollar
+    <?> "param_expression"
 
-param_expression :: { ParamExpression }
-    : mintypmax_expression          { PEMintypmax $1 }
-    | data_type                     { PEDataType $1 }
-    | '$'                           { PEDollar }
 -- constant_range_expression :: { ConstantRangeExpression }
 -- constant_part_select_range :: { ConstantPartSelectRange }
 
@@ -1041,17 +1069,20 @@ expression = AST.EPrimary <$> primary <?> "expression"
 -- tagged_union_expression :: { TaggedUnionExpression}
 -- inside_expression :: { InsideExpression }
 -- value_range :: { ValueRange }
-mintypmax_expression :: { MintypmaxExpression }
-    : expression                                  { MESingle $1 }
-    | expression ':' expression ':' expression  { METripple $1 $3 $5 }
+
+mintypmax_expression =
+    MESingle <$> expression
+    <|> METripple <$> expression <* colon <*> expression <* colon <*> expression
+    <?> "mintypmax_expression"
 -- module_path_conditional_expression :: { ModulePathConditionalExpression }
 -- module_path_expression :: { ModulePathExpression }
 -- module_path_mintypmax_expression :: { ModulePathMintypmaxExpression}
 part_select_range = AST.PSRConstant <$> constant_range <?> "part_select_range"
 
-indexed_range :: { IndexedRange }
-    : expression '+:' constant_expression       { IRPlusColon $1 $3 }
-    | expression '-:' constant_expression       { IRMinusColon $1 $3 }
+indexed_range =
+    IRPlusColon <$> expression <* plus_colon <*> constant_expression
+    <|> IRMinusColon <$> expression <* minus_colon <*> constant_expression
+    <?> "indexed_range"
 -- genvar_expression :: { GenvarExpression}
 
 ---- 8.4 - Primaries ----
@@ -1064,15 +1095,16 @@ primary =   AST.PLiteral <$> primary_literal
 -- range_expression :: { RangeExpression }
 primary_literal = AST.PLNumber <$> number <?> "primary_literal"
 
-time_literal :: { TimeLiteral }
-    : unsigned_number time_unit                                 { TLUnsigned (L.unTokDecimal $1) (L.unTokTimeUnit $2) }
-    | unsigned_number '.' unsigned_number time_unit             { TLFixedPoint (L.unTokDecimal $1) (L.unTokDecimal $3) (L.unTokTimeUnit $4) }
+time_literal =
+    TLUnsigned <$> unsigned_decimal <*> time_unit
+    <|> TLFixedPoint <$> unsigned_decimal <* fullstop <*> unsigned_number <*> time_unit
+    <?> "time_literal"
 
 -- time_unit :: { TimeUnit }
-implicit_class_handle :: { ImplicitClassHandle }
-    : this '.'              { ICHThis }
-    | super                 { ICHSuper }
-    | this '.' super        { ICHThisSuper }
+implicit_class_handle =
+    this *> fullstop *> pure ICHThis
+    <|> super *> pure ICHSuper
+    <|> this *> fullstop *> super *> pure ICHThisSuper
 
 bit_select = AST.BitSelect <$> many(osb *> expression <* csb) <?> "bit_select"
 
@@ -1082,35 +1114,31 @@ select = AST.Select
             <*> optional ( osb *> part_select_range <* csb)
             <?> "select"
 
-
-member_identifier_bit_selects :: { ([(MemberIdentifier, BitSelect)], MemberIdentifier) }
-    : many(snd('.', member_identifier_bit_select)) '.' member_identifier { ($1, $3)}
-
-member_identifier_bit_select :: { (MemberIdentifier, BitSelect) }
-    : member_identifier bit_select { ($1,$2) }
-
 -- nonrange_select :: { NonrangeSelect }
 constant_bit_select = AST.ConstantBitSelect <$> many( osb *> constant_expression <* csb) <?> "constant_bit_select"
 
 -- Incorrect production rule
-constant_select :: { ConstantSelect }
-    : '[' ']'                                               { ConstantSelect }
-
+constant_select =
+    osb *> csb *> pure ConstantSelect <?> "constant_select"
 -- constant_cast :: { ConstantCast }
 -- constant_let_expression :: { ConstantLetExpression }
 -- cast :: { Cast }
 
 ---- 8.5 - Expression Left-Side Values ----
 -- Incomplete production rule
-net_lvalue :: { NetLValue }
-    : ps_or_hierarchical_net_identifier constant_select     { NetLValue $1 $2 }
+net_lvalue =
+    NetLValue <$> ps_or_hierarchical_net_identifier <*> constant_select <?> "net_lvalue"
 
-variable_lvalue = AST.VLHierarchical <$> optional implicit_class_handle_or_package_scope <*> hierarchical_variable_identifier <*> select <?> "variable_lvalue"
+variable_lvalue =
+    AST.VLHierarchical
+    <$> optional implicit_class_handle_or_package_scope
+    <*> hierarchical_variable_identifier
+    <*> select <?> "variable_lvalue"
 
-implicit_class_handle_or_package_scope :: { ImplicitClassHandleOrPackageScope }
-    : implicit_class_handle             { Left $1 }
-    | package_scope                     { Right $1 }
-
+implicit_class_handle_or_package_scope =
+    Left <$> impilicit_class_handle
+    <|> Right <$> package_scope
+    <?> "implicit_class_handle_or_package_scope"
 -- nonrange_variable_lvalue :: { NonrangeVariableLvalue }
 
 ---- 8.6 - Operators ----
