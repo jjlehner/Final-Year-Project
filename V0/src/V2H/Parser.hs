@@ -1,33 +1,146 @@
-module V2H.Parser where
+{-# LANGUAGE RecursiveDo #-}
 
-isPresent = fmap isJust optional
-either a b =
+module V2H.Parser where
+import Text.Earley
+import Data.Maybe
+import Control.Applicative
+import qualified V2H.Alex.Lexer as L
+import qualified V2H.Ast as Ast
+import V2H.Ast (StreamConcatenation)
+import Debug.Trace
+isPresent a = fmap isJust (optional a)
+eitherProd a b =
     Left <$> a
     <|> Right <$> b
 
-containsToken token rangedToken = token == rtToken rangedToken
-unsigned_number = fmap L.unTokDecimal $ satisfy $ (\token -> case (rtToken token) of
-                                UnsignedNumberT _ -> True
+containsToken token rangedToken = token == L.rtToken rangedToken
+unsigned_number = fmap L.unTokDecimal $ satisfy $ (\token -> case (L.rtToken token) of
+                                L.UnsignedNumberT _ -> True
                                 _ -> False )
+
+asterisk = satisfy $ containsToken L.Asterisk
 eof = satisfy $ containsToken L.EOF
-identifier = fmap L.unTokIdentifier $ satisfy $ (\token -> case (rtToken token) of
+identifier = fmap L.unTokIdentifier $ satisfy $ (\token -> case (L.rtToken token) of
                                                     L.Identifier _ -> True
                                                     _ -> False)
 fullstop = satisfy $ containsToken L.FullStop
+ob = satisfy $ containsToken L.OpenBracket
+cb = satisfy $ containsToken L.CloseBracket
 osb = satisfy $ containsToken L.OpenSquareBracket
 csb = satisfy $ containsToken L.CloseSquareBracket
 colon = satisfy $ containsToken L.Colon
+semicolon = satisfy $ containsToken L.Semicolon
+static = satisfy $ containsToken L.Static
+hashtag = satisfy $ containsToken L.Hashtag
+comma = satisfy $ containsToken L.Comma
+edge = satisfy $ containsToken L.Edge
+forward_slash = satisfy $ containsToken L.Forwardslash
 
+plus_equal = satisfy $  containsToken L.PlusEqual
+minus_equal = satisfy $ containsToken L.MinusEqual
+asterisk_equal = satisfy $ containsToken L.AsteriskEqual
+forwardslash_equal= satisfy $ containsToken L.ForwardslashEqual
+percentage_equal = satisfy $ containsToken L.PercentageEqual
+ampersand_equal = satisfy $ containsToken L.AmpersandEqual
+pipe_equal = satisfy $ containsToken L.PipeEqual
+caret_equal = satisfy $ containsToken L.CaretEqual
+lesser_Lesser_equal = satisfy $ containsToken L.LesserLesserEqual
+greater_greater_equal = satisfy $ containsToken L.GreaterGreaterEqual
+lesser_esser_lesser_equal = satisfy $ containsToken L.LesserLesserLesserEqual
+greater_greater_greater_equal = satisfy $ containsToken L.GreaterGreaterGreaterEqual
+lesser_equal = satisfy $ containsToken L.LesserEqual
+ocb = satisfy $ containsToken L.OpenCurlyBracket
+ccb = satisfy $ containsToken L.CloseCurlyBracket
 
+greater_greater = satisfy $ containsToken L.GreaterGreater
+lesser_lesser = satisfy $ containsToken L.LesserLesser
+at_sign = satisfy $ containsToken L.AtSign
+dollar = satisfy $ containsToken L.Dollar
+plus_colon = satisfy $ containsToken L.PlusColon
+minus_colon = satisfy $ containsToken L.MinusColon
+
+always = satisfy $ containsToken L.Always
+always_comb = satisfy $ containsToken L.AlwaysComb
+always_ff = satisfy $ containsToken L.AlwaysFf
+always_latch = satisfy $ containsToken L.AlwaysLatch
+assign = satisfy $ containsToken L.Assign
+automatic = satisfy $ containsToken L.Automatic
+begin = satisfy $ containsToken L.Begin
+colon_colon = satisfy $ containsToken L.ColonColon
+local_colon_colon = satisfy $ containsToken L.LocalColonColon
+bit = satisfy $ containsToken L.Bit
+byte = satisfy $ containsToken L.Byte
+const' = satisfy $ containsToken L.Const
+end = satisfy $ containsToken L.End
+endmodule = satisfy $ containsToken L.Endmodule
+equal = satisfy $ containsToken L.Equal
+fs = satisfy $ containsToken L.Femtosecond
+longint = satisfy $ containsToken L.Longint
+macromodule = satisfy $ containsToken L.Macromodule
+module' = satisfy $ containsToken L.Module
+iff = satisfy $ containsToken L.Iff
+import' = satisfy $ containsToken L.Import
+int = satisfy $ containsToken L.Int
+input = satisfy $ containsToken L.Input
+inout = satisfy $ containsToken L.Inout
+integer = satisfy $ containsToken L.Integer
+interface = satisfy $ containsToken L.Interface
+ms = satisfy $ containsToken L.Millisecond
+ns = satisfy $ containsToken L.Nanosecond
+parameter = satisfy $ containsToken L.Parameter
+picosecond = satisfy $ containsToken L.Picosecond
+real = satisfy $ containsToken L.Real
+realtime = satisfy $ containsToken L.Realtime
+ref = satisfy $ containsToken L.Ref
+localparam = satisfy $ containsToken L.Localparam
+logic = satisfy $ containsToken L.Logic
+negedge = satisfy $ containsToken L.Negedge
+output = satisfy $ containsToken L.Output
+posedge = satisfy $ containsToken L.Posedge
+ps = satisfy $ containsToken L.Picosecond
+reg = satisfy $ containsToken L.Reg
+s = satisfy $ containsToken L.Second
+signed = satisfy $ containsToken L.Signed
+shortint= satisfy $ containsToken L.Shortint
+shortreal = satisfy $ containsToken L.Shortreal
+super = satisfy $ containsToken L.Super
+supply0 = satisfy $ containsToken L.Supply0
+supply1 = satisfy $ containsToken L.Supply1
+this = satisfy $ containsToken L.This
+time = satisfy $ containsToken L.Time
+tri     = satisfy $ containsToken L.Tri
+triand  = satisfy $ containsToken L.Triand
+trior   = satisfy $ containsToken L.Trior
+trireg  = satisfy $ containsToken L.Trireg
+tri0    = satisfy $ containsToken L.Tri0
+tri1    = satisfy $ containsToken L.Tri1
+timeunit = satisfy $ containsToken L.Timeunit
+us = satisfy $ containsToken L.Microsecond
+uwire   = satisfy $ containsToken L.Uwire
+unsigned = satisfy $ containsToken L.Unsigned
+type' = satisfy $ containsToken L.Type
+var = satisfy $ containsToken L.Var
+wand    = satisfy $ containsToken L.Wand
+wire    = satisfy $ containsToken L.Wire
+with    = satisfy $ containsToken L.With
+wor     = satisfy $ containsToken L.Wor
 ----- Sec 1 -----
 ---- 1.1 - Library Source Text ----
 ---- 1.2 - SystemVerilog Source Text ----
-source_text = AST.SourceText <$> optional timeunits_declaration <*> many(description) <?> "source_text"
-description = AST.DModuleDeclaration <$> module_declaration <?> "description"
+source_text =
+    Ast.SourceText
+    <$> optional timeunits_declaration
+    <*> many(description)
+    <?> "source_text"
+
+description =
+    Ast.DModuleDeclaration
+    <$> module_declaration
+    <?> "description"
 -- module_nonansi_header :: { ModuleNonansiHeader }
 
 -- Incomplete production rule
-module_ansi_header = AST.ModuleAnsiHeader
+module_ansi_header = Ast.ModuleAnsiHeader
                         <$> many attribute_instance
                         <*> module_keyword
                         <*> optional lifetime
@@ -35,16 +148,18 @@ module_ansi_header = AST.ModuleAnsiHeader
                         <*> many package_import_declaration
                         <*> optional parameter_ports
                         <*> optional port_declarations <* semicolon
+                        <?> "module_ansi_header"
 
-module_declaration = AST.MDAnsiHeader
+module_declaration = Ast.MDAnsiHeader
                         <$> module_ansi_header
                         <*> optional timeunits_declaration
                         <*> many non_port_module_item
-                        <*> endmodule
-                        <*> optional (colon *> module_identifier) <?> "module_declaration"
+                        <* endmodule
+                        <*> optional (colon *> module_identifier)
+                        <?> "module_declaration"
 
-module_keyword =    module' *> (pure AST.MKModule)
-                    <|> (macromodule *> pure AST.MKMacromodule)
+module_keyword =    module' *> (pure Ast.MKModule)
+                    <|> (macromodule *> pure Ast.MKMacromodule)
                     <?> "module_keyword"
 
 -- interface_declaration :: { InterfaceDeclaration }
@@ -65,65 +180,71 @@ module_keyword =    module' *> (pure AST.MKModule)
 timeunits_declaration = timeunit
                         *> time_literal
                         *> optional (forward_slash *> time_literal)
-                        *> pure AST.TimeunitsDeclaration
+                        *> pure Ast.TimeunitsDeclaration
                         *> semicolon
-                        *> pure TimeunitsDeclaration
+                        *> pure Ast.TimeunitsDeclaration
+                        <?> "timeunits_declaration"
 
 ---- 1.3 - Module parameters and Ports ----
 -- | Referred to as parameter_port_list in Standard
-parameter_ports =   AST.ParameterPorts
-                    <$> hashtag *> ob *> param_assignments
+parameter_ports :: Prod r String L.RangedToken Ast.ParameterPorts
+parameter_ports =   Ast.ParameterPorts
+                    <$> (hashtag *> ob *> param_assignments)
                     <*> many (comma *> parameter_port_declaration) <* cb
-                    <|> AST.ParameterPorts []
-                    <$> hashtag *> ob *> ((:) <$> parameter_port_declaration <*> many (comma *> parameter_port_declaration)) <* cb
-                    <|> hashtag *> ob *> cb *> pure (AST.ParameterPorts [] [])
+                    <|> Ast.ParameterPorts []
+                    <$> (hashtag *> ob *> ((:) <$> parameter_port_declaration <*> many (comma *> parameter_port_declaration)) <* cb)
+                    <|> hashtag *> ob *> cb *> pure (Ast.ParameterPorts [] [])
                     <?> "parameter_ports"
 
+parameter_port_declaration :: Prod r String L.RangedToken Ast.ParameterPortDeclaration
 parameter_port_declaration =
-    PPD <$> parameter_declaration
-    <|> PPDLocal <$> local_parameter_declaration
-    <|> PPDDataTypeParamAssignments <$> data_type <*> param_assignments
-    <|> PPDTypeAssignments <$> type *> type_assignments
+    Ast.PPD <$> parameter_declaration
+    <|> Ast.PPDLocal <$> local_parameter_declaration
+    <|> Ast.PPDDataTypeParamAssignments <$> data_type <*> param_assignments
+    <|> Ast.PPDTypeAssignments <$> (type' *> type_assignments)
     <?> "parameter_port_declaration"
 
 port_declarations =
     ob *> cb *> pure []
-    <|> (:) <$> ob port_declarations_item <*> many(comma *> port_declarations_item)
+    <|> (:) <$> (ob *> port_declarations_item) <*> many(comma *> port_declarations_item) <* cb
     <?> "port_declarations"
 
 port_declarations_item =
-    PortDeclarationsItem <$> many attribute_instance <*> ansi_port_declaration <?> "port_declarations_item"
+    Ast.PortDeclarationsItem <$> many attribute_instance <*> ansi_port_declaration <?> "port_declarations_item"
 -- port_declaration :: { PortDeclaration }
 -- port :: { Port }
 -- port_expression :: { PortExpression }
 -- port_reference :: { PortReference }
 
 port_direction =
-    input *> pure PDInput
-    <|> output *> pure PDOutput
-    <|> inout *> pure PDInout
-    <|> ref *> pure PDRef
+    input *> pure Ast.PDInput
+    <|> output *> pure Ast.PDOutput
+    <|> inout *> pure Ast.PDInout
+    <|> ref *> pure Ast.PDRef
     <?> "port_direction"
 
-net_port_header = NetPortHeader <$> optional port_direction <*> net_port_type <?> "net_port_header"
-variable_port_header = VariablePortHeader <$> optional port_direction <*> variable_port_type <?> "variabler_port_header"
-interface_port_header = IPDNamed <$> interface_identifier <*> optional (fullstop *> modport_identifier)
-                        <|> IPDAnonymous <$> interface <*> optional (fullstop *> modport_identifier) <?> "interface_port_header"
+net_port_header = Ast.NetPortHeader <$> optional port_direction <*> net_port_type <?> "net_port_header"
+variable_port_header = Ast.VariablePortHeader <$> optional port_direction <*> variable_port_type <?> "variabler_port_header"
+interface_port_header = Ast.IPDNamed <$> interface_identifier <*> optional (fullstop *> modport_identifier)
+                        <|> Ast.IPDAnonymous <$> (interface *> optional (fullstop *> modport_identifier)) <?> "interface_port_header"
 
 -- Incomplete Production Rule
+ansi_port_declaration :: Prod r String L.RangedToken Ast.AnsiPortDeclaration
 ansi_port_declaration =
-    APDNetOrInterfaceHeader <$> optional net_or_interface_port_header
+    Ast.APDNetOrInterfaceHeader
+    <$> optional net_or_interface_port_header
     <*> port_identifier
-    <*> unpacked_dimension
-    <*> optional $ equal *> constant_expression
-    <|> APDVariableHeader <$> optional variable_port_header
+    <*> many unpacked_dimension
+    <*> optional(equal *> constant_expression)
+    <|> Ast.APDVariableHeader
+    <$> optional variable_port_header
     <*> port_identifier
     <*> many variable_dimension
-    <*> optional $ equal *> constant_expression
+    <*> optional (equal *> constant_expression)
     <?> "ansi_port_declaration"
 
 net_or_interface_port_header =
-    Left <$> net_port
+    Left <$> net_port_header
     <|> Right <$> interface_port_header
     <?> "net_or_interface_port_header"
 
@@ -133,22 +254,22 @@ net_or_interface_port_header =
 
 -- Incomplete Production Rule
 module_common_item =
-    MCIModuleOrGenerateItemDeclaration <$> module_or_generate_item_declaration
-    <|> MCIContinuousAssign <$> continuous_assign
-    <|> MCIAlwaysConstruct <$> always_construct
+    Ast.MCIModuleOrGenerateItemDeclaration <$> module_or_generate_item_declaration
+    <|> Ast.MCIContinuousAssign <$> continuous_assign
+    <|> Ast.MCIAlwaysConstruct <$> always_construct
     <?> "module_common_item"
 -- module_item :: { ModuleItem }
 -- Incomplete Production Rule
 module_or_generate_item =
-    MOGIModuleCommonItem <$> many attribute_instance <*> module_common_item <?> "module_or_generate_item"
+    Ast.MOGIModuleCommonItem <$> many attribute_instance <*> module_common_item <?> "module_or_generate_item"
 
 -- Incomplete Production Rule
 module_or_generate_item_declaration =
-    MOGIDPackageOrGenerateItemDeclaration <$> package_or_generate_item_declaration <?> "module_or_generate_item_declaration"
+    Ast.MOGIDPackageOrGenerateItemDeclaration <$> package_or_generate_item_declaration <?> "module_or_generate_item_declaration"
 
 -- Incomplete Production Rule
 non_port_module_item =
-    NPMIModuleOrGenerateItem <$> module_or_generate_item <?> "non_port_module_item"
+    Ast.NPMIModuleOrGenerateItem <$> module_or_generate_item <?> "non_port_module_item"
 -- parameter_override :: { ParameterOverride }
 -- bind_directive :: { BindDirective }
 -- bind_target_scope :: { BindTargetScope }
@@ -219,20 +340,20 @@ non_port_module_item =
 
 -- | Incomplete Production Rule
 package_or_generate_item_declaration =
-    POGIDData <$> data_declaration <?> "package_or_generate_item_declaration"
+    Ast.POGIDData <$> data_declaration <?> "package_or_generate_item_declaration"
 -- anonymous_program :: { AnonymousProgram }
 -- anonymous_program_item :: { AnonymousProgramItem }
 
 ----- Sec 2 -----
 ---- 2.1.1 - Module Parameter Declarations ----
 local_parameter_declaration =
-    LPDParamAssignments <$> localparam *> data_type_or_implicit param_assignments
-    <|> LPDTypeAssignments <$> localparam *> type *> type_assignments
+    Ast.LPDParamAssignments <$> (localparam *> data_type_or_implicit) <*> param_assignments
+    <|> Ast.LPDTypeAssignments <$> (localparam *> type'*> type_assignments)
     <?> "local_parameter_declaration"
 
 parameter_declaration =
-    PDDataTypeOrImplicit <$> parameter *> data_type_or_implicit *> param_assignments
-    <|> PDTypeAssignments <$> parameter *> type *> type_assignments
+    Ast.PDDataTypeOrImplicit <$> (parameter *> data_type_or_implicit) <*> param_assignments
+    <|> Ast.PDTypeAssignments <$> (parameter *> type'*> type_assignments)
     <?> "parameter_declaration"
 -- specparam_declaration :: { SpecparamDeclaration }
 
@@ -245,7 +366,7 @@ parameter_declaration =
 
 ---- 2.1.3 - Type Declarations ----
 data_declaration =
-    DD <$> isPresent const
+    Ast.DD <$> isPresent const'
     <*> isPresent var
     <*> optional lifetime
     <*> data_type_or_implicit
@@ -254,11 +375,13 @@ data_declaration =
     <?> "data_declaration"
 
 package_import_declaration =
-    PackageImportDeclaration <$> import' *> package_import <*> many (comma *> package_import_item) <?> "package_import_declaration"
+    Ast.PackageImportDeclaration
+    <$> (import' *> ((:) <$> package_import_item <*> many (comma *> package_import_item)))
+    <?> "package_import_declaration"
 
 package_import_item =
-    PIIIdentifier <$> package_identifier <* colon_colon <*> identifier
-    <|> PIIWildcard <$> package_identifier <* colon_colon <*> asterisk
+    Ast.PIIIdentifier <$> package_identifier <* colon_colon <*> identifier
+    <|> Ast.PIIWildcard <$> package_identifier <* colon_colon <* asterisk
     <?> "package_import_item"
 
 -- package_export_declaration :: { PackageExportDeclaration }
@@ -267,8 +390,8 @@ package_import_item =
 -- type_declaration :: { TypeDeclaration }
 -- net_type_declaration :: { NetTypeDeclaration }
 lifetime =
-    automatic *> pure automatic
-    <|> static *> pure static
+    automatic *> pure Ast.LAutomatic
+    <|> static *> pure Ast.LStatic
     <?> "lifetime"
 
 ---- 2.2.1 - Net and Variable Types ----
@@ -277,164 +400,176 @@ lifetime =
 
 -- | Incomplete Production Rule
 data_type =
-    DTIntegerVector <$> integer_vector_type <*> optional signing <*> many packed_dimension <?> "data_type"
+    Ast.DTIntegerVector <$> integer_vector_type <*> optional signing <*> many packed_dimension <?> "data_type"
 
 data_type_or_implicit =
     Left <$> data_type
     <|> Right <$> implicit_data_type
     <?> "data_type_or_implicit"
 implicit_data_type =
-    ImplicitDataType <$> optional signing <*> many packed_dimension <?> "implicit_data_type"
+    Ast.ImplicitDataType <$> optional signing <*> many packed_dimension <?> "implicit_data_type"
 -- enum_base_type :: { EnumBaseType }
 -- enum_name_declaration :: { EnumNameDeclaration }
 class_scope =
-    ClassScope <$> class_type <* colon_colon
+    Ast.ClassScope <$> class_type <* colon_colon
 class_type =
-    ClassType <$> ps_class_identifier <*> optional parameter_value_assignment <*> many class_identifier_parameter_value_assignment <?> "class_type"
+    Ast.ClassType <$> ps_class_identifier <*> optional parameter_value_assignment <*> many class_identifier_parameter_value_assignment <?> "class_type"
 
 class_identifier_parameter_value_assignment =
-   ClassIdentifierParameterValueAssignment
-   <$>  colon_colon
-   *> class_identifier
+   Ast.ClassIdentifierParameterValueAssignment
+   <$> (colon_colon *> class_identifier)
    <*> optional parameter_value_assignment
    <?> "class_identifier_parameter_value_assignment"
 
 integer_type =
-    ITVector <$> integer_vector_type
-    <|> ITAtom <$> integer_atom_type
+    Ast.ITVector <$> integer_vector_type
+    <|> Ast.ITAtom <$> integer_atom_type
     <?> "integer_type"
 
 integer_atom_type =
-    byte *> pure IATByte
-    <*> shortint *> pure IATShortint
-    <*> int *> pure IATInt
-    <*> longint *> pure IATLongint
-    <*> integer *> pure IATInteger
-    <*> time *> pure IATTime
+    byte *> pure Ast.IATByte
+    <|> shortint *> pure Ast.IATShortint
+    <|> int *> pure Ast.IATInt
+    <|> longint *> pure Ast.IATLongint
+    <|> integer *> pure Ast.IATInteger
+    <|> time *> pure Ast.IATTime
     <?> "integer_atom_type"
 
 integer_vector_type =
-    bit *> pure IVTBit
-    <|> logic *> IVTLogic
-    <|> reg *> IVTReg
+    bit *> pure Ast.IVTBit
+    <|> logic *> pure Ast.IVTLogic
+    <|> reg *> pure Ast.IVTReg
     <?> "integer_vector_type"
 
 non_integer_type =
-    shortreal *> pure NITShortreal
-    <|> real *> pure NITReal
-    <|> realtime *> pure NITRealtime
+    shortreal *> pure Ast.NITShortreal
+    <|> real *> pure Ast.NITReal
+    <|> realtime *> pure Ast.NITRealtime
     <?> "non_integer_type"
 
 net_type =
-    <|> supply0 *> pure Supply0
-    <|> supply1 *> pure Supply1
-    <|> tri     *> pure Tri
-    <|> triand  *> pure Triand
-    <|> trior   *> pure Trior
-    <|> trireg  *> pure Trireg
-    <|> tri0    *> pure Tri0
-    <|> tri1    *> pure Tri1
-    <|> uwire   *> pure Uwire
-    <|> wire    *> pure Wire
-    <|> wand    *> pure Wand
-    <|> wor     *> pure Wor
+    supply0 *> pure Ast.Supply0
+    <|> supply1 *> pure Ast.Supply1
+    <|> tri     *> pure Ast.Tri
+    <|> triand  *> pure Ast.Triand
+    <|> trior   *> pure Ast.Trior
+    <|> trireg  *> pure Ast.Trireg
+    <|> tri0    *> pure Ast.Tri0
+    <|> tri1    *> pure Ast.Tri1
+    <|> uwire   *> pure Ast.Uwire
+    <|> wire    *> pure Ast.Wire
+    <|> wand    *> pure Ast.Wand
+    <|> wor     *> pure Ast.Wor
     <?> "net_type"
 
 net_port_type =
-    NPTDataOrImplicit
+    Ast.NPTDataOrImplicit
     <$> optional net_type
     <*> data_type_or_implicit
     <?> "net_port_type"
 
 variable_port_type =
-    VariablePortType <$> var_data_type <?> "variable_port_type"
+    Ast.VariablePortType <$> var_data_type <?> "variable_port_type"
 
 var_data_type =
-    VDT <$> data_type
-    <|> VDTOrImplicit <$> var *> data_type_or_implicit
+    Ast.VDT <$> data_type
+    <|> Ast.VDTOrImplicit <$> (var *> data_type_or_implicit)
     <?> "var_data_type"
 
 signing =
-    signed *> pure SSigned
-    <|> unsigned *> pure SUnsigned
+    signed *> pure Ast.SSigned
+    <|> unsigned *> pure Ast.SUnsigned
     <?> "signing"
 
 simple_type =
-    STInteger <$> integer_type
-    <|> STNonInteger <$> non_integer_type
-    <|> STPsIdentifier <$> ps_type_identifier
-    <|> STPsParameterIdentifier <$> ps_parameter_identifier
+    Ast.STInteger <$> integer_type
+    <|> Ast.STNonInteger <$> non_integer_type
+    <|> Ast.STPsIdentifier <$> ps_type_identifier
+    <|> Ast.STPsParameterIdentifier <$> ps_parameter_identifier
 
 -- struct_union_member :: { StructUnionMember }
 -- data_type_or_void :: { DataTypeOrVoid }
 -- struct_union :: { StructUnion }
 type_reference =
-    TRExpression <$> type' *> ob *> expression <* cb
-    <|> TRDataType <$> type' *>  ob *> data_type <* cb
+    Ast.TRExpression <$> (type' *> ob *> expression) <* cb
+    <|> Ast.TRDataType <$> (type' *>  ob *> data_type) <* cb
     <?> "type_reference"
 
 ---- 2.2.2 - Strengths ----
 -- | Incorrect Production Rule
 drive_strength =
-    osb *> csb *> pure DriveStrength <?> "drive_strength"
+    osb *> csb *> pure Ast.DriveStrength <?> "drive_strength"
+
 -- strength0 :: { Strength0 }
 -- strength1 :: { Strength1 }
 -- charge_strength :: { ChargeStrength }
 
 ---- 2.2.3 - Delays ----
--- delay3 :: { Delay3 }
+delay3 = Ast.D3Value <$> (hashtag *> delay_value)
+        <?> "delay3"
+
 -- delay2 :: { Delay2 }
--- delay_value :: { DelayValue }
+delay_value =
+    Ast.DVUnsigned <$> unsigned_number <?> "delay_value"
 
 ---- 2.3 - Declarations Lists ----
-param_assignments :: { [ParamAssignment] }
-    : param_assignment many(snd(',',param_assignment)) { $1:$2 }
-type_assignments :: { [TypeAssignment] }
-    : type_assignment many(snd(',', type_assignment)) { $1:$2 }
-variable_decl_assignments :: { [VariableDeclAssignment] }
-    : variable_decl_assignment  many(snd(',', variable_decl_assignment)) { $1:$2 }
+param_assignments :: Prod r String L.RangedToken [Ast.ParamAssignment]
+param_assignments =
+    (:) <$> param_assignment <*> many (comma *> param_assignment) <?> "param_assignments"
+type_assignments :: Prod
+  r String L.RangedToken [Ast.TypeAssignment]
+type_assignments =
+    (:) <$> type_assignment <*> many (comma *> type_assignment) <?> "type_assignments"
+variable_decl_assignments =
+    (:) <$> variable_decl_assignment <*> many ( comma *> variable_decl_assignment) <?> "variable_decl_assignments"
+
 ---- 2.4 - Declarations Assignments ----
 -- defparam_assignment :: { DefparamAssignment }
 -- net_decl_assignment :: { NetDeclAssignment }
-param_assignment :: { ParamAssignment }
-    : parameter_identifier many(unpacked_dimension) optional(snd('=',constant_param_expression)) {
-        ParamAssignment {
-            parameterIdentifier = $1,
-            unpackedDimensions = $2,
-            constantParamExpression = $3
-        }
-    }
--- specparam_assignment :: { SpecparamAssignment }
-type_assignment :: { TypeAssignment }
-    : type_identifier optional(snd('=', data_type))   { TypeAssignment $1 $2 }
 
+param_assignment =
+    Ast.ParamAssignment
+    <$> parameter_identifier
+    <*> many unpacked_dimension
+    <*> optional constant_param_expression
+    <?> "param_assignment"
+
+-- specparam_assignment :: { SpecparamAssignment }
+type_assignment =
+    Ast.TypeAssignment <$> type_identifier <*> optional ( equal *> data_type )
+    <?> "type_assignment"
 -- pulse_control_specparam :: { PulseControlSpecparam }
 -- error_limit_value :: { ErrorLimitValue }
 -- reject_limit_value :: { RejectLimitValue }
 -- limit_value :: { LimitValue }
-variable_decl_assignment :: { VariableDeclAssignment }
-    : variable_identifier many(variable_dimension) optional(expression)     { VDA $1 $2 $3 }
+variable_decl_assignment =
+    Ast.VDA
+    <$> variable_identifier
+    <*> many variable_dimension
+    <*> optional expression
+    <?> "variable_decl_assignment"
 
 -- class_new :: { ClassNew }
 -- dynamic_array_new :: { DynamicArrayNew }
 
 ---- 2.5 - Declaration Ranges ----
-unpacked_dimension :: { UnpackedDimension }
-    : '[' constant_range ']'            { UDConstantRange $2 }
-    | '[' constant_expression ']'       { UDConstantExpression $2 }
+unpacked_dimension =
+    Ast.UDConstantRange <$> (osb *> constant_range) <* csb
+    <|> Ast.UDConstantExpression <$> (osb *> constant_expression) <* csb
+    <?> "unpacked_dimension"
 
-packed_dimension :: { PackedDimension }
-    : '[' constant_range ']'            { PDConstantRange $2 }
-    | unsized_dimension                 { PDUnsized $1 }
-
+packed_dimension =
+    Ast.PDConstantRange <$> (osb *> constant_range) <* csb
+    <|> Ast.PDUnsized <$> unsized_dimension
+    <?> "packed_dimension"
 -- associative_dimension :: { AssociativeDimension }
-variable_dimension :: { VariableDimension }
-    : unsized_dimension                 { VDUnsized $1 }
-    | unpacked_dimension                { VDUnpacked $1 }
-
+variable_dimension =
+    Ast.VDUnsized <$> unsized_dimension
+    <|> Ast.VDUnpacked <$> unpacked_dimension
+    <?> "variable_dimension"
 -- queue_dimension :: { QueueDimension }
-unsized_dimension :: { UnsizedDimension }
-    : '[' ']'       { UnsizedDimension }
+unsized_dimension =
+    osb *> csb *> pure Ast.UnsizedDimension
 ---- 2.6 - Function Declarations ----
 -- function_data_type_or_implicit :: { FunctionDataTypeOrImplicit }
 -- function_declaration :: { FunctionDeclaration }
@@ -458,8 +593,8 @@ unsized_dimension :: { UnsizedDimension }
 
 ---- 2.8 - Block Item Declarations ----
 -- | Incomplete production rule
-block_item_declaration :: { BlockItemDeclaration }
-    : many(attribute_instance) data_declaration {BIDData $1 $2 }
+block_item_declaration =
+    Ast.BIDData <$> many attribute_instance <*> data_declaration <?> "block_item_declaration"
 -- overload_declaration :: { OverloadDeclaration }
 -- overload_operator :: { OverloadOperator }
 
@@ -591,19 +726,27 @@ block_item_declaration :: { BlockItemDeclaration }
 ---- Sec 4 ----
 ---- 4.1.1 - Module Instantiation ----
 -- module_instantiation :: { ModuleInstantiation }
-parameter_value_assignment :: { ParameterValueAssignment }
-    : '#' '(' optional(parameter_assignments) ')' { ParameterValueAssignment $3 }
+parameter_value_assignment =
+    Ast.ParameterValueAssignment
+    <$> (hashtag *> ob *> optional parameter_assignments)
+    <* cb
+    <?> "parameter_value_assignment"
 
-parameter_assignments :: { ParameterAssignments }
-    : ordered_parameter_assignment many(snd(',', ordered_parameter_assignment)) { PAOrdered ($1:$2) }
-    | named_parameter_assignment many(snd(',', named_parameter_assignment)) { PANamed ($1:$2) }
+parameter_assignments :: Prod r String L.RangedToken Ast.ParameterAssignments
+parameter_assignments =
+    Ast.PAOrdered <$> ((:) <$> ordered_parameter_assignment <*> many (comma *> ordered_parameter_assignment))
+    <|> Ast.PANamed <$> ((:) <$> named_parameter_assignment <*> many (comma *> named_parameter_assignment))
+    <?> "parameter_assignments"
+ordered_parameter_assignment =
+    Ast.OrderedParameterAssignment <$> param_expression <?> "ordered_parameter_assignment"
 
-ordered_parameter_assignment :: { OrderedParameterAssignment }
-    : param_expression  { OrderedParameterAssignment $1  }
-
-named_parameter_assignment :: { NamedParameterAssignment }
-    : '.' parameter_identifier '(' optional(param_expression) ')' { NamedParameterAssignment $2 $4 }
-
+named_parameter_assignment =
+    Ast.NamedParameterAssignment
+    <$> (fullstop *> parameter_identifier)
+    <* ob
+    <*> optional param_expression
+    <* cb
+    <?> "named_parameter_assignment"
 -- hierarchical_instance :: { HierarchicalInstance }
 -- name_of_instance :: { NameOfInstance }
 -- port_connections :: { PortConnections }
@@ -670,78 +813,75 @@ named_parameter_assignment :: { NamedParameterAssignment }
 
 ---- Sec 6 -----
 ---- 6.1 - Continuous Assignment And Net Alias Statements ----
+net_assignments = (:) <$> net_assignment <*> many (comma *> net_assignment) <?> "net_assignments"
 -- Incomplete and incorrect (delay3) ignored Production Rule
-continuous_assign :: { ContinuousAssign }
-    : assign optional(drive_strength) sep1(net_assignment, ',') { ContinuousAssign };
+continuous_assign =
+    Ast.CANetAssignment
+    <$> (assign *> optional drive_strength)
+    <*> optional delay3
+    <*> net_assignments
+    <|> Ast.CAVariableAssignment
+    <$> (assign *> optional delay_control)
+    <*> variable_assignments
+    <?> "continuous_assign"
 
+variable_assignments =
+    (:) <$> variable_assignment <*> many (comma *> variable_assignment) <?> "variable_assignments"
 -- net_alias :: { NetAlias }
-net_assignment :: { NetAssignment }
-    : net_lvalue '=' expression                                 { NetAssignment }
+net_assignment =
+    Ast.NetAssignment <$> net_lvalue <* equal <*> expression <?> "net_assignment"
 
 ---- 6.2 - Procedural Blocks And Assignments ----
 -- initial_construct :: { InitialConstruct }
-always_construct :: { AlwaysConstruct }
-    : always_keyword statement                                  { AlwaysConstruct $1 $2 }
-always_keyword :: { AlwaysKeyword }
-    : always                                                    { Always }
-    | always_comb                                               { AlwaysComb }
-    | always_latch                                              { AlwaysLatch }
-    | always_ff                                                 { AlwaysFf }
+always_construct =
+    Ast.AlwaysConstruct <$> always_keyword <*> statement
+
+always_keyword =
+    always *> pure Ast.AKAlways
+    <|> always_comb *> pure Ast.AKAlwaysComb
+    <|> always_latch *> pure Ast.AKAlwaysLatch
+    <|> always_ff *> pure Ast.AKAlwaysFf
+    <?> "always_keyword"
 -- final_construct :: { FinalConstruct }
 -- | Incomplete production rule
-blocking_assignment :: { BlockingAssignment }
-    : operator_assignment       { BAOperator $1 }
-
-operator_assignment :: { OperatorAssignment }
-    : variable_lvalue assignment_operator expression { OperatorAssignment $1 $2 $3 }
-
-assignment_operator :: { AssignmentOperator }
-    : '='       { AOEqual }
-    | '+='      { AOPlusEqual }
-    | '-='      { AOMinusEqual}
-    | '*='      { AOAsteriskEqual }
-    | '/='      { AOForwardslashEqual}
-    | '%='      { AOPercentageEqual }
-    | '&='      { AOAmpersandEqual }
-    | '|='      { AOPipeEqual }
-    | '^='      { AOCaretEqual }
-    | '<<='     { AOLesserLesserEqual }
-    | '>>='     { AOGreaterGreaterEqual }
-    | '<<<='    { AOLesserLesserLesserEqual }
-    | '>>>='    { AOGreaterGreaterGreaterEqual }
+blocking_assignment =
+    Ast.BAOperator <$> operator_assignment
+operator_assignment =
+    Ast.OperatorAssignment <$> variable_lvalue <*> assignment_operator <*> expression
 
 assignment_operator =
-    equal *> AOEqual
-    <|> plus_equal *> AOPlusEqual
-    <|> minus_equal *> AOMinusEqual
-    <|> AsteriskEqual *> AOAsteriskEqual
-    <|> ForwardslashEqual*> AOForwardslashEqual
-    <|> PercentageEqual *> AOPercentageEqual
-    <|> AmpersandEqual *> AOAmpersandEqual
-    <|> PipeEqual *> AOPipeEqual
-    <|> CaretEqual *> AOCaretEqual
-    <|> LesserLesserEqual *> AOLesserLesserEqual
-    <|> GreaterGreaterEqual *> AOGreaterGreaterEqual
-    <|> LesserLesserLesserEqual *> AOLesserLesserLesserEqual
-    <|> GreaterGreaterGreaterEqual *> AOGreaterGreaterGreaterEqual
+    equal *> pure Ast.AOEqual
+    <|> plus_equal *> pure Ast.AOPlusEqual
+    <|> minus_equal *> pure Ast.AOMinusEqual
+    <|> asterisk_equal *> pure Ast.AOAsteriskEqual
+    <|> forwardslash_equal*> pure Ast.AOForwardslashEqual
+    <|> percentage_equal *> pure Ast.AOPercentageEqual
+    <|> ampersand_equal *> pure Ast.AOAmpersandEqual
+    <|> pipe_equal *> pure Ast.AOPipeEqual
+    <|> caret_equal *> pure Ast.AOCaretEqual
+    <|> lesser_Lesser_equal *> pure Ast.AOLesserLesserEqual
+    <|> greater_greater_equal *> pure Ast.AOGreaterGreaterEqual
+    <|> lesser_esser_lesser_equal *> pure Ast.AOLesserLesserLesserEqual
+    <|> greater_greater_greater_equal *> pure Ast.AOGreaterGreaterGreaterEqual
     <?> "assignment_opeartor"
 
-noblocking_assignment =
-    NonblockingAssignment
+nonblocking_assignment =
+    Ast.NonblockingAssignment
     <$> variable_lvalue
     <* lesser_equal
     <*> expression
     <?> "nonblocking_assignment"
 -- procedural_continuous_assignment :: { ProceduralContinousAssignment }
 -- variable_assignment :: { VariableAssignment }
+variable_assignment =
+    Ast.VariableAssignment <$> variable_lvalue <* equal <*> expression <?> "variable_assignment"
 
 ---- 6.3 - Parallel And Sequential Blocks ----
 -- action_block :: { ActionBlock }
 
 seq_block =
-    SeqBlock
-    <$> begin
-    *> optional (colon *> block_identifier)
+    Ast.SeqBlock
+    <$> (begin *> optional (colon *> block_identifier))
     <*> many block_item_declaration
     <*> many statement_or_null
     <* end
@@ -759,37 +899,41 @@ statement_or_null =
 
 -- | Incomplete production rule
 statement =
-    Statement <$> many (block_identifier <* colon) <*> many attribute_instance <*> statement_item
+    Ast.Statement <$> optional (block_identifier <* colon) <*> many attribute_instance <*> statement_item
     <?> "statement"
 -- | Incomplete production rule
 statement_item =
-    SIBlockingAssignment <$> blocking_assignment <* semicolon
-    <|> SINonblockingAssignment <$> nonblocking_assignment <* semicolon
-    <|> SISeqBlock <$> seq_block
-    <|> SIProceduralTimingControlStatement <$> procedural_timing_control_statement
+    Ast.SIBlockingAssignment <$> blocking_assignment <* semicolon
+    <|> Ast.SINonblockingAssignment <$> nonblocking_assignment <* semicolon
+    <|> Ast.SISeqBlock <$> seq_block
+    -- <|> Ast.SIProceduralTimingControlStatement <$> procedural_timing_control_statement
     <?> "statement_item"
 -- function_statement :: { FunctionStatement }
 -- function_statement_or_null :: { FunctionStatementOrNull }
 
 ---- 6.5 - Timing Control Statements ----
 procedural_timing_control_statement =
-    ProceduralTimingControlStatement <$> procedural_timing_control <*> statement_or_null
+    Ast.ProceduralTimingControlStatement <$> procedural_timing_control <*> statement_or_null
     <?> "procedural_timing_control_statement"
 
 -- delay_or_event_control :: { DelayOrEventControl }
--- delay_control :: { DelayControl }
+delay_control =
+    Ast.DCValue <$> (hashtag *> delay_value)
+    <|> Ast.DCMintypmaxExpression <$> (hashtag *> ob *> mintypmax_expression <* cb )
+    <?> "delay_control"
+
 event_control =
-    ECExpression <$> at_sign *> ob *> event_expression <* cb
-    <|> at_sign *> ob *> asterisk <* cb <*> pure ECAsterisk
+    Ast.ECExpression <$> (at_sign *> ob *> event_expression) <* cb
+    <|> at_sign *> ob *> asterisk *> cb *> pure Ast.ECAsterisk
     <?> "event_control"
 
 -- | Incomplete Expression
 event_expression =
-    EE <$> optional edge_identifier <*> expression <*> optional (iff *> expression)
+    Ast.EE <$> optional edge_identifier <*> expression <*> optional (iff *> expression)
     <?> "event_expression"
 
 procedural_timing_control =
-    PTCEvent <$> event_control
+    Ast.PTCEvent <$> event_control
     <?> "procedural_timing_control"
 -- jump_statement :: { JumpStatement }
 -- wait_statement :: { WaitStatement }
@@ -825,10 +969,10 @@ procedural_timing_control =
 -- assignment_pattern_expression :: { AssignmentPatternExpression }
 
 assignment_pattern_expression_type =
-    APETPsTypeIdentifier <$> ps_type_identifier
-    <|> APETPsParameterIdentifier <$> ps_parameter_identifier
-    <|> APETIntegerAtomType <$> integer_atom_type
-    <|> APETTypeReference <$> type_reference
+    Ast.APETPsTypeIdentifier <$> ps_type_identifier
+    <|> Ast.APETPsParameterIdentifier <$> ps_parameter_identifier
+    <|> Ast.APETIntegerAtomType <$> integer_atom_type
+    <|> Ast.APETTypeReference <$> type_reference
     <?> "assignment_pattern_expression_type"
 
 -- constant_assignment_pattern_expression :: { ConstantAssignmentPatternExpression }
@@ -930,10 +1074,13 @@ assignment_pattern_expression_type =
 -- parallel_edge_sensitive_path_description :: { ParallelEdgeSensitivePathDescription }
 -- full_edge_sensitive_path_description :: { FullEdgeSensitivePathDescription }
 -- data_source_expression :: { DataSourceExpression }
-edge_identifier :: { EdgeIdentifier }
-    : posedge       { EIPosedge }
-    | negedge       { EINegedge }
-    | edge          { EIEdge }
+
+edge_identifier =
+    posedge *> pure Ast.EIPosedge
+    <|> negedge *> pure Ast.EINegedge
+    <|> edge *> pure Ast.EIEdge
+    <?> "edge_identifier"
+
 -- state_dependent_path_declaration :: { StateDependentPathDeclaration }
 -- polarity_operator :: { PolarityOperator }
 
@@ -991,32 +1138,33 @@ edge_identifier :: { EdgeIdentifier }
 -- multiple_concatenation :: { MultipleConcatenation }
 
 streaming_concatenation =
-    StreamingConcatenation <$> ocb *> stream_operator <*> optional slice_size <*> stream_concatenation <* csb
+    Ast.StreamingConcatenation <$> (ocb *> stream_operator) <*> optional slice_size <*> stream_concatenation <* ccb
     <?> "streaming_concatenation"
 stream_operator =
-    greater_greater *> pure SOGreater
-    lesser_lesser *> pure SOLesser
+    greater_greater *> pure Ast.SOGreater
+    <|> lesser_lesser *> pure Ast.SOLesser
 
 slice_size =
-    SSSimpleType <$> simple_type
-    <|> SSConstantExpression constant_expression
+    Ast.SSSimpleType <$> simple_type
+    <|> Ast.SSConstantExpression <$> constant_expression
     <?> "slice_size"
 
 stream_concatenation =
-    StreamConcatenation
-    <$> ocb *> stream_expression <*> many (comma *> stream_expression) <* csb
+    Ast.StreamConcatenation
+    <$> ((:) <$> (ocb *> stream_expression) <*> many (comma *> stream_expression) <* ccb)
     <?> "stream_concatenation"
+
 stream_expression =
-    StreamExpression
+    Ast.StreamExpression
     <$> expression
     <*> optional (with *> osb *> array_range_expression <* csb)
     <?> "stream_expression"
 
 array_range_expression =
-    ARE <$> expression
-    <|> AREColon <$> expression <* colon <*> expression
-    <|> AREPlusColon <$> expression <* plus_colon <*> expression
-    <|> AREMinusColon <$> expression <* minus_colon <*> expression
+    Ast.ARE <$> expression
+    <|> Ast.AREColon <$> expression <* colon <*> expression
+    <|> Ast.AREPlusColon <$> expression <* plus_colon <*> expression
+    <|> Ast.AREMinusColon <$> expression <* minus_colon <*> expression
     <?> "array_range_expression"
 
 -- empty_queue :: { EmptyQueue }
@@ -1039,87 +1187,94 @@ array_range_expression =
 ---- 8.3 - Expressions ----
 -- inc_or_dec_expression :: { IncOrDecExpression }
 -- conditional_expression :: { ConditionalExpression }
-constant_expression = AST.CEPrimary <$> constant_primary <?> "constant_expression"
+constant_expression = Ast.CEPrimary <$> constant_primary <?> "constant_expression"
 
 constant_mintypmax_expression =
-    CMESingle <$> constant_expression
-    <|> CMETriple <$> constant_expression <* colon <*> constant_expression <* colon <*> constant_expression
+    Ast.CMESingle <$> constant_expression
+    <|> Ast.CMETriple <$> constant_expression <* colon <*> constant_expression <* colon <*> constant_expression
     <?> "constant_mintypmax_expression"
 
 constant_param_expression =
-    CPEMintypmax <$> constant_mintypmax_expression
-    <|> CPEDataType <$> data_type
-    <|> dollar *> pure CPEDollar
+    Ast.CPEMintypmax <$> constant_mintypmax_expression
+    <|> Ast.CPEDataType <$> data_type
+    <|> dollar *> pure Ast.CPEDollar
     <?> "constant_param_expression"
 
 param_expression =
-    PEMintypmax <$> mintypmax_expression
-    <|> PEDataType <$> data_type
-    <|> dollar *> pure PEDollar
+    Ast.PEMintypmax <$> mintypmax_expression
+    <|> Ast.PEDataType <$> data_type
+    <|> dollar *> pure Ast.PEDollar
     <?> "param_expression"
 
 -- constant_range_expression :: { ConstantRangeExpression }
 -- constant_part_select_range :: { ConstantPartSelectRange }
 
 -- | Incomplete production rule
-constant_range = AST.CRExpression <$> constant_expression <* colon <*> constant_expression
+constant_range = Ast.CRExpression <$> constant_expression <* colon <*> constant_expression
 -- constant_indexed_range ::{ ConstantIndexedRange }
 -- | Incorrect production rule
-expression = AST.EPrimary <$> primary <?> "expression"
+expression = Ast.EPrimary <$> primary <?> "expression"
 -- tagged_union_expression :: { TaggedUnionExpression}
 -- inside_expression :: { InsideExpression }
 -- value_range :: { ValueRange }
 
 mintypmax_expression =
-    MESingle <$> expression
-    <|> METripple <$> expression <* colon <*> expression <* colon <*> expression
+    Ast.MESingle <$> expression
+    <|> Ast.METripple <$> expression <* colon <*> expression <* colon <*> expression
     <?> "mintypmax_expression"
 -- module_path_conditional_expression :: { ModulePathConditionalExpression }
 -- module_path_expression :: { ModulePathExpression }
 -- module_path_mintypmax_expression :: { ModulePathMintypmaxExpression}
-part_select_range = AST.PSRConstant <$> constant_range <?> "part_select_range"
+part_select_range = Ast.PSRConstant <$> constant_range <?> "part_select_range"
 
 indexed_range =
-    IRPlusColon <$> expression <* plus_colon <*> constant_expression
-    <|> IRMinusColon <$> expression <* minus_colon <*> constant_expression
+    Ast.IRPlusColon <$> expression <* plus_colon <*> constant_expression
+    <|> Ast.IRMinusColon <$> expression <* minus_colon <*> constant_expression
     <?> "indexed_range"
 -- genvar_expression :: { GenvarExpression}
 
 ---- 8.4 - Primaries ----
-constant_primary = AST.CPLiteral <$> primary_literal <?> "constant_primary"
+constant_primary = Ast.CPLiteral <$> primary_literal <?> "constant_primary"
 -- module_path_primary :: { ModulePathPrimary }
-primary =   AST.PLiteral <$> primary_literal
-            <|> AST.PHierarchicalIdentifier hierarchical_identifier <*> select <?> "primary"
+primary =   Ast.PHierarchicalIdentifier <$> hierarchical_identifier <*> constant_select <|> Ast.PLiteral <$> primary_literal <?> "primary"
 
 -- class_qualifier :: { ClassQualifier}
 -- range_expression :: { RangeExpression }
-primary_literal = AST.PLNumber <$> number <?> "primary_literal"
+primary_literal = Ast.PLNumber <$> number <?> "primary_literal"
 
 time_literal =
-    TLUnsigned <$> unsigned_decimal <*> time_unit
-    <|> TLFixedPoint <$> unsigned_decimal <* fullstop <*> unsigned_number <*> time_unit
+    Ast.TLUnsigned <$> unsigned_number <*> time_unit
+    <|> Ast.TLFixedPoint <$> unsigned_number <* fullstop <*> unsigned_number <*> time_unit
     <?> "time_literal"
+time_unit = s *> (pure Ast.TUSecond)
+            <|> ms *> pure Ast.TUMillisecond
+            <|> us *> pure Ast.TUMicrosecond
+            <|> ns *> pure Ast.TUNanosecond
+            <|> ps  *> pure Ast.TUPicosecond
+            <|> fs *> pure Ast.TUFemtosecond
+            <?> "timeunit"
 
 -- time_unit :: { TimeUnit }
 implicit_class_handle =
-    this *> fullstop *> pure ICHThis
-    <|> super *> pure ICHSuper
-    <|> this *> fullstop *> super *> pure ICHThisSuper
+    this *> fullstop *> pure Ast.ICHThis
+    <|> super *> pure Ast.ICHSuper
+    <|> this *> fullstop *> super *> pure Ast.ICHThisSuper
 
-bit_select = AST.BitSelect <$> many(osb *> expression <* csb) <?> "bit_select"
+bit_select = Ast.BitSelect
+            <$> many(osb *> expression <* csb) <?> "bit_select"
 
-select = AST.Select
-            <$> optional( (,) <$> many((,) <$> member_identifier <*> bit_select) <*> member_identifier)
+select = trace "loop" Ast.Select
+            <$> optional( (,) <$> many((,) <$> (fullstop *> member_identifier) <*> bit_select) <*> (fullstop *> member_identifier))
             <*> bit_select
             <*> optional ( osb *> part_select_range <* csb)
-            <?> "select"
 
+            <?> "select"
 -- nonrange_select :: { NonrangeSelect }
-constant_bit_select = AST.ConstantBitSelect <$> many( osb *> constant_expression <* csb) <?> "constant_bit_select"
+constant_bit_select = Ast.ConstantBitSelect <$> many( osb *> constant_expression <* csb) <?> "constant_bit_select"
 
 -- Incorrect production rule
 constant_select =
-    osb *> csb *> pure ConstantSelect <?> "constant_select"
+    osb *> csb *> pure Ast.ConstantSelect <?> "constant_select"
 -- constant_cast :: { ConstantCast }
 -- constant_let_expression :: { ConstantLetExpression }
 -- cast :: { Cast }
@@ -1127,16 +1282,16 @@ constant_select =
 ---- 8.5 - Expression Left-Side Values ----
 -- Incomplete production rule
 net_lvalue =
-    NetLValue <$> ps_or_hierarchical_net_identifier <*> constant_select <?> "net_lvalue"
+    Ast.NetLValue <$> ps_or_hierarchical_net_identifier <*> constant_select <?> "net_lvalue"
 
 variable_lvalue =
-    AST.VLHierarchical
+    Ast.VLHierarchical
     <$> optional implicit_class_handle_or_package_scope
     <*> hierarchical_variable_identifier
     <*> select <?> "variable_lvalue"
 
 implicit_class_handle_or_package_scope =
-    Left <$> impilicit_class_handle
+    Left <$> implicit_class_handle
     <|> Right <$> package_scope
     <?> "implicit_class_handle_or_package_scope"
 -- nonrange_variable_lvalue :: { NonrangeVariableLvalue }
@@ -1145,25 +1300,27 @@ implicit_class_handle_or_package_scope =
 ---- 8.7 - Numbers ----
 
 -- Incomplete production rule
-number = AST.NIntegral <$> integral_number <?> "integral_number"
+number = Ast.NIntegral <$> integral_number <?> "integral_number"
 
 -- Incomplete production rule
-integral_number = AST.INDecimal <$> decimal_number <?> "integral_number"
+integral_number = Ast.INDecimal <$> decimal_number <?> "integral_number"
 
-decimal_number = AST.DNUnsigned <$> unsigned_number <?> "decimal_number"
+decimal_number = Ast.DNUnsigned <$> unsigned_number <?> "decimal_number"
 
 ---- 8.8 - Strings ----
 
 ---- Sec 9 ----
 ---- 9.1 - Attributes ----
-attribute_instance :: { AttributeInstance }
-    : '(' '*' attr_spec many(snd(',', attr_spec)) '*' ')' { AttributeInstance ($3:$4) }
--- | Incorrect production rule (Constant Expression should not be Identifier)
-attr_spec :: { AttrSpec }
-    : attr_name optional(snd('=', identifier))          { AttrSpec{ attrName=$1, constantExpression=$2} }
-attr_name :: { AttrName }
-    : identifier { AttrName $1 }
-
+attribute_instance =
+    Ast.AttributeInstance
+    <$> (ob *> asterisk *> ((:) <$> attr_spec <*> many (comma *> attr_spec)))
+    <* asterisk
+    <* cb
+    <?> "attribute_instance"
+attr_spec =
+    Ast.AttrSpec <$> attr_name <*> optional (equal *> constant_expression) <?> "attr_spec"
+attr_name =
+    Ast.AttrName <$> identifier <?> "attr_name"
 ---- 9.2 - Comments ----
 -- comment :: { Comment }
 -- one_line_comment :: { OneLineComment }
@@ -1172,13 +1329,13 @@ attr_name :: { AttrName }
 
 ---- 9.3 - Identifiers ----
 block_identifier =
-    BlockIdentifier <$> identifier <?> "block_identifier"
+    Ast.BlockIdentifier <$> identifier <?> "block_identifier"
 
 class_identifier =
-    ClassIdentifier <$> identifier <?> "class_identifier"
+    Ast.ClassIdentifier <$> identifier <?> "class_identifier"
 
 hierarchical_identifier =
-    AST.HierarchicalIdentifier
+    Ast.HierarchicalIdentifier
     <$> pure False
     <*> many ((,) <$> identifier <*> constant_bit_select <* fullstop)
     <*> identifier
@@ -1188,45 +1345,44 @@ hierarchical_identifier =
 identifier_constant_bit_select =
     (,) <$> identifier <*> constant_bit_select <* fullstop <?> "identifier_constant_bit_select"
 
-hierarchical_variable_identifier = AST.HierarchicalVariableIdentifier <$> hierarchical_identifier <?> "hierarchical_variable_identifier"
+hierarchical_variable_identifier = Ast.HierarchicalVariableIdentifier <$> hierarchical_identifier <?> "hierarchical_variable_identifier"
 
 interface_identifier =
-    InterfaceIdentifier <$> identifier <?> "interface_identifier"
+    Ast.InterfaceIdentifier <$> identifier <?> "interface_identifier"
 
 parameter_identifier =
-    ParameterIdentifier <$> identifier <?> "parameter_identifier"
+    Ast.ParameterIdentifier <$> identifier <?> "parameter_identifier"
 module_identifier =
-    ModuleIdentifier <$> identifier <?> "module_identifier"
+    Ast.ModuleIdentifier <$> identifier <?> "module_identifier"
 -- Incomplete production rule
 package_scope =
-    PSidentifier <$> package_identifier *> colon_colon <?> "package_scope"
-
+    Ast.PSIdentifier <$> package_identifier <* colon_colon <?> "package_scope"
+modport_identifier =
+    Ast.ModportIdentifier <$> identifier <?> "modport_identifier"
 package_identifier =
-    PackageIdentifier <$> identifier <?> "package_identifier"
+    Ast.PackageIdentifier <$> identifier <?> "package_identifier"
 port_identifier =
-    PortIdentifier <$> identifier <?> "port_identifier"
+    Ast.PortIdentifier <$> identifier <?> "port_identifier"
 ps_class_identifier =
-    PsClassIdentifier <$> optional package_scope <*> class_identifier <?> "ps_class_identifier"
+    Ast.PsClassIdentifier <$> optional package_scope <*> class_identifier <?> "ps_class_identifier"
 
 ps_or_hierarchical_net_identifier =
-    POHNINet <$> optional package_scope <*> net_identifier <?> "ps_or_hierarchical_net_identifier"
+    Ast.POHNINet <$> optional package_scope <*> net_identifier <?> "ps_or_hierarchical_net_identifier"
 
 -- Incomplete production rule
 ps_parameter_identifier =
-    PPIScoped <$> optional either(package_scope class_scope) <*> parameter_identifier <?> "ps_parameter_identifier"
+    Ast.PPIScoped <$> optional (eitherProd package_scope class_scope) <*> parameter_identifier <?> "ps_parameter_identifier"
 
-ps_parameter_identifier =
-    PPIScoped <$> optional
 ps_type_identifier =
-    PsTypeIdentifier <$> optional local_or_package_scope <*> type_identifier
+    Ast.PsTypeIdentifier <$> optional local_or_package_scope <*> type_identifier
     <?> "ps_type_identifier"
 
 local_or_package_scope =
-    local_colon_colon *> pure LOPSLocal
-    <|> LOPSPackageScope <$> package_scope
+    local_colon_colon *> pure Ast.LOPSLocal
+    <|> Ast.LOPSPackageScope <$> package_scope
     <?> "local_or_package_scope"
 
-member_identifier = AST.MemberIdentifier <$> identifier <?> "identifier"
-net_identifier = NetIdentifier <$> identifier <?> "net_identifier"
-type_identifier = TypeIdentifier <$> identifier <?> "type_identifier"
-variable_identifier = VariableIdentifier <$> identifier <?> "variable_identifier"
+member_identifier = Ast.MemberIdentifier <$> identifier <?> "identifier"
+net_identifier = Ast.NetIdentifier <$> identifier <?> "net_identifier"
+type_identifier = Ast.TypeIdentifier <$> identifier <?> "type_identifier"
+variable_identifier = Ast.VariableIdentifier <$> identifier <?> "variable_identifier"
