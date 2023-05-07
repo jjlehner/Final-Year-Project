@@ -7,7 +7,6 @@ import Control.Applicative
 import qualified V2H.Alex.Lexer as L
 import qualified V2H.Ast as Ast
 import V2H.Ast (StreamConcatenation)
-import Debug.Trace
 isPresent a = fmap isJust (optional a)
 eitherProd a b =
     Left <$> a
@@ -59,6 +58,7 @@ dollar = satisfy $ containsToken L.Dollar
 plus_colon = satisfy $ containsToken L.PlusColon
 minus_colon = satisfy $ containsToken L.MinusColon
 
+ampersand_ampersand_ampersand = satisfy $ containsToken L.AmpersandAmpersandAmpersand
 always = satisfy $ containsToken L.Always
 always_comb = satisfy $ containsToken L.AlwaysComb
 always_ff = satisfy $ containsToken L.AlwaysFf
@@ -71,6 +71,7 @@ local_colon_colon = satisfy $ containsToken L.LocalColonColon
 bit = satisfy $ containsToken L.Bit
 byte = satisfy $ containsToken L.Byte
 const' = satisfy $ containsToken L.Const
+else' = satisfy $ containsToken L.Else
 end = satisfy $ containsToken L.End
 endmodule = satisfy $ containsToken L.Endmodule
 equal = satisfy $ containsToken L.Equal
@@ -78,6 +79,7 @@ fs = satisfy $ containsToken L.Femtosecond
 longint = satisfy $ containsToken L.Longint
 macromodule = satisfy $ containsToken L.Macromodule
 module' = satisfy $ containsToken L.Module
+if' = satisfy $ containsToken L.If
 iff = satisfy $ containsToken L.Iff
 import' = satisfy $ containsToken L.Import
 int = satisfy $ containsToken L.Int
@@ -97,6 +99,7 @@ logic = satisfy $ containsToken L.Logic
 negedge = satisfy $ containsToken L.Negedge
 output = satisfy $ containsToken L.Output
 posedge = satisfy $ containsToken L.Posedge
+priority = satisfy $ containsToken L.Priority
 ps = satisfy $ containsToken L.Picosecond
 reg = satisfy $ containsToken L.Reg
 s = satisfy $ containsToken L.Second
@@ -118,6 +121,8 @@ timeunit = satisfy $ containsToken L.Timeunit
 us = satisfy $ containsToken L.Microsecond
 uwire   = satisfy $ containsToken L.Uwire
 unsigned = satisfy $ containsToken L.Unsigned
+unique = satisfy $ containsToken L.Unique
+unique0 = satisfy $ containsToken L.Unique0
 type' = satisfy $ containsToken L.Type
 var = satisfy $ containsToken L.Var
 wand    = satisfy $ containsToken L.Wand
@@ -128,7 +133,6 @@ wor     = satisfy $ containsToken L.Wor
 -- 1.1 - Library Source Text ----
 ---- 1.2 - SystemVerilog Source Text ----
 
-grams :: Grammar r (Prod r String L.RangedToken Ast.SourceText)
 grams = mdo
     source_text <- rule $
         Ast.SourceText
@@ -261,7 +265,8 @@ grams = mdo
     -- module_item :: { ModuleItem }
     -- Incomplete Production Rule
     module_or_generate_item <- rule $
-        Ast.MOGIModuleCommonItem <$> many attribute_instance <*> module_common_item <?> "module_or_generate_item"
+        Ast.MOGIModuleInstantiation <$> many attribute_instance <*> module_instantiation
+        <|> Ast.MOGIModuleCommonItem <$> many attribute_instance <*> module_common_item <?> "module_or_generate_item"
 
     -- Incomplete Production Rule
     module_or_generate_item_declaration <- rule $
@@ -723,6 +728,13 @@ grams = mdo
     ---- Sec 4 ----
     ---- 4.1.1 - Module Instantiation ----
     -- module_instantiation :: { ModuleInstantiation }
+    module_instantiation <- rule $
+        Ast.ModuleInstantiation
+        <$> module_identifier
+        <*> optional parameter_value_assignment
+        <*> ((:) <$> hierarchical_instance <*> many (comma *> hierarchical_instance))
+        <* semicolon
+
     parameter_value_assignment <- rule $
         Ast.ParameterValueAssignment
         <$> (hashtag *> ob *> optional parameter_assignments)
@@ -744,11 +756,37 @@ grams = mdo
         <* cb
         <?> "named_parameter_assignment"
     -- hierarchical_instance :: { HierarchicalInstance }
-    -- name_of_instance :: { NameOfInstance }
-    -- port_connections :: { PortConnections }
-    -- ordered_port_connection :: { OrderedPortConnection }
-    -- named_port_connection :: { NamedPortConnection }
+    hierarchical_instance <- rule $
+        Ast.HierarchicalInstance
+        <$> name_of_instance
+        <*> (ob *> fmap Just port_connections <* cb)
+        <?> "hierarchical_instance"
 
+    name_of_instance <- rule $
+        Ast.NameOfInstance
+        <$> instance_identifier
+        <*> many unpacked_dimension
+        <?> "name_of_instance"
+
+    -- port_connections :: { PortConnections }
+    port_connections <- rule $
+        Ast.PCOrdered
+        <$> ((:) <$> ordered_port_connection <*> many (comma *> ordered_port_connection))
+        <|> Ast.PCNamed
+        <$> ((:) <$> named_port_connection <*> many (comma *> named_port_connection))
+        <?> "port_connections"
+
+    ordered_port_connection <- rule $
+        Ast.OrderedPortConnection
+        <$> many attribute_instance
+        <*> optional expression
+    named_port_connection <- rule $
+        Ast.NPC
+        <$> many attribute_instance <* fullstop <*> port_identifier
+        <*> optional (ob *> expression <* cb)
+        <|> Ast.NPCAsterisk
+        <$> many attribute_instance <* fullstop <* asterisk
+        <?> "named_port_connection"
     ---- 4.1.2 - Interface Instantiation ----
     -- interface_instantiation :: { InterfaceInstantiation }
 
@@ -902,7 +940,8 @@ grams = mdo
         Ast.SIBlockingAssignment <$> blocking_assignment <* semicolon
         <|> Ast.SINonblockingAssignment <$> nonblocking_assignment <* semicolon
         <|> Ast.SISeqBlock <$> seq_block
-        -- <|> Ast.SIProceduralTimingControlStatement <$> procedural_timing_control_statement
+        <|> Ast.SIProceduralTimingControlStatement <$> procedural_timing_control_statement
+        <|> Ast.SIConditionalStatement <$> conditional_statement
         <?> "statement_item"
     -- function_statement :: { FunctionStatement }
     -- function_statement_or_null :: { FunctionStatementOrNull }
@@ -936,13 +975,33 @@ grams = mdo
     -- event_trigger :: { EventTrigger }
     -- disable_statement :: { DisableStatement }
 
+-- [ unique_priority ] if ( cond_predicate ) statement_or_null
+-- {else if ( cond_predicate ) statement_or_null } [ else statement_or_null ]
     ---- 6.6 - Conditional Statements ----
-    -- conditional_statement :: { ConditionalStatement }
+    conditional_statement <- rule $
+                                Ast.ConditionalStatement
+                                <$> optional unique_priority
+                                <*> (if' *> ob *> cond_predicate <* cb)
+                                <*> statement_or_null
+                                <*> many ((,) <$> (else' *> if' *> ob *> cond_predicate <* cb) <*> statement_or_null)
+                                <*> optional (else' *> statement_or_null)
     -- unique_priority :: { UniquePriority }
+    unique_priority <- rule $
+                            (unique *> pure Ast.UPUnique)
+                            <|> (unique0 *> pure Ast.UPUnique0)
+                            <|> priority *> pure Ast.UPPriority
+                            <?> "unique_priority"
     -- cond_predicate :: { CondPredicate }
+    cond_predicate <- rule $
+                        (:)
+                        <$> expression_or_cond_pattern
+                        <*> many (ampersand_ampersand_ampersand *> expression_or_cond_pattern)
     -- expression_or_cond_pattern :: { ExpressionOrCondPattern }
+    -- | Incomplete production rule
+    expression_or_cond_pattern <- rule $
+                                    Left <$> expression <?> "expression_or_cond_pattern"
+                                    -- <|> Right cond_pattern <?> "expression_or_cond_pattern"
     -- cond_pattern :: { CondPattern }
-
     ---- 6.7 - Case Statements ----
     -- case_statement :: { CaseStatement }
     -- case_keyword :: { CaseKeyword }
@@ -1232,7 +1291,8 @@ grams = mdo
     ---- 8.4 - Primaries ----
     constant_primary <- rule $ Ast.CPLiteral <$> primary_literal <?> "constant_primary"
     -- module_path_primary :: { ModulePathPrimary }
-    primary <- rule $   Ast.PHierarchicalIdentifier <$> hierarchical_identifier <*> select <|> Ast.PLiteral <$> primary_literal <?> "primary"
+    primary <- rule $   Ast.PHierarchicalIdentifier <$> hierarchical_identifier <*> optional select
+                        <|> Ast.PLiteral <$> primary_literal <?> "primary"
 
     -- class_qualifier :: { ClassQualifier}
     -- range_expression :: { RangeExpression }
@@ -1262,9 +1322,17 @@ grams = mdo
     select <- rule $ Ast.Select
                 <$> optional( (,) <$> many((,) <$> (fullstop *> member_identifier) <*> bit_select) <*> (fullstop *> member_identifier))
                 <*> bit_select
+                <*> fmap Just ( osb *> part_select_range <* csb)
+                <|> Ast.Select
+                <$> fmap Just ((,) <$> many((,) <$> (fullstop *> member_identifier) <*> bit_select) <*> (fullstop *> member_identifier))
+                <*> bit_select
                 <*> optional ( osb *> part_select_range <* csb)
-
+                <|> Ast.Select
+                <$> optional( (,) <$> many((,) <$> (fullstop *> member_identifier) <*> bit_select) <*> (fullstop *> member_identifier))
+                <*> (Ast.BitSelect <$> ((:) <$> (osb *> expression <* csb) <*> many(osb *> expression <* csb)))
+                <*> optional ( osb *> part_select_range <* csb)
                 <?> "select"
+
     -- nonrange_select :: { NonrangeSelect }
     constant_bit_select <- rule $ Ast.ConstantBitSelect <$> many( osb *> constant_expression <* csb) <?> "constant_bit_select"
 
@@ -1284,7 +1352,7 @@ grams = mdo
         Ast.VLHierarchical
         <$> optional implicit_class_handle_or_package_scope
         <*> hierarchical_variable_identifier
-        <*> select <?> "variable_lvalue"
+        <*> optional select <?> "variable_lvalue"
 
     implicit_class_handle_or_package_scope <- rule $
         Left <$> implicit_class_handle
@@ -1382,4 +1450,5 @@ grams = mdo
     net_identifier <- rule $ Ast.NetIdentifier <$> identifier <?> "net_identifier"
     type_identifier <- rule $ Ast.TypeIdentifier <$> identifier <?> "type_identifier"
     variable_identifier <- rule $ Ast.VariableIdentifier <$> identifier <?> "variable_identifier"
+    instance_identifier <- rule $ Ast.InstanceIdentifier <$> identifier <?> "instance_identifier"
     return (source_text <* eof)
