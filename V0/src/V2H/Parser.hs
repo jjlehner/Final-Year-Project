@@ -4,136 +4,139 @@ module V2H.Parser where
 import Text.Earley
 import Data.Maybe
 import Control.Applicative
-import qualified V2H.Alex.Lexer as L
+import qualified V2H.Alex.Lexer as Lexer
 import qualified V2H.Ast as Ast
-import V2H.Ast (StreamConcatenation)
+
+runParser :: [Lexer.RangedToken] -> ([Ast.SourceText], Report String [Lexer.RangedToken])
+runParser = fullParses (parser grammar)
+
 isPresent a = fmap isJust (optional a)
 eitherProd a b =
     Left <$> a
     <|> Right <$> b
 
-containsToken token rangedToken = token == L.rtToken rangedToken
-unsigned_number = fmap L.unTokDecimal $ satisfy $ (\token -> case (L.rtToken token) of
-                                L.UnsignedNumberT _ -> True
+containsToken token rangedToken = token == Lexer.rtToken rangedToken
+unsigned_number = fmap Lexer.unTokDecimal $ satisfy $ (\token -> case (Lexer.rtToken token) of
+                                Lexer.UnsignedNumberT _ -> True
                                 _ -> False )
 
-asterisk = satisfy $ containsToken L.Asterisk
-eof = satisfy $ containsToken L.EOF
-identifier = fmap L.unTokIdentifier $ satisfy $ (\token -> case (L.rtToken token) of
-                                                    L.Identifier _ -> True
+asterisk = satisfy $ containsToken Lexer.Asterisk
+eof = satisfy $ containsToken Lexer.EOF
+identifier = fmap Lexer.unTokIdentifier $ satisfy $ (\token -> case (Lexer.rtToken token) of
+                                                    Lexer.Identifier _ -> True
                                                     _ -> False)
-fullstop = satisfy $ containsToken L.FullStop
-ob = satisfy $ containsToken L.OpenBracket
-cb = satisfy $ containsToken L.CloseBracket
-osb = satisfy $ containsToken L.OpenSquareBracket
-csb = satisfy $ containsToken L.CloseSquareBracket
-colon = satisfy $ containsToken L.Colon
-semicolon = satisfy $ containsToken L.Semicolon
-static = satisfy $ containsToken L.Static
-hashtag = satisfy $ containsToken L.Hashtag
-comma = satisfy $ containsToken L.Comma
-edge = satisfy $ containsToken L.Edge
-forward_slash = satisfy $ containsToken L.Forwardslash
+fullstop = satisfy $ containsToken Lexer.FullStop
+ob = satisfy $ containsToken Lexer.OpenBracket
+cb = satisfy $ containsToken Lexer.CloseBracket
+osb = satisfy $ containsToken Lexer.OpenSquareBracket
+csb = satisfy $ containsToken Lexer.CloseSquareBracket
+colon = satisfy $ containsToken Lexer.Colon
+semicolon = satisfy $ containsToken Lexer.Semicolon
+static = satisfy $ containsToken Lexer.Static
+hashtag = satisfy $ containsToken Lexer.Hashtag
+comma = satisfy $ containsToken Lexer.Comma
+edge = satisfy $ containsToken Lexer.Edge
+forward_slash = satisfy $ containsToken Lexer.Forwardslash
 
-plus_equal = satisfy $  containsToken L.PlusEqual
-minus_equal = satisfy $ containsToken L.MinusEqual
-asterisk_equal = satisfy $ containsToken L.AsteriskEqual
-forwardslash_equal= satisfy $ containsToken L.ForwardslashEqual
-percentage_equal = satisfy $ containsToken L.PercentageEqual
-ampersand_equal = satisfy $ containsToken L.AmpersandEqual
-pipe_equal = satisfy $ containsToken L.PipeEqual
-caret_equal = satisfy $ containsToken L.CaretEqual
-lesser_Lesser_equal = satisfy $ containsToken L.LesserLesserEqual
-greater_greater_equal = satisfy $ containsToken L.GreaterGreaterEqual
-lesser_esser_lesser_equal = satisfy $ containsToken L.LesserLesserLesserEqual
-greater_greater_greater_equal = satisfy $ containsToken L.GreaterGreaterGreaterEqual
-lesser_equal = satisfy $ containsToken L.LesserEqual
-ocb = satisfy $ containsToken L.OpenCurlyBracket
-ccb = satisfy $ containsToken L.CloseCurlyBracket
+plus_equal = satisfy $  containsToken Lexer.PlusEqual
+minus_equal = satisfy $ containsToken Lexer.MinusEqual
+asterisk_equal = satisfy $ containsToken Lexer.AsteriskEqual
+forwardslash_equal= satisfy $ containsToken Lexer.ForwardslashEqual
+percentage_equal = satisfy $ containsToken Lexer.PercentageEqual
+ampersand_equal = satisfy $ containsToken Lexer.AmpersandEqual
+pipe_equal = satisfy $ containsToken Lexer.PipeEqual
+caret_equal = satisfy $ containsToken Lexer.CaretEqual
+lesser_Lesser_equal = satisfy $ containsToken Lexer.LesserLesserEqual
+greater_greater_equal = satisfy $ containsToken Lexer.GreaterGreaterEqual
+lesser_esser_lesser_equal = satisfy $ containsToken Lexer.LesserLesserLesserEqual
+greater_greater_greater_equal = satisfy $ containsToken Lexer.GreaterGreaterGreaterEqual
+lesser_equal = satisfy $ containsToken Lexer.LesserEqual
+ocb = satisfy $ containsToken Lexer.OpenCurlyBracket
+ccb = satisfy $ containsToken Lexer.CloseCurlyBracket
 
-greater_greater = satisfy $ containsToken L.GreaterGreater
-lesser_lesser = satisfy $ containsToken L.LesserLesser
-at_sign = satisfy $ containsToken L.AtSign
-dollar = satisfy $ containsToken L.Dollar
-plus_colon = satisfy $ containsToken L.PlusColon
-minus_colon = satisfy $ containsToken L.MinusColon
+greater_greater = satisfy $ containsToken Lexer.GreaterGreater
+lesser_lesser = satisfy $ containsToken Lexer.LesserLesser
+at_sign = satisfy $ containsToken Lexer.AtSign
+dollar = satisfy $ containsToken Lexer.Dollar
+plus_colon = satisfy $ containsToken Lexer.PlusColon
+minus_colon = satisfy $ containsToken Lexer.MinusColon
 
-ampersand_ampersand_ampersand = satisfy $ containsToken L.AmpersandAmpersandAmpersand
-always = satisfy $ containsToken L.Always
-always_comb = satisfy $ containsToken L.AlwaysComb
-always_ff = satisfy $ containsToken L.AlwaysFf
-always_latch = satisfy $ containsToken L.AlwaysLatch
-assign = satisfy $ containsToken L.Assign
-automatic = satisfy $ containsToken L.Automatic
-begin = satisfy $ containsToken L.Begin
-colon_colon = satisfy $ containsToken L.ColonColon
-local_colon_colon = satisfy $ containsToken L.LocalColonColon
-bit = satisfy $ containsToken L.Bit
-byte = satisfy $ containsToken L.Byte
-const' = satisfy $ containsToken L.Const
-else' = satisfy $ containsToken L.Else
-end = satisfy $ containsToken L.End
-endmodule = satisfy $ containsToken L.Endmodule
-equal = satisfy $ containsToken L.Equal
-fs = satisfy $ containsToken L.Femtosecond
-longint = satisfy $ containsToken L.Longint
-macromodule = satisfy $ containsToken L.Macromodule
-module' = satisfy $ containsToken L.Module
-if' = satisfy $ containsToken L.If
-iff = satisfy $ containsToken L.Iff
-import' = satisfy $ containsToken L.Import
-int = satisfy $ containsToken L.Int
-input = satisfy $ containsToken L.Input
-inout = satisfy $ containsToken L.Inout
-integer = satisfy $ containsToken L.Integer
-interface = satisfy $ containsToken L.Interface
-ms = satisfy $ containsToken L.Millisecond
-ns = satisfy $ containsToken L.Nanosecond
-parameter = satisfy $ containsToken L.Parameter
-picosecond = satisfy $ containsToken L.Picosecond
-real = satisfy $ containsToken L.Real
-realtime = satisfy $ containsToken L.Realtime
-ref = satisfy $ containsToken L.Ref
-localparam = satisfy $ containsToken L.Localparam
-logic = satisfy $ containsToken L.Logic
-negedge = satisfy $ containsToken L.Negedge
-output = satisfy $ containsToken L.Output
-posedge = satisfy $ containsToken L.Posedge
-priority = satisfy $ containsToken L.Priority
-ps = satisfy $ containsToken L.Picosecond
-reg = satisfy $ containsToken L.Reg
-s = satisfy $ containsToken L.Second
-signed = satisfy $ containsToken L.Signed
-shortint= satisfy $ containsToken L.Shortint
-shortreal = satisfy $ containsToken L.Shortreal
-super = satisfy $ containsToken L.Super
-supply0 = satisfy $ containsToken L.Supply0
-supply1 = satisfy $ containsToken L.Supply1
-this = satisfy $ containsToken L.This
-time = satisfy $ containsToken L.Time
-tri     = satisfy $ containsToken L.Tri
-triand  = satisfy $ containsToken L.Triand
-trior   = satisfy $ containsToken L.Trior
-trireg  = satisfy $ containsToken L.Trireg
-tri0    = satisfy $ containsToken L.Tri0
-tri1    = satisfy $ containsToken L.Tri1
-timeunit = satisfy $ containsToken L.Timeunit
-us = satisfy $ containsToken L.Microsecond
-uwire   = satisfy $ containsToken L.Uwire
-unsigned = satisfy $ containsToken L.Unsigned
-unique = satisfy $ containsToken L.Unique
-unique0 = satisfy $ containsToken L.Unique0
-type' = satisfy $ containsToken L.Type
-var = satisfy $ containsToken L.Var
-wand    = satisfy $ containsToken L.Wand
-wire    = satisfy $ containsToken L.Wire
-with    = satisfy $ containsToken L.With
-wor     = satisfy $ containsToken L.Wor
+ampersand_ampersand_ampersand = satisfy $ containsToken Lexer.AmpersandAmpersandAmpersand
+always = satisfy $ containsToken Lexer.Always
+always_comb = satisfy $ containsToken Lexer.AlwaysComb
+always_ff = satisfy $ containsToken Lexer.AlwaysFf
+always_latch = satisfy $ containsToken Lexer.AlwaysLatch
+assign = satisfy $ containsToken Lexer.Assign
+automatic = satisfy $ containsToken Lexer.Automatic
+begin = satisfy $ containsToken Lexer.Begin
+colon_colon = satisfy $ containsToken Lexer.ColonColon
+local_colon_colon = satisfy $ containsToken Lexer.LocalColonColon
+bit = satisfy $ containsToken Lexer.Bit
+byte = satisfy $ containsToken Lexer.Byte
+const' = satisfy $ containsToken Lexer.Const
+else' = satisfy $ containsToken Lexer.Else
+end = satisfy $ containsToken Lexer.End
+endmodule = satisfy $ containsToken Lexer.Endmodule
+equal = satisfy $ containsToken Lexer.Equal
+fs = satisfy $ containsToken Lexer.Femtosecond
+longint = satisfy $ containsToken Lexer.Longint
+macromodule = satisfy $ containsToken Lexer.Macromodule
+module' = satisfy $ containsToken Lexer.Module
+if' = satisfy $ containsToken Lexer.If
+iff = satisfy $ containsToken Lexer.Iff
+import' = satisfy $ containsToken Lexer.Import
+int = satisfy $ containsToken Lexer.Int
+input = satisfy $ containsToken Lexer.Input
+inout = satisfy $ containsToken Lexer.Inout
+integer = satisfy $ containsToken Lexer.Integer
+interface = satisfy $ containsToken Lexer.Interface
+ms = satisfy $ containsToken Lexer.Millisecond
+ns = satisfy $ containsToken Lexer.Nanosecond
+parameter = satisfy $ containsToken Lexer.Parameter
+picosecond = satisfy $ containsToken Lexer.Picosecond
+real = satisfy $ containsToken Lexer.Real
+realtime = satisfy $ containsToken Lexer.Realtime
+ref = satisfy $ containsToken Lexer.Ref
+localparam = satisfy $ containsToken Lexer.Localparam
+logic = satisfy $ containsToken Lexer.Logic
+negedge = satisfy $ containsToken Lexer.Negedge
+output = satisfy $ containsToken Lexer.Output
+posedge = satisfy $ containsToken Lexer.Posedge
+priority = satisfy $ containsToken Lexer.Priority
+ps = satisfy $ containsToken Lexer.Picosecond
+reg = satisfy $ containsToken Lexer.Reg
+s = satisfy $ containsToken Lexer.Second
+signed = satisfy $ containsToken Lexer.Signed
+shortint= satisfy $ containsToken Lexer.Shortint
+shortreal = satisfy $ containsToken Lexer.Shortreal
+super = satisfy $ containsToken Lexer.Super
+supply0 = satisfy $ containsToken Lexer.Supply0
+supply1 = satisfy $ containsToken Lexer.Supply1
+this = satisfy $ containsToken Lexer.This
+time = satisfy $ containsToken Lexer.Time
+tri     = satisfy $ containsToken Lexer.Tri
+triand  = satisfy $ containsToken Lexer.Triand
+trior   = satisfy $ containsToken Lexer.Trior
+trireg  = satisfy $ containsToken Lexer.Trireg
+tri0    = satisfy $ containsToken Lexer.Tri0
+tri1    = satisfy $ containsToken Lexer.Tri1
+timeunit = satisfy $ containsToken Lexer.Timeunit
+us = satisfy $ containsToken Lexer.Microsecond
+uwire   = satisfy $ containsToken Lexer.Uwire
+unsigned = satisfy $ containsToken Lexer.Unsigned
+unique = satisfy $ containsToken Lexer.Unique
+unique0 = satisfy $ containsToken Lexer.Unique0
+type' = satisfy $ containsToken Lexer.Type
+var = satisfy $ containsToken Lexer.Var
+wand    = satisfy $ containsToken Lexer.Wand
+wire    = satisfy $ containsToken Lexer.Wire
+with    = satisfy $ containsToken Lexer.With
+wor     = satisfy $ containsToken Lexer.Wor
 --- Sec 1 -----
 -- 1.1 - Library Source Text ----
 ---- 1.2 - SystemVerilog Source Text ----
 
-grams = mdo
+grammar = mdo
     source_text <- rule $
         Ast.SourceText
         <$> optional timeunits_declaration
@@ -236,16 +239,18 @@ grams = mdo
     -- Incomplete Production Rule
     ansi_port_declaration <- rule $
         Ast.APDNetOrInterfaceHeader
-        <$> optional net_or_interface_port_header
+        <$> net_or_interface_port_header
         <*> port_identifier
         <*> many unpacked_dimension
         <*> optional(equal *> constant_expression)
-        <|> Ast.APDVariableHeader
-        <$> optional variable_port_header
-        <*> port_identifier
-        <*> many variable_dimension
-        <*> optional (equal *> constant_expression)
         <?> "ansi_port_declaration"
+
+        -- <|> Ast.APDVariableHeader
+        -- <$> optional variable_port_header
+        -- <*> port_identifier
+        -- <*> many variable_dimension
+        -- <*> optional (equal *> constant_expression)
+        -- <?> "ansi_port_declaration"
 
     net_or_interface_port_header <- rule $
         Left <$> net_port_header
