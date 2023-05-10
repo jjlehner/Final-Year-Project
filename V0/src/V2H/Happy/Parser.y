@@ -13,7 +13,7 @@ import V2H.Ast
 import Debug.Trace
 }
 
-%name parseSV variable_lvalue
+%name parseSV source_text
 %tokentype { L.RangedToken }
 %error { parseError }
 %monad { L.Alex } { >>= } { pure }
@@ -1446,14 +1446,21 @@ implicit_class_handle :: { ImplicitClassHandle }
 bit_select :: { BitSelect }
     : many(inner('[', expression,']'))              { BitSelect $1 }
 
-bracketed_expression_or_part_select_range :: { Either Expression PartSelectRange }
-    : '[' expression ']'    { Left $2 }
-    | '[' part_select_range ']'{ Right $2 }
+multi_bracketed_expression_or_part_select_range :: { SelectEnd  }
+    :'[' expression ']' { SE1 $2 }
+    | '[' expression ']' multi_bracketed_expression_or_part_select_range   { SE2 $2 $4 }
+    | '[' part_select_range ']'{ SE3 $2 }
+
+select_start :: { SelectStart }
+    : '.' member_identifier '[' expression ']' select_start { SS1 $2 $4 $6 }
+    | '.' member_identifier '[' expression ']' multi_bracketed_expression_or_part_select_range { SS2 $2 $4 $6 }
+    | multi_bracketed_expression_or_part_select_range { SS3 $1 }
 
 select :: { Select }
+    : select_start { SelectStartEnd $1 }
     -- : bit_select {Select (MIBSSingleton $1) Nothing }
     -- | bit_select inner('[', part_select_range, ']') {Select (MIBSSingleton (BitSelect [])) (Just $1) }
-    : many(bracketed_expression_or_part_select_range) {SelectAlt $1 }
+    -- | multi_bracketed_expression_or_part_select_range {SelectAlt $1 }
     -- | optional(member_identifier_bit_selects) bit_select optional(inner('[', part_select_range, ']')) {
     --     let helper = \mibs -> case mibs of
     --                             Just (pairs, mi) -> MIBSList $ pairs ++ [(mi,$2)]
@@ -1486,6 +1493,7 @@ net_lvalue :: { NetLValue }
 
 variable_lvalue :: { VariableLvalue }
     : hierarchical_variable_identifier select          { VLHierarchical Nothing $1 $2 }
+    | hierarchical_variable_identifier { VLHierarchical Nothing $1 SelectEmpty }
     -- : optional(implicit_class_handle_or_package_scope) hierarchical_variable_identifier select          { VLHierarchical $1 $2 (Just $3) }
     -- | '{' variable_lvalue many(snd(',', variable_lvalue)) '}'                                           { VLList ($2:$3) }
     -- | optional(assignment_pattern_expression_type) assignment_pattern_variable_lvalue                   { VLAssignmentPattern  $1 $2 }

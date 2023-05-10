@@ -72,7 +72,8 @@ data ModuleDeclaration =
     } | MDAnsiHeader {
         moduleAnsiHeader      :: ModuleAnsiHeader,
         timeunitsDeclarations :: Maybe TimeunitsDeclaration,
-        nonPortModuleItems    :: [NonPortModuleItem]
+        nonPortModuleItems    :: [NonPortModuleItem],
+        endModuleIdentifier   :: Maybe ModuleIdentifier
     } | MDAttributes {
         attributeInstances   :: [AttributeInstance],
         lifetime             :: Maybe Lifetime,
@@ -85,7 +86,7 @@ data ModuleDeclaration =
         moduleAnsiHeader :: ModuleAnsiHeader
     } deriving (Show, Generic)
 
-data ModuleKeyword = Module | Macromodule deriving (Show, Generic)
+data ModuleKeyword = MKModule | MKMacromodule deriving (Show, Generic)
 
 -- | Incomplete production rule
 data InterfaceDeclaration = InterfaceDeclaration deriving (Show, Generic)
@@ -206,7 +207,7 @@ data InterfacePortHeader =
 -- | Incomplete production rule
 data AnsiPortDeclaration =
     APDNetOrInterfaceHeader {
-        netOrInterfacePortHeader :: Maybe (Either NetPortHeader InterfacePortHeader),
+        netOrInterfacePortHeader :: Either NetPortHeader InterfacePortHeader,
         portIdentifier :: PortIdentifier,
         unpackedDimensions :: [UnpackedDimension],
         constantExpression :: Maybe ConstantExpression
@@ -264,6 +265,9 @@ data ModuleItem =
 data ModuleOrGenerateItem = MOGIModuleCommonItem{
         attributeInstances :: [AttributeInstance],
         moduleCommonItem   :: ModuleCommonItem
+    } | MOGIModuleInstantiation {
+        attributeInstances :: [AttributeInstance],
+        moduleInstantiation :: ModuleInstantiation
     } deriving (Show, Generic)
 
 data NonPortModuleItem =
@@ -359,7 +363,7 @@ data PackageImportItem =
         packageIdentifier :: PackageIdentifier
     } deriving (Show, Generic)
 
-data Lifetime = Static | Automatic deriving (Show, Generic)
+data Lifetime = LStatic | LAutomatic deriving (Show, Generic)
 
 -- | Incomplete production rule
 data PackageImportDeclaration = PackageImportDeclaration [PackageImportItem] deriving (Show, Generic)
@@ -367,7 +371,7 @@ data PackageImportDeclaration = PackageImportDeclaration [PackageImportItem] der
 data DataType = DTIntegerVector {
         integerVectorType :: IntegerVectorType,
         signing           :: Maybe Signing,
-        packedDimension   :: [PackedDimension]
+        packedDimensions   :: [PackedDimension]
     } deriving (Show, Generic)
 
 type DataTypeOrImplicit = Either DataType ImplicitDataType
@@ -431,7 +435,17 @@ data TypeReference =
 ---- 2.2.2 - Strengths ----
 data DriveStrength = DriveStrength deriving (Show, Generic)
 
+data DelayValue =
+    DVUnsigned {
+        unsignedNumber :: UnsignedNumber
+    } deriving (Show, Generic)
+
 ---- 2.2.3 - Delays ----
+-- | Incomplete production rule
+data Delay3 =
+    D3Value {
+        delayValue :: DelayValue
+    } deriving (Show, Generic)
 ---- 2.3 - Declarations Lists ----
 ---- 2.4 - Declarations Assignments ----
 -- | Incomplete production rule
@@ -514,18 +528,62 @@ data BlockItemDeclaration = BIDData {
 
 ---- Sec 4 ----
 ---- 4.1.1 - Module Instantiation ----
-data ParameterValueAssignment = ParameterValueAssignment {
-    parameterAssignments :: Maybe ParameterAssignments
-} deriving (Show, Generic)
+data ModuleInstantiation =
+    ModuleInstantiation {
+        moduleIdentifier :: ModuleIdentifier,
+        parameterValueAssignment :: Maybe ParameterValueAssignment,
+        hierarchicalInstances :: [HierarchicalInstance]
+    } deriving (Show, Generic)
+
+data ParameterValueAssignment =
+    ParameterValueAssignment {
+        parameterAssignments :: Maybe ParameterAssignments
+    } deriving (Show, Generic)
+
 data ParameterAssignments = PAOrdered {
     orderedParameterAssignments :: [OrderedParameterAssignment]
 } | PANamed {
     namedParameterAssignments :: [NamedParameterAssignment]
 } deriving (Show, Generic)
 
-data OrderedParameterAssignment = OrderedParameterAssignment {
-    paramExpression :: ParamExpression
-} deriving (Show, Generic)
+data HierarchicalInstance =
+    HierarchicalInstance {
+        nameOfInstance :: NameOfInstance,
+        portConnections :: Maybe PortConnections
+    } deriving (Show, Generic)
+
+data NameOfInstance =
+    NameOfInstance {
+        instanceIdentifier :: InstanceIdentifier,
+        unpackedDimensions :: [UnpackedDimension]
+    } deriving (Show, Generic)
+
+data PortConnections =
+    PCOrdered {
+        orderedPortConnections :: [OrderedPortConnection]
+    } | PCNamed {
+        namedPortConnections :: [NamedPortConnection]
+    } deriving (Show, Generic)
+
+data OrderedPortConnection =
+    OrderedPortConnection {
+        attributeInstances :: [AttributeInstance],
+        expression :: Maybe Expression
+    } deriving (Show, Generic)
+
+data NamedPortConnection =
+    NPC {
+        attributeInstances :: [AttributeInstance],
+        portIdentifier :: PortIdentifier,
+        expression :: Maybe Expression
+    } | NPCAsterisk {
+        attributeInstances :: [AttributeInstance]
+    } deriving (Show, Generic)
+
+data OrderedParameterAssignment =
+    OrderedParameterAssignment {
+        paramExpression :: ParamExpression
+    } deriving (Show, Generic)
 
 data NamedParameterAssignment = NamedParameterAssignment {
     parameterIdentifier :: ParameterIdentifier,
@@ -566,13 +624,24 @@ data UdpDeclaration = UdpDeclaration deriving (Show, Generic)
 
 ---- Sec 6 -----
 ---- 6.1 - Continuous Assignment And Net Alias Statements ----
-data ContinuousAssign = ContinuousAssign deriving (Show, Generic)
+data ContinuousAssign =
+    CANetAssignment {
+        driveStrength :: Maybe DriveStrength,
+        delay3 :: Maybe Delay3,
+        netAssignments :: [NetAssignment]
+    } | CAVariableAssignment {
+        delayControl :: Maybe DelayControl,
+        variableAssignments :: [VariableAssignment]
+    } deriving (Show, Generic)
 
 -- | Incomplete production rule
 data NetAlias = NetAlias deriving (Show, Generic)
 
 -- | Incomplete production rule
-data NetAssignment = NetAssignment deriving (Show, Generic)
+data NetAssignment = NetAssignment {
+        netLvalue :: NetLValue,
+        expression :: Expression
+    } deriving (Show, Generic)
 ---- 6.2 - Procedural Blocks And Assignments ----
 -- | Incomplete production rule
 data InitialConstruct = InitialConstruct deriving (Show, Generic)
@@ -587,7 +656,7 @@ data AlwaysConstruct =
 -- | Incomplete production rule
 data FinalConstruct = FinalConstruct deriving (Show, Generic)
 
-data AlwaysKeyword = Always | AlwaysComb | AlwaysLatch | AlwaysFf deriving (Show, Generic)
+data AlwaysKeyword = AKAlways | AKAlwaysComb | AKAlwaysLatch | AKAlwaysFf deriving (Show, Generic)
 
 -- | Incomplete production rule
 data BlockingAssignment = BAOperator { operatorAssignment :: OperatorAssignment }deriving (Show, Generic)
@@ -625,15 +694,18 @@ data NonblockingAssignment =
 data ProceduralContinuousAssignment = ProceduralContinuousAssignment deriving (Show, Generic)
 
 -- | Incomplete production rule
-data VariableAssignment = VariableAssignment deriving (Show, Generic)
+data VariableAssignment =
+    VariableAssignment {
+        variableLvalue :: VariableLvalue,
+        expression :: Expression
+    } deriving (Show, Generic)
 ---- 6.3 - Parallel And Sequential Blocks ----
 
 data SeqBlock = SeqBlock {
-    blockIdentifier :: Maybe BlockIdentifier,
+    startBlockIdentifier :: Maybe BlockIdentifier,
     blockItemDeclarations :: [BlockItemDeclaration],
     statementsOrNull :: [StatementOrNull],
-    startBlockIdentifier :: Maybe BlockIdentifier,
-    endBlockIdentifier :: Maybe BlockIdentifier
+    endblockIdentifier :: Maybe BlockIdentifier
 } deriving (Show, Generic)
 
 ---- 6.4 - Statements ----
@@ -658,6 +730,8 @@ data StatementItem =
         proceduralTimingControlStatement :: ProceduralTimingControlStatement
     } | SISeqBlock {
         seqBlock :: SeqBlock
+    } | SIConditionalStatement {
+        conditionalStatement :: ConditionalStatement
     } deriving (Show, Generic)
 
 -- | Incomplete production rule
@@ -687,6 +761,13 @@ data EventControl =
         eventExpression :: EventExpression
     } | ECAsterisk deriving (Show, Generic)
 
+data DelayControl =
+    DCValue {
+        delayValue :: DelayValue
+    } | DCMintypmaxExpression {
+        mintypmaxExpression :: MintypmaxExpression
+    } deriving (Show, Generic)
+
 data EventExpression =
     EE {
         edgeIdentifier :: Maybe EdgeIdentifier,
@@ -694,6 +775,19 @@ data EventExpression =
         iffExpression :: Maybe Expression
     } deriving (Show, Generic)
 ---- 6.6 - Conditional Statements ----
+data ConditionalStatement =
+    ConditionalStatement {
+        uniquePriority :: Maybe UniquePriority,
+        condPredicate :: CondPredicate,
+        statementOrNull :: StatementOrNull,
+        elseIfBlock :: [(CondPredicate, StatementOrNull)],
+        elseBlock :: Maybe StatementOrNull
+    } deriving (Show, Generic)
+
+type CondPredicate = [Either Expression CondPattern]
+
+data CondPattern = CondPattern deriving (Show, Generic)
+data UniquePriority = UPUnique | UPUnique0 | UPPriority deriving (Show, Generic)
 ---- 6.7 - Case Statements ----
 ---- 6.7.1 - Patterns ----
 
@@ -857,11 +951,43 @@ data BitSelect =
         expressions :: [Expression]
     } deriving (Show, Generic)
 
+data SelectEnd =
+    SE1 {
+        expression :: Expression
+    } | SE2 {
+        expression :: Expression,
+        selectEnd :: SelectEnd
+    } | SE3 {
+        partSelectRange :: PartSelectRange
+    } | SE4 deriving (Show, Generic)
+
+data SelectStart =
+    SS1 {
+        memberIdentifier :: MemberIdentifier,
+        expression :: Expression,
+        selectStart :: SelectStart
+    } | SS2 {
+        memberIdentifier :: MemberIdentifier,
+        expression :: Expression,
+        selectEnd :: SelectEnd
+    } | SS3 {
+        selectEnd :: SelectEnd
+    } | SS4 {
+        memberIdentifier :: MemberIdentifier,
+        selectStart :: SelectStart
+    } deriving (Show, Generic)
+
 data Select =
     Select {
-        memberIdentifierBitSelects :: MemberIdentifierBitSelects,
+        prefix :: Maybe ([(MemberIdentifier, BitSelect)], MemberIdentifier),
+        bitSelect :: BitSelect,
         partSelectRange :: Maybe PartSelectRange
-    } | SelectAlt { bitSelectsOrPartSelectRanges :: [Either Expression PartSelectRange] }deriving (Show, Generic)
+    } | SelectAlt {
+        bitSelectsOrPartSelectRanges :: [Either Expression PartSelectRange]
+    } | SelectStartEnd {
+        selectStart :: SelectStart
+    } | SelectEmpty
+    deriving (Show, Generic)
 
 data MemberIdentifierBitSelects = MIBSList { list :: [(MemberIdentifier, BitSelect)]} | MIBSSingleton { singleton :: BitSelect } deriving (Show, Generic)
 
@@ -876,7 +1002,7 @@ data Primary =
         primaryLiteral :: PrimaryLiteral
     } | PHierarchicalIdentifier {
         hierarchicalIdentifier :: HierarchicalIdentifier,
-        select :: Select
+        constantSelect :: Maybe Select
      } deriving (Show, Generic)
 
 -- | Incomplete production rule
@@ -884,7 +1010,7 @@ data PrimaryLiteral = PLNumber { number :: Number } deriving (Show, Generic)
 data TimeLiteral =  TLUnsigned UnsignedNumber TimeUnit
                     | TLFixedPoint UnsignedNumber UnsignedNumber TimeUnit deriving (Show, Generic)
 
-data TimeUnit = Second | Millisecond | Microsecond | Nanosecond | Picosecond | Femtosecond deriving (Eq, Show, Generic)
+data TimeUnit = TUSecond | TUMillisecond | TUMicrosecond | TUNanosecond | TUPicosecond | TUFemtosecond deriving (Eq, Show, Generic)
 
 ---- 8.5 - Expression Left-Side Values ----
 -- | Incomplete production rule
@@ -897,7 +1023,7 @@ data NetLValue =
 data VariableLvalue = VLHierarchical {
     implicitClassHandleOrPackageScope :: Maybe ImplicitClassHandleOrPackageScope,
     hierarchicalVariableIdentifier :: HierarchicalVariableIdentifier,
-    select :: Select
+    select :: Maybe Select
 } | VLList {
     variableLvalues :: [VariableLvalue]
 } | VLAssignmentPattern {
@@ -948,7 +1074,7 @@ data AttributeInstance =
 data AttrSpec =
     AttrSpec{
         attrName           :: AttrName,
-        constantExpression :: Maybe Identifier
+        constantExpression :: Maybe ConstantExpression
     }   deriving (Show, Generic)
 
 newtype AttrName = AttrName Identifier deriving (Show, Generic)
@@ -1008,5 +1134,6 @@ newtype NetIdentifier = NetIdentifier Identifier deriving (Show, Generic)
 
 newtype TypeIdentifier = TypeIdentifier Identifier deriving (Show, Generic)
 newtype VariableIdentifier = VariableIdentifier Identifier deriving (Show, Generic)
+newtype InstanceIdentifier = InstanceIdentifier Identifier deriving (Show, Generic)
 -- | Incorrect
 ---- 9.4 - White space ----

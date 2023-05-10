@@ -30,7 +30,7 @@ executable verilog-earley-parser
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
     build-depends:
-        base ^>=4.17.0,
+        base ^>= 4.16.4.0,
         Earley ^>= 0.13.0.1
     hs-source-dirs:   app
     default-language: GHC2021
@@ -38,7 +38,7 @@ executable verilog-earley-parser
 executable syntax-visualiser
     main-is:          syntax-visualiser.hs
     build-depends:
-        base ^>=4.17.0,
+        base ^>= 4.16.4.0,
         Earley ^>= 0.13.0.1,
         graphviz ^>=  2999.20.1.0,
         fgl ^>= 5.8.0.0,
@@ -47,10 +47,20 @@ executable syntax-visualiser
     hs-source-dirs:   syntax-visualiser
     default-language: GHC2021
 
+executable test-area
+    main-is:          main.hs
+    build-depends:
+        base ^>= 4.16.4.0
+    hs-source-dirs:   test-area
+    default-language: GHC2021
+    default-extensions:     DuplicateRecordFields
+    build-depends:
+        generic-lens ^>= 2.2.2.0,
+        lens ^>= 5.2.2
 executable symbol-visualiser
     main-is:          symbol-visualiser.hs
     build-depends:
-        base ^>=4.17.0,
+        base ^>= 4.16.4.0,
         parsec ^>= 3.1.15.1,
         graphviz ^>=  2999.20.1.0,
         fgl ^>= 5.8.0.0,

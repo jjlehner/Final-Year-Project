@@ -271,6 +271,8 @@ drawGrammarTree allNonTerminals startingSymbolIdentifier maybeRoot =
                         fmtEdge = \(from, to, el) ->
                             if to == startingSymbolIdentifier then
                                 edgeAttribute (RGB 0xff 0 0) 10
+                            else if from `elem` maybeRoot then
+                                edgeAttribute (RGB 0 0 0xff) 10
                             else
                                 edgeAttribute ( RGB 0 0 0 ) 1
         }

@@ -14,7 +14,7 @@ module V2H.Alex.Lexer (
     unTokTimeUnit,
     unTokIdentifier,
     tokDecimal,
-    scanMany
+    runLexer
 ) where
 import qualified Data.ByteString.Lazy.Char8 as BS
 import qualified V2H.Ast as Ast
@@ -42,9 +42,11 @@ tokens :-
 <0> "bit"                       { tok Bit }
 
 <0> "edge"                      { tok Edge }
+<0> "else"                      { tok Else }
 <0> "end"                       { tok End }
 <0> "endmodule"                 { tok Endmodule }
-<0> "input"                     { tok Input}
+<0> "input"                     { tok Input }
+<0> "if"                        { tok If }
 <0> "localparam"                { tok Localparam }
 <0> "logic"                     { tok Logic }
 
@@ -223,6 +225,7 @@ data Token =
             | Extends
             | Extern
             | Final
+            | Femtosecond
             | FirstMatch
             | For
             | Force
@@ -270,9 +273,12 @@ data Token =
             | Macromodule
             | Matches
             | Medium
+            | Microsecond
+            | Millisecond
             | Modport
             | Module
             | Nand
+            | Nanosecond
             | Negedge
             | Nettype
             | New
@@ -289,6 +295,7 @@ data Token =
             | Package
             | Packed
             | Parameter
+            | Picosecond
             | Pmos
             | Posedge
             | Primitive
@@ -329,6 +336,7 @@ data Token =
             | SUntilWith
             | Scalared
             | Sequence
+            | Second
             | Shortint
             | Shortreal
             | Showcancelled
@@ -446,6 +454,7 @@ data Token =
             | DollarRoot
             | GreaterGreater
             | LesserLesser
+            | AmpersandAmpersandAmpersand
             -- Time_unit
             | TimeUnitOperator Ast.TimeUnit
             -- Numbers
@@ -503,8 +512,8 @@ tokDecimal inp@(_, _, str, _) len =
     , rtRange = mkRange inp len
     }
 
-scanMany :: BS.ByteString -> Either String [RangedToken]
-scanMany input = runAlex input go
+runLexer :: BS.ByteString -> Either String [RangedToken]
+runLexer input = runAlex input go
   where
     go = do
       output <- alexMonadScan
