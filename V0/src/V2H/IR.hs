@@ -25,7 +25,9 @@ data PackedDimensionIR = PackedDimensionIR deriving (Show, Eq, Ord)
 data UnpackedDimensionIR = UnpackedDimensionIR deriving (Show, Eq, Ord)
 data StatementItemIR =  BlockingAssignment ConnectionIR ExpressionIR
                         | NonblockingAssignment ConnectionIR ExpressionIR deriving (Show, Eq, Ord)
-data ExpressionIR = EConnection ConnectionIR deriving (Show, Eq, Ord)
+-- Perhaps Eliteral should be of value signalDynamic ?
+data ExpressionIR = EConnection ConnectionIR
+                    | ELiteral Integer deriving (Show, Eq, Ord)
 data DataTypeIR = LogicIR deriving (Show, Eq, Ord)
 
 data ConnectionIR =

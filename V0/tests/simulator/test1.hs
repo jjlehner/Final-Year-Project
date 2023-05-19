@@ -1,4 +1,5 @@
 {-# LANGUAGE DataKinds, TemplateHaskell #-}
+{-# LANGUAGE ImpredicativeTypes #-}
 
 module Main where
 import Control.Lens hiding (element)
@@ -12,6 +13,7 @@ import Control.Monad.State.Strict
 import Debug.Trace
 
 import GHC.TypeLits
+import Control.Exception (assert)
 
 clkIRIdentifier = VariableOrNetIdentifierIR "clk"
 aIRIdentifier = VariableOrNetIdentifierIR "a"
@@ -41,8 +43,8 @@ data ExampleModuleDynamic = ExampleModuleDynamic {
 
 $(makeLenses ''ExampleModuleDynamic)
 
-lensMap :: Map.Map VariableOrNetIdentifierIR (Getting SignalDynamic ExampleModuleDynamic SignalDynamic)
-lensMap = Map.fromList [(clkIRIdentifier, clkD), (aIRIdentifier,aD), (bIRIdentifier, bD)]
+lensMap :: Map.Map VariableOrNetIdentifierIR (ReifiedLens' ExampleModuleDynamic SignalDynamic)
+lensMap = Map.fromList [(clkIRIdentifier, Lens clkD), (aIRIdentifier,Lens aD), (bIRIdentifier, Lens bD)]
 
 x = ExampleModule $ Signal 0
 -- (<=) :: a -> b ->
@@ -87,17 +89,18 @@ convertToDynamic m =
 convertFromDynamic :: ExampleModuleDynamic -> ExampleModule
 convertFromDynamic md =
     ExampleModule {
-        _clk = Signal md._clkD.value,
-        _a = Signal md._aD.value,
-        _b = Signal md._bD.value
+        _clk = Signal md._clkD.signalValue,
+        _a = Signal md._aD.signalValue,
+        _b = Signal md._bD.signalValue
     }
+
 
 evalTestbench :: State (TestbenchCircuitState ExampleModule) ()
 evalTestbench = do
     (TestbenchCircuitState testbenchState oldState changingSignals) <- get
     let testbenchStateDynamic = convertToDynamic testbenchState
     let oldStateDynamic = convertToDynamic oldState
-    let (TestbenchCircuitState newStateDynamic _ _) =  execState (eval ir lensMap) $ TestbenchCircuitState oldStateDynamic newStateDynamic changingSignals
+    let (TestbenchCircuitState newStateDynamic _ _) =  execState (eval ir lensMap) $ TestbenchCircuitState testbenchStateDynamic oldStateDynamic changingSignals
     let newState = convertFromDynamic newStateDynamic
     put $ TestbenchCircuitState newState newState Set.empty
     return ()
@@ -112,9 +115,14 @@ main =
         test1 = do
             clk <== Signal 1
             evalTestbench
-        (TestbenchCircuitState end _ a) = execState test1 (TestbenchCircuitState start start Set.empty)
+            clk <== Signal 0
+            a <== Signal 0
+            evalTestbench
+            clk <== Signal 1
+            evalTestbench
+        (TestbenchCircuitState end _ b) = execState test1 (TestbenchCircuitState start start Set.empty)
     in
-        traceShow a $ print end
+        print $ assert False end
 
 
 
