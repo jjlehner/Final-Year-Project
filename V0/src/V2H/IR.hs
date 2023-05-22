@@ -2,6 +2,10 @@
 
 module V2H.IR where
 
+import V2H.IR.DataTypes
+import V2H.IR.NetTypes
+import V2H.IR.Dimensions
+
 import qualified    Data.Map              as Map
 import qualified    Data.Set              as Set
 import qualified    V2H.Ast               as Ast
@@ -21,14 +25,50 @@ data SelectIR = SelectIR {
 } deriving (Show, Eq, Ord)
 
 data SensitivityIR = Comb | FF (Set.Set EventExpressionIR) | Latch deriving (Show, Eq, Ord)
-data PackedDimensionIR = PackedDimensionIR deriving (Show, Eq, Ord)
-data UnpackedDimensionIR = UnpackedDimensionIR deriving (Show, Eq, Ord)
+
 data StatementItemIR =  BlockingAssignment ConnectionIR ExpressionIR
                         | NonblockingAssignment ConnectionIR ExpressionIR deriving (Show, Eq, Ord)
--- Perhaps Eliteral should be of value signalDynamic ?
+
+class (Show svdt, Ord svdt, Eq svdt) => SVDataObject svdt where
+    unaryOpMinus :: DataTypeIR -> svdt -> SignalValue
+    unaryOpExclamationMark :: DataTypeIR -> svdt -> SignalValue
+    getLSB :: svdt -> Bool
+    objToInteger :: DataTypeIR -> svdt -> Integer
+
+instance SVDataObject Integer where
+    unaryOpMinus dataType a = SignalValue dataType (-a)
+    objToInteger (DTSingular (STScalar SIVTLogic)) a =
+        case a of
+            0 -> 0
+            _ -> 1
+    unaryOpExclamationMark dataType 0 = SignalValue dataType (1::Integer)
+    unaryOpExclamationMark dataType _ = SignalValue dataType (0::Integer)
+
+data SignalValue where
+    SignalValue :: (Eq svdt, SVDataObject svdt) => DataTypeIR -> svdt -> SignalValue
+deriving instance Show SignalValue
+
+instance Eq SignalValue where
+instance Ord SignalValue where
+
+signalValueToInteger (SignalValue dataType svdo) = objToInteger dataType svdo
+signalValueToDataType (SignalValue dataType _) = dataType
+
 data ExpressionIR = EConnection ConnectionIR
-                    | ELiteral Integer deriving (Show, Eq, Ord)
-data DataTypeIR = LogicIR deriving (Show, Eq, Ord)
+                        | ELiteral SignalValue
+                        | EUnaryOperator UnaryOperatorIR ExpressionIR deriving (Show, Eq, Ord)
+
+data UnaryOperatorIR =  UOPlus
+                        | UOMinus
+                        | UOExclamationMark
+                        | UOTilda
+                        | UOAmpersand
+                        | UOTildaAmpersand
+                        | UOPipe
+                        | UOTildePipe
+                        | UOCaret
+                        | UOTildeCaret
+                        | UOCaretTilde deriving (Show, Eq, Ord)
 
 data ConnectionIR =
     ConnectionVariableIR VariableIR (Maybe SelectIR)
@@ -65,14 +105,14 @@ getSensitiveSignals alwaysConstructIR =
 data VariableIR =
     VariableIR {
         identifier :: VariableOrNetIdentifierIR,
-        dataType :: DataTypeIR,
-        packedDimension :: Maybe PackedDimensionIR,
-        unpackedDimension :: Maybe UnpackedDimensionIR
+        dataType :: DataTypeIR
     } deriving (Show, Eq, Ord)
 
 data NetIR =
     NetIR {
-        identifier :: VariableOrNetIdentifierIR
+        identifier :: VariableOrNetIdentifierIR,
+        netType :: NetTypeIR,
+        dataType :: DataTypeIR
     } deriving (Show, Eq, Ord)
 
 

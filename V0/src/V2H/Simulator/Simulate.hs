@@ -3,53 +3,30 @@ module V2H.Simulator.Simulate where
 import Control.Monad
 import Control.Lens
 import Control.Monad.State.Strict
-import Data.Function
-import Data.Sequence.Queue qualified as Queue
 import Data.Set qualified as Set
 import Data.Map qualified as Map
+import Data.Sequence.Queue as Queue
 import Data.Maybe
 
 import Data.Bits
 import V2H.IR
-import Debug.Trace
+import V2H.IR.DataTypes
+import V2H.Simulator.TimeSlot
 import GHC.TypeLits
+import GHC.Integer
+import V2H.IR.DataTypes (DataTypeIR)
+import Debug.Trace
 
-newtype Signal sig (a::Nat) = Signal {value::Integer} deriving (Show, Eq)
 data SignalDynamic =
     SignalDynamic {
-        signalVariableOrNetIdentifier :: VariableOrNetIdentifierIR,
-        signalWidth :: Integer,
-        signalValue :: Integer
+        signalIdentifier :: VariableOrNetIdentifierIR,
+        signalValue :: SignalValue
     } deriving (Show)
-
-data TimeSlotEvent = UpdateNetVariable ConnectionIR ExpressionIR | ScheduleNBAUpdate ConnectionIR ExpressionIR deriving (Show, Eq)
+mkSignalValueFromSignalDynamic resultType (SignalDynamic _(SignalValue _ svdo)) = SignalValue resultType svdo
 
 class FindNetVariableIdentifier s where
     fetchNetVariableIdentifier :: s -> VariableOrNetIdentifierIR
 
-data TimeSlot =
-    TimeSlot {
-        _activeRegion :: Queue.Queue TimeSlotEvent,
-        _nbaRegion :: Queue.Queue TimeSlotEvent,
-        _reActiveRegion :: Queue.Queue TimeSlotEvent,
-        _reNbaRegion :: Queue.Queue TimeSlotEvent
-    } deriving (Show)
-
-
-emptyTimeSlot = TimeSlot Queue.empty Queue.empty Queue.empty Queue.empty
-
-$(makeLenses ''TimeSlot)
-
-addToActiveRegion :: TimeSlot -> TimeSlotEvent -> TimeSlot
-addToActiveRegion = addToRegion activeRegion
-addToNbaRegion :: TimeSlot -> TimeSlotEvent -> TimeSlot
-addToNbaRegion = addToRegion nbaRegion
-addToReactiveRegion :: TimeSlot -> TimeSlotEvent -> TimeSlot
-addToReactiveRegion = addToRegion reActiveRegion
-addToReNbaRegion :: TimeSlot -> TimeSlotEvent -> TimeSlot
-addToReNbaRegion = addToRegion reNbaRegion
-
-addToRegion regionLens timeSlot event = over regionLens (Queue.|> event) timeSlot
 -- updateSignals :: IR -> (moduleSignals, Set.Set ModuleItemIdentifierIR) -> TimeSlot
 -- updateSignals ir (moduleSignals, updateSet) =
 
@@ -97,15 +74,15 @@ isTimeSlotEmpty = do
             && ts._reActiveRegion == Queue.empty
             && ts._reNbaRegion == Queue.empty)
 
-data TestbenchCircuitState a =
-    TestbenchCircuitState {
-        _updatedState :: a,
-        _oldState :: a,
-        _updatedSignals :: Set.Set VariableOrNetIdentifierIR
+data StimulatedCircuit a =
+    StimulatedCircuit {
+        _stimulatedState :: a,
+        _stimulatedSignals :: Set.Set VariableOrNetIdentifierIR
     }  deriving (Show)
-$(makeLenses ''TestbenchCircuitState)
+$(makeLenses ''StimulatedCircuit)
+mkStimulatedCircuit initialState = StimulatedCircuit initialState Set.empty
 
-executeTimeSlot ::
+executeTimeSlot :: (Show circuitState) =>
     IR
     -> Map.Map VariableOrNetIdentifierIR (ReifiedLens' circuitState SignalDynamic)
     -> State (circuitState,TimeSlot) ()
@@ -128,15 +105,15 @@ updateTimeSlotFromSensitiveProcess alwaysConstruct =
         put $ foldl (\ts si -> addToReactiveRegion ts (statementItemToTimeSlotEvent si)) timeSlotInit alwaysConstruct.statementItems
         return ()
 
-isConnectionSignalChangeTriggerLevel (SignalDynamic _ _ vOld) (SignalDynamic _ _ vNew) (ConnectionVariableIR variableIR Nothing) = vOld /= vNew
+isConnectionSignalChangeTriggerLevel (SignalDynamic _ vOld) (SignalDynamic _ vNew) (ConnectionVariableIR variableIR Nothing) = vOld /= vNew
 
-isConnectionSignalChangeTriggerPosedge (SignalDynamic _ _ vOld) (SignalDynamic _ _ vNew) (ConnectionVariableIR variableIR Nothing)  =
-    case (testBit vOld 0, testBit vNew 0 ) of
-        (False,True) -> True
+isConnectionSignalChangeTriggerPosedge (SignalDynamic _ (SignalValue _ vOld)) (SignalDynamic _ (SignalValue _ vNew)) (ConnectionVariableIR variableIR Nothing)  =
+    case (getLSB vOld, getLSB vNew) of
+        (True,False) -> True
         _ -> False
 
-isConnectionSignalChangeTriggerNegedge (SignalDynamic _ _ vOld) (SignalDynamic _ _ vNew) (ConnectionVariableIR variableIR Nothing) =
-    case (testBit vOld 0, testBit vNew 0) of
+isConnectionSignalChangeTriggerNegedge (SignalDynamic _ (SignalValue _ vOld)) (SignalDynamic _ (SignalValue _ vNew)) (ConnectionVariableIR variableIR Nothing) =
+    case (getLSB vOld, getLSB vNew) of
         (True,False) -> True
         _ -> False
 
@@ -147,7 +124,7 @@ doesSignalChangeTriggerEvent sigOld sigNew eventExpression =
                                     Just Negedge -> isConnectionSignalChangeTriggerNegedge
                                     Just Edge -> isConnectionSignalChangeTriggerLevel
                                     Nothing ->  isConnectionSignalChangeTriggerLevel
-        matchedSignal = sigOld.signalVariableOrNetIdentifier == fetchNetVariableIdentifierFromConnection eventExpression.connection
+        matchedSignal = sigOld.signalIdentifier == fetchNetVariableIdentifierFromConnection eventExpression.connection
     in matchedSignal || edgeDetectionMethod sigOld sigNew eventExpression.connection
 
 doesSignalChangeTriggerProcess :: SignalDynamic -> SignalDynamic -> AlwaysConstructIR -> Bool
@@ -170,89 +147,133 @@ generateTimeSlotFromTestbenchSignalUpdate sensitiveProcessMap lensMap oldState t
         let lens = lensMap Map.! variableOrNetIdentifier
         let oldSig = view (runLens lens) oldState
         let newSig = view (runLens lens) testbenchState
+        let updateTimeSlotwhenSignalChangeTriggerProcess elem = when (doesSignalChangeTriggerProcess oldSig newSig elem) $ updateTimeSlotFromSensitiveProcess elem
         case Map.lookup variableOrNetIdentifier sensitiveProcessMap of
             Nothing -> return ()
-            Just sensitiveProcesses ->
-                Set.foldl (\s elem ->
-                    if doesSignalChangeTriggerProcess oldSig newSig elem then
-                        s >> updateTimeSlotFromSensitiveProcess elem
-                    else s) (pure ()) sensitiveProcesses
+            Just sensitiveProcesses -> mapM_ updateTimeSlotwhenSignalChangeTriggerProcess $ Set.toList sensitiveProcesses
 
+generateTimeSlotEventWithIdentifier ::
+        IR
+        -> Map.Map VariableOrNetIdentifierIR (ReifiedLens' circuitState SignalDynamic)
+        -> circuitState
+        -> VariableOrNetIdentifierIR
+        -> TimeSlotEvent
+generateTimeSlotEventWithIdentifier ir lensMap stimulatedCircuit sigIdentifier =
+    let ln = lensMap Map.! sigIdentifier
+        newVal = view (runLens ln) stimulatedCircuit
+        updatingVariable = ir.variables Map.! sigIdentifier
+    in ScheduleNBAUpdate (ConnectionVariableIR updatingVariable Nothing) $ ELiteral newVal.signalValue
 generateTimeSlotFromTestbench ::
     IR
     -> Map.Map VariableOrNetIdentifierIR (ReifiedLens' circuitState SignalDynamic)
-    -> TestbenchCircuitState circuitState
+    -> StimulatedCircuit circuitState
     -> TimeSlot
-generateTimeSlotFromTestbench ir lensMap testbenchCircuitState =
-    let sensitiveProcessMap = mkSensitiveProcessesMapFromIR ir
-        timeSlotUpdater = generateTimeSlotFromTestbenchSignalUpdate sensitiveProcessMap lensMap (view oldState testbenchCircuitState) (view updatedState testbenchCircuitState)
-        timeSlotGenerator = foldl (\ts elem -> ts >> timeSlotUpdater elem) (pure ()) (view updatedSignals testbenchCircuitState)
-    in execState timeSlotGenerator emptyTimeSlot
+generateTimeSlotFromTestbench ir lensMap (StimulatedCircuit stimState stimSignals) =
+    foldl (\ts iden -> addToReactiveRegion ts (generateTimeSlotEventWithIdentifier ir lensMap stimState iden)) emptyTimeSlot stimSignals
 
-executeEvent :: IR
+evaluateExpression ::
+    IR
+    -> Map.Map VariableOrNetIdentifierIR (ReifiedLens' circuitState SignalDynamic)
+    -> DataTypeIR
+    -> circuitState
+    -> ExpressionIR
+    -> SignalValue
+evaluateExpression _ _ resultType circuitState (ELiteral x) = x
+evaluateExpression ir lensMap resultType circuitState (EConnection conn) =
+    let fetchLens = lensMap Map.! fetchNetVariableIdentifierFromConnection conn
+    in mkSignalValueFromSignalDynamic resultType $ view (runLens fetchLens) circuitState
+        -- & traceShow (view (runLens fetchLens) circuitState)
+
+evaluateExpression ir lensMap resultType circuitState (EUnaryOperator unaryOp expr) =
+    traceShow (evaluateExpression ir lensMap resultType circuitState expr) $
+    case unaryOp of
+        UOPlus -> evaluateExpression ir lensMap resultType circuitState expr
+        UOMinus ->  unaryOpMinus' resultType $ evaluateExpression ir lensMap resultType circuitState expr
+        UOExclamationMark -> unaryOpExclamationMark' resultType $ evaluateExpression ir lensMap resultType circuitState expr
+        UOTilda -> undefined
+        UOAmpersand -> undefined
+        UOTildaAmpersand -> undefined
+        UOPipe -> undefined
+        UOTildePipe -> undefined
+        UOCaret -> undefined
+        UOTildeCaret -> undefined
+        UOCaretTilde -> undefined
+
+{- These shouldn't be necessary -}
+unaryOpMinus' resultType (SignalValue _ svdo) = unaryOpMinus resultType svdo
+unaryOpExclamationMark' resultType (SignalValue _ svdo) = unaryOpExclamationMark resultType svdo
+
+executeEvent :: (Show circuitState) => IR
                 -> Map.Map VariableOrNetIdentifierIR (ReifiedLens' circuitState SignalDynamic)
                 -> TimeSlotEvent
                 -> State (circuitState, TimeSlot) ()
-executeEvent ir lensMap (UpdateNetVariable toSet (EConnection toFetch)) = do
-    let fetchLens = lensMap Map.! fetchNetVariableIdentifierFromConnection toFetch
-    let setLens = lensMap Map.! fetchNetVariableIdentifierFromConnection toSet
+executeEvent ir lensMap (UpdateNetVariable toSet expr) = do
     (oldState, oldTimeSlot) <- get
-    let fetchedValue = view (runLens fetchLens) oldState
-    let updatedState = set (runLens setLens) fetchedValue oldState
+    let setLens =
+            lensMap Map.! fetchNetVariableIdentifierFromConnection toSet
+    let initialVariable@SignalDynamic{signalIdentifier=identifier, signalValue=signalValue} =
+            view (runLens setLens) oldState
+    let resultDataType =
+            signalValue
+            & signalValueToDataType
+
+    let evaluatedExpr = SignalDynamic identifier $ evaluateExpression ir lensMap resultDataType oldState expr
+    let updatedState = set (runLens setLens) evaluatedExpr oldState
     let sensitiveProcessMap = mkSensitiveProcessesMapFromIR ir
-    let timeSlotUpdater = generateTimeSlotFromTestbenchSignalUpdate sensitiveProcessMap lensMap updatedState oldState (fetchNetVariableIdentifierFromConnection toFetch)
+    let timeSlotUpdater = generateTimeSlotFromTestbenchSignalUpdate sensitiveProcessMap lensMap updatedState oldState (fetchNetVariableIdentifierFromConnection toSet)
     let newTimeSlot = execState timeSlotUpdater oldTimeSlot
     put (updatedState, newTimeSlot)
 
-executeEvent ir lensMap (UpdateNetVariable toSet (ELiteral lit)) = do
+executeEvent ir lensMap (ScheduleNBAUpdate conn expr) = do
     (oldState, oldTimeSlot) <- get
-    let ln = lensMap Map.! fetchNetVariableIdentifierFromConnection toSet
-    let newValue = (view (runLens ln) oldState) {signalValue = lit}
-    let updatedState = over (runLens ln) (const newValue) oldState
-    put (updatedState, oldTimeSlot)
-
-executeEvent ir lensMap (ScheduleNBAUpdate conn (EConnection toFetch)) = do
-    let fetchLens = lensMap Map.! fetchNetVariableIdentifierFromConnection toFetch
-    (oldState, oldTimeSlot) <- get
-    let fetchedValue = view (runLens fetchLens) oldState
-    let newTimeSlot = addToNbaRegion oldTimeSlot $ UpdateNetVariable  conn $ ELiteral fetchedValue.signalValue
+    let toUpdateLens = lensMap Map.! fetchNetVariableIdentifierFromConnection conn
+    let resultDataType =
+            view (runLens toUpdateLens) oldState
+            & signalValue
+            & signalValueToDataType
+    let evaluatedExpr = evaluateExpression ir lensMap resultDataType oldState expr
+    let newTimeSlot = addToNbaRegion oldTimeSlot $ UpdateNetVariable conn $ ELiteral evaluatedExpr
     put (oldState, newTimeSlot)
 
-executeEvents ::
+executeEvents ::(Show circuitState) =>
     IR
     -> Map.Map VariableOrNetIdentifierIR (ReifiedLens' circuitState SignalDynamic)
     -> Queue.Queue TimeSlotEvent
     -> State (circuitState, TimeSlot) ()
-executeEvents ir lensMap q =
-    traceShow q
-    foldl (\state event -> state >> executeEvent ir lensMap event) (pure () ) q
+executeEvents ir lensMap  = mapM_ $ executeEvent ir lensMap
 
-executeActiveRegionSet :: IR -> Map.Map VariableOrNetIdentifierIR (ReifiedLens' circuitState SignalDynamic) -> State (circuitState, TimeSlot) ()
+executeActiveRegionSet ::(Show circuitState) =>
+    IR
+    -> Map.Map VariableOrNetIdentifierIR (ReifiedLens' circuitState SignalDynamic)
+    -> State (circuitState, TimeSlot) ()
 executeActiveRegionSet ir lensMap= do
     events <- getFirstRegionInActiveRegionSet
     case events of
         Nothing -> return ()
         Just e -> do
-                    traceShow "events" $ pure ()
                     executeEvents ir lensMap e
                     executeActiveRegionSet ir lensMap
 
-executeReActiveRegionSet ::
+executeReActiveRegionSet :: (Show circuitState) =>
     IR
     -> Map.Map VariableOrNetIdentifierIR (ReifiedLens' circuitState SignalDynamic)
     -> State (circuitState, TimeSlot) ()
 executeReActiveRegionSet ir lensMap = do
     events <- getFirstRegionInReactiveRegionSet
-    traceShow events $ pure ()
     case events of
         Just e -> do
                     executeEvents ir lensMap e
                     executeReActiveRegionSet ir lensMap
         Nothing -> return ()
 
-eval :: (Show circuitState) =>  IR -> Map.Map VariableOrNetIdentifierIR (ReifiedLens' circuitState SignalDynamic) -> State (TestbenchCircuitState circuitState) ()
+eval :: (Show circuitState) =>
+    IR
+    -> Map.Map VariableOrNetIdentifierIR (ReifiedLens' circuitState SignalDynamic)
+    -> State (StimulatedCircuit circuitState) ()
 eval ir lensMap = do
-    testbenchCircuitState <- get
-    let timeSlot = generateTimeSlotFromTestbench ir lensMap testbenchCircuitState
-    let newState = fst $ execState (executeTimeSlot ir lensMap) (view updatedState testbenchCircuitState, generateTimeSlotFromTestbench ir lensMap testbenchCircuitState)
-    put $ TestbenchCircuitState newState newState Set.empty
+    stimulatedCircuit@StimulatedCircuit{_stimulatedState=stimulatedState} <- get
+    let timeSlot = generateTimeSlotFromTestbench ir lensMap stimulatedCircuit
+    let newState =  (stimulatedState, generateTimeSlotFromTestbench ir lensMap stimulatedCircuit)
+                    & execState (executeTimeSlot ir lensMap)
+                    & fst
+    put $ StimulatedCircuit newState Set.empty

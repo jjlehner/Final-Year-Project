@@ -13,12 +13,14 @@ import Control.Monad.State.Strict
 import Debug.Trace
 
 import GHC.TypeLits
-import Control.Exception (assert)
+import V2H.IR.DataTypes
 
 clkIRIdentifier = VariableOrNetIdentifierIR "clk"
 aIRIdentifier = VariableOrNetIdentifierIR "a"
 bIRIdentifier = VariableOrNetIdentifierIR "b"
 data ModuleExampleSignals = ModuleExampleCLK | ModuleExampleA | ModuleExampleB
+
+newtype Signal sig (a::Nat) = Signal {value::Integer} deriving (Show, Eq)
 
 instance FindNetVariableIdentifier (Signal ModuleExampleCLK a) where
     fetchNetVariableIdentifier _ = clkIRIdentifier
@@ -48,22 +50,21 @@ lensMap = Map.fromList [(clkIRIdentifier, Lens clkD), (aIRIdentifier,Lens aD), (
 
 x = ExampleModule $ Signal 0
 -- (<=) :: a -> b ->
-(<==) :: (FindNetVariableIdentifier s1) => Lens' ExampleModule s1 -> s1 -> State (TestbenchCircuitState ExampleModule) ()
+(<==) :: (FindNetVariableIdentifier s1) => Lens' ExampleModule s1 -> s1 -> State (StimulatedCircuit ExampleModule) ()
 (<==) ln newValue = do
-    (TestbenchCircuitState circuitState exampleModule changedSignals) <- get
-    let a = view ln exampleModule
-    let b = over ln (const newValue) exampleModule
-    put $ TestbenchCircuitState b exampleModule $ Set.insert (fetchNetVariableIdentifier a) changedSignals
+    (StimulatedCircuit circuitState changedSignals) <- get
+    let b = set ln newValue circuitState
+    put $ StimulatedCircuit b $ Set.insert (fetchNetVariableIdentifier newValue) changedSignals
 
-clkIR = VariableIR clkIRIdentifier LogicIR Nothing Nothing
-aIR = VariableIR aIRIdentifier LogicIR Nothing Nothing
-bIR = VariableIR  bIRIdentifier LogicIR Nothing Nothing
+clkIR = VariableIR clkIRIdentifier $ DTSingular $ STScalar SIVTLogic
+aIR = VariableIR aIRIdentifier $ DTSingular $ STScalar SIVTLogic
+bIR = VariableIR  bIRIdentifier $ DTSingular $ STScalar SIVTLogic
 
 clkIRConnection = ConnectionVariableIR clkIR Nothing
 aIRConnection = ConnectionVariableIR aIR Nothing
 bIRConnection = ConnectionVariableIR bIR Nothing
 
-sItems = [NonblockingAssignment bIRConnection $ EConnection aIRConnection]
+sItems = [NonblockingAssignment bIRConnection $ EUnaryOperator UOExclamationMark $ EConnection aIRConnection]
 ir = IR {
     alwaysConstructs = Map.fromList [(  AlwaysConstructIdentifierIR "ExampleModuleAlways1",
                                         AlwaysConstructIR {
@@ -81,48 +82,55 @@ ir = IR {
 convertToDynamic :: ExampleModule -> ExampleModuleDynamic
 convertToDynamic m =
     ExampleModuleDynamic {
-        _clkD = SignalDynamic clkIRIdentifier 1 m._clk.value,
-        _aD = SignalDynamic aIRIdentifier 1 m._a.value,
-        _bD = SignalDynamic aIRIdentifier 1 m._b.value
+        _clkD = SignalDynamic clkIRIdentifier $ SignalValue (DTSingular $ STScalar SIVTLogic) m._clk.value,
+        _aD = SignalDynamic aIRIdentifier $ SignalValue (DTSingular $ STScalar SIVTLogic) m._a.value,
+        _bD = SignalDynamic aIRIdentifier $ SignalValue (DTSingular $ STScalar SIVTLogic) m._b.value
     }
 
 convertFromDynamic :: ExampleModuleDynamic -> ExampleModule
 convertFromDynamic md =
     ExampleModule {
-        _clk = Signal md._clkD.signalValue,
-        _a = Signal md._aD.signalValue,
-        _b = Signal md._bD.signalValue
+        _clk = Signal $ signalValueToInteger md._clkD.signalValue,
+        _a = Signal $ signalValueToInteger md._aD.signalValue,
+        _b = Signal $ signalValueToInteger md._bD.signalValue
     }
 
 
-evalTestbench :: State (TestbenchCircuitState ExampleModule) ()
+evalTestbench :: State (StimulatedCircuit ExampleModule) ()
 evalTestbench = do
-    (TestbenchCircuitState testbenchState oldState changingSignals) <- get
+    (StimulatedCircuit testbenchState changingSignals) <- get
     let testbenchStateDynamic = convertToDynamic testbenchState
-    let oldStateDynamic = convertToDynamic oldState
-    let (TestbenchCircuitState newStateDynamic _ _) =  execState (eval ir lensMap) $ TestbenchCircuitState testbenchStateDynamic oldStateDynamic changingSignals
+    let (StimulatedCircuit newStateDynamic _) =  execState (eval ir lensMap) $ StimulatedCircuit testbenchStateDynamic changingSignals
     let newState = convertFromDynamic newStateDynamic
-    put $ TestbenchCircuitState newState newState Set.empty
-    return ()
+    put $ StimulatedCircuit newState Set.empty
+
+runTest test startState =
+    _stimulatedState $ execState test $ mkStimulatedCircuit startState
+
 
 main :: IO ()
 main =
     let start = ExampleModule {
                     _clk = Signal 0,
-                    _a = Signal 1,
-                    _b = Signal 0
+                    _a = Signal 0,
+                    _b = Signal 1
                 }
+        toggleClock (clk'::Lens' ExampleModule (Signal b' 1)) a' = do
+            clk' <== Signal 0
+            evalTestbench
+            a'
+            evalTestbench
+            clk' <== Signal 1
+            evalTestbench
+
+
         test1 = do
-            clk <== Signal 1
-            evalTestbench
-            clk <== Signal 0
-            a <== Signal 0
-            evalTestbench
-            clk <== Signal 1
-            evalTestbench
-        (TestbenchCircuitState end _ b) = execState test1 (TestbenchCircuitState start start Set.empty)
+            toggleClock clk (a <== Signal 1)
+            toggleClock clk (a <== Signal 0)
+            -- toggleClock clk (a <== Signal 1)
+
     in
-        print $ assert False end
+        print $ runTest test1 start
 
 
 
