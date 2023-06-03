@@ -2,8 +2,8 @@
 
 module V2H.IR where
 
+import Data.List qualified as List
 import Control.Lens
-import Data.Generics.Product
 import GHC.Generics
 import V2H.IR.DataTypes
 import V2H.IR.NetTypes
@@ -77,7 +77,7 @@ instance Show SVDataObject where
     show = objToString
 
 data SignalValue = SignalValue DataTypeIR SVDataObject deriving (Generic, Show)
-
+toSVDataObject (SignalValue _ svdo) = svdo
 instance Eq SignalValue where
     (==) (SignalValue dt1 obj1) (SignalValue dt2 obj2) =
         dt1 == dt2 && binaryEqualEqual obj1 dt1 obj2
@@ -106,6 +106,7 @@ data UnaryOperatorIR =  UOPlus
                         | UOTildeCaret
                         | UOCaretTilde deriving (Show, Eq, Ord, Generic)
 
+-- Should be changed to CVariableIR and CNetIR
 data ConnectionIR =
     ConnectionVariableIR VariableIR (Maybe SelectIR)
     | ConnectionNetIR NetIR (Maybe SelectIR) deriving (Show, Eq, Ord, Generic)
@@ -156,7 +157,7 @@ data ModuleItemIdentifierIR = MIIAlways AlwaysConstructIdentifierIR | MIIVariabl
 newtype AlwaysConstructIdentifierIR = AlwaysConstructIdentifierIR String deriving (Show, Eq, Ord, Generic)
 newtype VariableOrNetIdentifierIR = VariableOrNetIdentifierIR String deriving (Show, Eq, Ord, Generic)
 newtype ModuleIdentifierIR = ModuleIdentifierIR String deriving (Show, Eq, Ord, Generic)
-newtype ModuleInstanceNameIR = ModuleInstanceNameIR String deriving (Show, Eq, Ord, Generic)
+newtype ModuleInstanceIdentifierIR = ModuleInstanceIdentifierIR String deriving (Show, Eq, Ord, Generic)
 newtype PortIdentifierIR = PortIdentifierIR String deriving (Show, Eq, Ord, Generic)
 data PortDirectionIR = PDInput | PDOutput deriving (Show, Eq, Ord, Generic)
 data PortDeclarationIR =
@@ -168,8 +169,9 @@ data PortDeclarationIR =
 
 data SubmoduleIR = SubmoduleIR {
     submoduleIdentifier :: ModuleIdentifierIR,
+    submoduleInstanceIdentifier :: ModuleInstanceIdentifierIR,
     connections :: Map.Map PortIdentifierIR ExpressionIR
-}
+} deriving (Show, Generic)
 
 data IR =
     IR {
@@ -177,9 +179,19 @@ data IR =
         alwaysConstructs    :: Map.Map AlwaysConstructIdentifierIR AlwaysConstructIR,
         variables           :: Map.Map VariableOrNetIdentifierIR VariableIR,
         nets                :: Map.Map VariableOrNetIdentifierIR NetIR,
-        ports               :: Map.Map PortIdentifierIR PortDeclarationIR
+        ports               :: Map.Map PortIdentifierIR PortDeclarationIR,
         submodules          :: [SubmoduleIR]
     } deriving (Show)
+
+data IRExpanded =
+    IRExpanded {
+
+    }
+
+findIRFromModuleIdentifier irs iden =
+    List.find (\ir -> ir.moduleIdentifier == iden) irs
+findIRFromSubmodule irs (SubmoduleIR iden _ _) =
+    List.find (\ir -> ir.moduleIdentifier == iden) irs
 
 mkSensitiveProcessMapFromAlwaysConstructIR :: AlwaysConstructIR -> Map.Map VariableOrNetIdentifierIR (Set.Set AlwaysConstructIR)
 mkSensitiveProcessMapFromAlwaysConstructIR alwaysConstructIR =

@@ -66,7 +66,7 @@ data DataDeclaration =
 
 data HierarchicalInstance =
     HierarchicalInstance {
-        instanceIdentifier :: InstanceIdentifier,
+        instanceIdentifier :: ModuleInstanceIdentifier,
         portConnections :: [PortConnection]
     } deriving (Show, Generic)
 
@@ -86,7 +86,7 @@ newtype BitSelect = BitSelect Expression deriving (Show, Generic)
 data PartSelectRange = PartSelectRange Integer Integer deriving (Show, Generic)
 
 data ModuleKeyword = MKModule | MKMacromodule deriving (Show, Generic)
-data Expression = ELiteral Integer | ENet NetIdentifier BitSelect PartSelectRange | EVariable VariableIdentifier BitSelect PartSelectRange deriving (Show, Generic)
+data Expression = ELiteral Integer | EConnection VariableIdentifier (Maybe BitSelect) (Maybe PartSelectRange) deriving (Show, Generic)
 data NetType = NTWire deriving (Show, Generic)
 data DataType = DTIntegerVector IntegerVectorType | DTString deriving (Show, Generic)
 data IntegerVectorType = IVTBit | IVTLogic | IVTReg deriving (Show, Generic)
@@ -96,4 +96,4 @@ newtype PortIdentifier = PortIdentifier String deriving (Show, Generic)
 newtype VariableIdentifier = VariableIdentifier String deriving (Show, Generic)
 newtype AlwaysConstructIdentifier = AlwaysConstructIdentifier String deriving (Show, Generic)
 newtype NetIdentifier = NetIdentifier String deriving (Show, Generic)
-newtype InstanceIdentifier = InstanceIdentifier String deriving (Show, Generic)
+newtype ModuleInstanceIdentifier = ModuleInstanceIdentifier String deriving (Show, Generic)

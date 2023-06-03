@@ -1,18 +1,14 @@
+{-# LANGUAGE TemplateHaskell, DataKinds #-}
 module Main where
+import V2H.Simulator.Signal
+import V2H.Simple.V2H
 
-import Prelude hiding (readFile)
+$(setup "top" ["tests/parser/simple/empty_module.sv", "tests/parser/simple/submodule.sv"])
 
-import Data.ByteString.Lazy.Char8 (readFile)
-
-import V2H.Alex.Lexer qualified as Lexer
-import V2H.Simple.Parser qualified as Parser
-import V2H.Simple.IRGenerator as IR
-
-import Text.Pretty.Simple
-main = do
-    sourceCode <- readFile "tests/parser/simple/empty_module.sv"
-    let ir =
-            Lexer.runLexer sourceCode
-            >>= Parser.runParser
-            >>= IR.generateIR
-    pPrint ir
+-- x = Top {
+--     _a = Signal 0,
+--     _b = Signal 0,
+--     _clk = Signal 0,
+--     _sub=
+--         Sub{_a = Signal 0, _clk=Signal 0}, _sub2=Sub2{_a = Signal 0, _clk=Signal 0}}
+main = undefined

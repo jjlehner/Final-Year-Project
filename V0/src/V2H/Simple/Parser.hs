@@ -14,7 +14,8 @@ runParser :: [Lexer.RangedToken] -> Either String SimpleAst.SourceText
 runParser tokens =
     case fullParses (parser grammar) tokens of
         ([parse], _) -> Right parse
-        _ -> Left "Failed to parse"
+        (parse:_, _ ) -> Left "Ambiguous Grammar, multiple parses"
+        (_, report) -> Left $ "Failed to parse -- " ++ show report
 
 isPresent a = fmap isJust (optional a)
 eitherProd a b =
@@ -190,7 +191,8 @@ grammar = mdo
 
     blocking_assignment <- rule $ SimpleAst.BlockingAssignment <$> variable_lvalue <* equal <*> expression <* semicolon <?> "blocking_assignment"
     seq_block <- rule $ SimpleAst.SeqBlock <$> (begin *> many statement_item) <* end <?> "seq_block"
-    expression <- rule $ SimpleAst.ELiteral <$> unsigned_number <?> "expression"
+    expression <- rule $ SimpleAst.ELiteral <$> unsigned_number
+                            <|> SimpleAst.EConnection <$> variable_identifier <*> optional bit_select <*> optional part_select_range <?> "expression"
     data_declaration <- rule $ SimpleAst.DataDeclaration <$> data_type <*> variable_identifier <* semicolon <?> "data_declaration"
     net_type <- rule $ (wire $> SimpleAst.NTWire) <?> "net_type"
     data_type <- rule $ SimpleAst.DTIntegerVector <$> integer_vector_type <?> "dataType"
@@ -208,8 +210,8 @@ grammar = mdo
                                 <*> optional part_select_range <?> "variable_lvalue"
     bit_select <- rule $ SimpleAst.BitSelect <$> (osb *> expression <* csb) <?> "bit_select"
     part_select_range <- rule $ SimpleAst.PartSelectRange <$> (osb *> unsigned_number) <*> (colon *> unsigned_number) <*csb <?> "part_select_range"
-    module_instantiation <- rule $ SimpleAst.ModuleInstantiation <$> module_identifier <*> hierarchical_instance <?> "module_instantiation"
-    hierarchical_instance <- rule $ SimpleAst.HierarchicalInstance <$> (instance_identifier <* ob) <*> many port_connection <* cb
+    module_instantiation <- rule $ SimpleAst.ModuleInstantiation <$> module_identifier <*> hierarchical_instance <* semicolon <?> "module_instantiation"
+    hierarchical_instance <- rule $ SimpleAst.HierarchicalInstance <$> (module_instance_identifier <* ob) <*> ((:) <$> port_connection <*> many (comma *> port_connection)) <* cb
     port_connection <- rule $ SimpleAst.PCNamed <$> (fullstop *> port_identifier) <*> (ob *> expression <* cb) <?> "port_connection"
-    instance_identifier <- rule $ SimpleAst.InstanceIdentifier <$> identifier <?> "instance_identifier"
+    module_instance_identifier <- rule $ SimpleAst.ModuleInstanceIdentifier <$> identifier <?> "instance_identifier"
     return (source_text <* eof)

@@ -15,14 +15,9 @@ import V2H.Simulator.TimeSlot
 import GHC.TypeLits
 import GHC.Integer
 import V2H.IR.DataTypes (DataTypeIR)
+import V2H.Simulator.SignalDynamic
 import Debug.Trace
 
-data SignalDynamic =
-    SignalDynamic {
-        signalIdentifier :: VariableOrNetIdentifierIR,
-        signalValue :: SignalValue
-    } deriving (Show)
-mkSignalValueFromSignalDynamic resultType (SignalDynamic _(SignalValue _ svdo)) = SignalValue resultType svdo
 
 class FindNetVariableIdentifier s where
     fetchNetVariableIdentifier :: s -> VariableOrNetIdentifierIR
@@ -188,8 +183,8 @@ evaluateExpression ir lensMap resultType circuitState (EUnaryOperator unaryOp ex
     traceShow (evaluateExpression ir lensMap resultType circuitState expr) $
     case unaryOp of
         UOPlus -> evaluateExpression ir lensMap resultType circuitState expr
-        UOMinus ->  unaryOpMinus' resultType $ evaluateExpression ir lensMap resultType circuitState expr
-        UOExclamationMark -> unaryOpExclamationMark' resultType $ evaluateExpression ir lensMap resultType circuitState expr
+        UOMinus ->  SignalValue resultType $ unaryOpMinus (toSVDataObject $ evaluateExpression ir lensMap resultType circuitState expr) resultType
+        UOExclamationMark -> SignalValue resultType $ unaryOpExclamationMark (toSVDataObject $ evaluateExpression ir lensMap resultType circuitState expr) resultType
         UOTilda -> undefined
         UOAmpersand -> undefined
         UOTildaAmpersand -> undefined
@@ -198,10 +193,6 @@ evaluateExpression ir lensMap resultType circuitState (EUnaryOperator unaryOp ex
         UOCaret -> undefined
         UOTildeCaret -> undefined
         UOCaretTilde -> undefined
-
-{- These shouldn't be necessary -}
-unaryOpMinus' resultType (SignalValue _ svdo) = unaryOpMinus resultType svdo
-unaryOpExclamationMark' resultType (SignalValue _ svdo) = unaryOpExclamationMark resultType svdo
 
 executeEvent :: (Show circuitState) => IR
                 -> Map.Map VariableOrNetIdentifierIR (ReifiedLens' circuitState SignalDynamic)

@@ -10,12 +10,8 @@ import Debug.Trace
 import V2H.Simple.Ast qualified as SimpleAst
 import V2H.IR qualified as IR
 import V2H.Simple.IRGenerator.DataTypes
-import V2H.Simple.IRGenerator.Expressions ( generateExpression )
-
-generateVariableOrNetIdentifier ::
-    SimpleAst.VariableIdentifier
-    -> IR.VariableOrNetIdentifierIR
-generateVariableOrNetIdentifier (SimpleAst.VariableIdentifier iden) = IR.VariableOrNetIdentifierIR iden
+import V2H.Simple.IRGenerator.Expressions
+import V2H.Simple.IRGenerator.Identifiers
 
 generateConnection ::
     IR.VariableMapIR
@@ -83,7 +79,6 @@ generateInnerVariableIRs dataDeclarations =
 generatePortDirection SimpleAst.PDInput = IR.PDInput
 generatePortDirection SimpleAst.PDOutput = IR.PDOutput
 
-generatePortIdentifier (SimpleAst.PortIdentifier iden) = IR.PortIdentifierIR iden
 
 generatePortVariableIR ::
     SimpleAst.PortDeclaration
@@ -139,24 +134,35 @@ generatePortDeclarationIRs variables nets moduleDeclaration =
     let portDeclarationList = Maybe.fromMaybe [] $ moduleDeclaration.moduleHeader.portDeclarations
     in Map.fromList $ fmap (generatePortDeclarationIR variables nets) portDeclarationList
 
-a :: SimpleAst.PortConnection -> (IR.PortIdentifierIR, IR.ExpressionIR)
-a portConnection =
+generateSubmoduleConnections ::
+    IR.VariableMapIR
+    -> IR.NetMapIR
+    -> SimpleAst.PortConnection
+    -> (IR.PortIdentifierIR, IR.ExpressionIR)
+generateSubmoduleConnections variables nets portConnection =
+    (generatePortIdentifier portConnection.portIdentifier, generateExpression variables nets portConnection.expression)
 
 
 generateSubmoduleIR ::
-    SimpleAst.ModuleInstantiation
+    IR.VariableMapIR
+    -> IR.NetMapIR
+    -> SimpleAst.ModuleInstantiation
     -> IR.SubmoduleIR
-generateSubmoduleIR moduleInstantiation =
+generateSubmoduleIR variables nets moduleInstantiation =
     IR.SubmoduleIR {
         submoduleIdentifier = generateModuleIdentifier moduleInstantiation.moduleIdentifier,
-        connections = moduleInstantiation.hierarchicalInstance.
+        submoduleInstanceIdentifier = generateModuleInstanceIdentifier moduleInstantiation.hierarchicalInstance.instanceIdentifier,
+        connections = Map.fromList $ generateSubmoduleConnections variables nets <$> moduleInstantiation.hierarchicalInstance.portConnections
     }
 
 generateSubmoduleIRs ::
-    SimpleAst.ModuleDeclaration
+    IR.VariableMapIR
+    -> IR.NetMapIR
+    -> SimpleAst.ModuleDeclaration
     -> [IR.SubmoduleIR]
-generateSubmoduleIRs moduleDeclaration =
-    fmap generateSubmoduleIR $ toListOf (types @SimpleAst.ModuleInstantiation) sourceText
+generateSubmoduleIRs variables nets moduleDeclaration =
+    generateSubmoduleIR variables nets <$> toListOf (types @SimpleAst.ModuleInstantiation) moduleDeclaration
+
 
 generateModuleIR ::
     SimpleAst.ModuleDeclaration
@@ -166,13 +172,14 @@ generateModuleIR moduleDeclaration =
         nets = generateNetIRs moduleDeclaration
         alwaysConstructs = generateAlwaysConstructIRs variables nets moduleDeclaration
         portsTable = generatePortDeclarationIRs variables nets moduleDeclaration
-        generateModuleIdentifier (SimpleAst.ModuleIdentifier iden) = IR.ModuleIdentifierIR iden
+
     in traceShow variables IR.IR {
         moduleIdentifier = generateModuleIdentifier moduleDeclaration.moduleHeader.moduleIdentifier,
         alwaysConstructs = alwaysConstructs,
         variables = variables,
         nets = Map.empty,
-        ports = portsTable
+        ports = portsTable,
+        submodules = generateSubmoduleIRs variables nets moduleDeclaration
     }
 
 generateIR ::

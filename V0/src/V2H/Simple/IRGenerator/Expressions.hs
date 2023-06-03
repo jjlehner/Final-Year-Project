@@ -1,6 +1,5 @@
 module V2H.Simple.IRGenerator.Expressions where
 import Control.Lens
-import Data.Generics.Product
 import Data.Map qualified as Map
 import Data.Bits qualified as Bits
 import V2H.Simple.Ast qualified as SimpleAst
@@ -33,3 +32,11 @@ generateExpression ::
     -> IR.ExpressionIR
 generateExpression _ _ (SimpleAst.ELiteral i) =
     IR.ELiteral $ IR.SignalValue (IR.DTSingular $ IR.STInteger IR.NSITInt) $ mkSignalValueFromInteger i
+generateExpression variables nets (SimpleAst.EConnection (SimpleAst.VariableIdentifier identifier) Nothing Nothing) =
+    let variable = Map.lookup (IR.VariableOrNetIdentifierIR identifier) variables
+        net = Map.lookup (IR.VariableOrNetIdentifierIR identifier) nets
+    in case (variable, net) of
+        (Nothing, Nothing) -> undefined
+        (Just v, Just n) -> undefined
+        (Just v, Nothing) -> IR.EConnection $ IR.ConnectionVariableIR v Nothing
+        (Nothing, Just n) -> IR.EConnection $ IR.ConnectionNetIR n Nothing

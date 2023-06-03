@@ -28,3 +28,6 @@ data AggregateTypeIR =
     ATUnpackedStructure UnpackedDimensionIR StructIR
     | ATUnpackedUnion UnpackedDimensionIR UnionIR
     | ATUnpackedArray UnpackedDimensionIR DataTypeIR deriving (Show, Eq, Ord, Generic)
+
+getBitWidth :: DataTypeIR -> Integer
+getBitWidth (DTSingular (STScalar SIVTLogic)) = 1
