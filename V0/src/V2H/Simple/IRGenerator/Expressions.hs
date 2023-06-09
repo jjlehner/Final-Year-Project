@@ -10,15 +10,15 @@ fromBoolToInteger :: Bool -> Integer
 fromBoolToInteger False = 0
 fromBoolToInteger True = 1
 
-mkSignalValueFromInteger :: Integer -> IR.SVDataObject
-mkSignalValueFromInteger i =
+mkSignalValueDataObjectFromInteger :: Integer -> IR.SVDataObject
+mkSignalValueDataObjectFromInteger i =
     IR.SVDataObject {
-        unaryOpMinus = mkSignalValueFromInteger . objIntegerToInteger (-i) ,
-        unaryOpExclamationMark = \_ -> mkSignalValueFromInteger $ fromBoolToInteger $ i /= 0 ,
-        getLSB = Bits.testBit i 0,
-        objToInteger = objIntegerToInteger i,
-        objToString = show i,
-        binaryEqualEqual = \dataType other -> i == IR.objToInteger other dataType
+        IR.unaryOpMinus = mkSignalValueDataObjectFromInteger . objIntegerToInteger (-i) ,
+        IR.unaryOpExclamationMark = \_ -> mkSignalValueDataObjectFromInteger $ fromBoolToInteger $ i /= 0 ,
+        IR.getLSB = Bits.testBit i 0,
+        IR.objToInteger = objIntegerToInteger i,
+        IR.objToString = show i,
+        IR.binaryEqualEqual = \dataType other -> i == IR.objToInteger other dataType
     }
 
 objIntegerToInteger :: Integer -> IR.DataTypeIR -> Integer
@@ -31,12 +31,12 @@ generateExpression ::
     -> SimpleAst.Expression
     -> IR.ExpressionIR
 generateExpression _ _ (SimpleAst.ELiteral i) =
-    IR.ELiteral $ IR.SignalValue (IR.DTSingular $ IR.STInteger IR.NSITInt) $ mkSignalValueFromInteger i
+    IR.ELiteral $ IR.SignalValue (IR.DTSingular $ IR.STInteger IR.NSITInt) $ mkSignalValueDataObjectFromInteger i
 generateExpression variables nets (SimpleAst.EConnection (SimpleAst.VariableIdentifier identifier) Nothing Nothing) =
     let variable = Map.lookup (IR.VariableOrNetIdentifierIR identifier) variables
         net = Map.lookup (IR.VariableOrNetIdentifierIR identifier) nets
     in case (variable, net) of
         (Nothing, Nothing) -> undefined
         (Just v, Just n) -> undefined
-        (Just v, Nothing) -> IR.EConnection $ IR.ConnectionVariableIR v Nothing
-        (Nothing, Just n) -> IR.EConnection $ IR.ConnectionNetIR n Nothing
+        (Just v, Nothing) -> IR.EConnection $ IR.ConnectionVariableIR (IR.I v.identifier) Nothing
+        (Nothing, Just n) -> IR.EConnection $ IR.ConnectionNetIR (IR.I n.identifier) Nothing

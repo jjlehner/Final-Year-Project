@@ -1,18 +1,28 @@
-{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE TemplateHaskell, TypeApplications, DeriveLift,DuplicateRecordFields #-}
 
 module V2H.IR where
 
 import Data.List qualified as List
 import Control.Lens
 import GHC.Generics
+
 import V2H.IR.DataTypes
 import V2H.IR.NetTypes
 import V2H.IR.Dimensions
 
 import qualified    Data.Map              as Map
 import qualified    Data.Set              as Set
+import Data.Set
 import Data.Function
 import GHC.Base
+
+import Language.Haskell.TH.Syntax
+
+newtype AlwaysConstructIdentifierIR = AlwaysConstructIdentifierIR String deriving (Show, Eq, Ord, Generic)
+newtype VariableOrNetIdentifierIR = VariableOrNetIdentifierIR String deriving (Show, Eq, Ord, Generic, Lift)
+newtype ModuleIdentifierIR = ModuleIdentifierIR String deriving (Show, Eq, Ord, Generic)
+newtype ModuleInstanceIdentifierIR = ModuleInstanceIdentifierIR String deriving (Show, Eq, Ord, Generic, Lift)
+newtype PortIdentifierIR = PortIdentifierIR String deriving (Show, Eq, Ord, Generic)
 
 type VariableMapIR = Map.Map VariableOrNetIdentifierIR VariableIR
 type NetMapIR = Map.Map VariableOrNetIdentifierIR NetIR
@@ -106,44 +116,36 @@ data UnaryOperatorIR =  UOPlus
                         | UOTildeCaret
                         | UOCaretTilde deriving (Show, Eq, Ord, Generic)
 
--- Should be changed to CVariableIR and CNetIR
+-- Should be changed to CVariableIR and CNetIR, separated as VariableORNetIdentifier will be split into variableIdentifier and NetIdentifier
 data ConnectionIR =
-    ConnectionVariableIR VariableIR (Maybe SelectIR)
-    | ConnectionNetIR NetIR (Maybe SelectIR) deriving (Show, Eq, Ord, Generic)
+    ConnectionVariableIR (HierarchicalIdentifierIR VariableOrNetIdentifierIR) (Maybe SelectIR)
+    | ConnectionNetIR (HierarchicalIdentifierIR VariableOrNetIdentifierIR) (Maybe SelectIR) deriving (Show, Eq, Ord, Generic)
+
+fetchMaybeSelectIRFromConnection (ConnectionVariableIR _ select) = select
+fetchMaybeSelectIRFromConnection (ConnectionNetIR _ select) = select
 
 -- Could possibly use prisms?
-fetchNetVariableIdentifierFromConnection (ConnectionVariableIR var _) = var.identifier
-fetchNetVariableIdentifierFromConnection (ConnectionNetIR net _) = net.identifier
+fetchHierarchicalIdentifierFromConnection (ConnectionVariableIR hIden _)= hIden
+fetchHierarchicalIdentifierFromConnection (ConnectionNetIR hIden _) = hIden
 
-data AlwaysConstructIR =
-    AlwaysConstructIR {
-        identifier                              :: AlwaysConstructIdentifierIR,
-        sensitivity                             :: SensitivityIR,
-        inputConnections                        :: Set.Set ConnectionIR,
-        outputConnections                       :: Set.Set ConnectionIR,
-        statementItems                          :: [StatementItemIR]
-    } deriving (Show, Eq, Ord, Generic)
 
-getSensitiveSignals :: AlwaysConstructIR -> Set.Set VariableOrNetIdentifierIR
+
+getSensitiveSignals :: AlwaysConstructIR -> Set.Set (HierarchicalIdentifierIR VariableOrNetIdentifierIR)
 getSensitiveSignals alwaysConstructIR =
-    case alwaysConstructIR.sensitivity of
-        Comb -> Set.map extractIdentifierFromConnections alwaysConstructIR.inputConnections
+    case alwaysConstructIR._sensitivity of
+        Comb -> Set.map fetchHierarchicalIdentifierFromConnection alwaysConstructIR._inputConnections
         FF eventExpressions -> Set.map extractIdentifierFromEventExpression eventExpressions
-        Latch -> Set.map extractIdentifierFromConnections alwaysConstructIR.inputConnections
+        Latch -> Set.map fetchHierarchicalIdentifierFromConnection alwaysConstructIR._inputConnections
     where
-        extractIdentifierFromConnections inputConnections =
-            case inputConnections of
-                ConnectionVariableIR v _ -> v.identifier
-                ConnectionNetIR i _ -> i.identifier
         extractIdentifierFromEventExpression eventExpressions =
-            extractIdentifierFromConnections eventExpressions.connection
+            fetchHierarchicalIdentifierFromConnection eventExpressions.connection
 
 
 data VariableIR =
     VariableIR {
         identifier :: VariableOrNetIdentifierIR,
         dataType :: DataTypeIR
-    } deriving (Show, Eq, Ord, Generic)
+    } deriving (Show, Eq, Ord, Generic, Lift)
 
 data NetIR =
     NetIR {
@@ -154,11 +156,7 @@ data NetIR =
 
 
 data ModuleItemIdentifierIR = MIIAlways AlwaysConstructIdentifierIR | MIIVariableNet VariableOrNetIdentifierIR deriving (Show, Ord, Eq)
-newtype AlwaysConstructIdentifierIR = AlwaysConstructIdentifierIR String deriving (Show, Eq, Ord, Generic)
-newtype VariableOrNetIdentifierIR = VariableOrNetIdentifierIR String deriving (Show, Eq, Ord, Generic)
-newtype ModuleIdentifierIR = ModuleIdentifierIR String deriving (Show, Eq, Ord, Generic)
-newtype ModuleInstanceIdentifierIR = ModuleInstanceIdentifierIR String deriving (Show, Eq, Ord, Generic)
-newtype PortIdentifierIR = PortIdentifierIR String deriving (Show, Eq, Ord, Generic)
+
 data PortDirectionIR = PDInput | PDOutput deriving (Show, Eq, Ord, Generic)
 data PortDeclarationIR =
     PortDeclarationIR {
@@ -176,30 +174,68 @@ data SubmoduleIR = SubmoduleIR {
 data IR =
     IR {
         moduleIdentifier    :: ModuleIdentifierIR,
-        alwaysConstructs    :: Map.Map AlwaysConstructIdentifierIR AlwaysConstructIR,
-        variables           :: Map.Map VariableOrNetIdentifierIR VariableIR,
-        nets                :: Map.Map VariableOrNetIdentifierIR NetIR,
-        ports               :: Map.Map PortIdentifierIR PortDeclarationIR,
+        alwaysConstructs    :: [AlwaysConstructIR],
+        variables           :: [VariableIR],
+        nets                :: [NetIR],
+        ports               :: [PortDeclarationIR], -- Should this really be called PortDeclarationIR
         submodules          :: [SubmoduleIR]
     } deriving (Show)
 
-data IRExpanded =
-    IRExpanded {
+data HierarchicalIdentifierIR a where
+    H :: (Ord a, Show a, Eq a) => ModuleInstanceIdentifierIR -> (HierarchicalIdentifierIR a) -> HierarchicalIdentifierIR a
+    I :: (Ord a, Show a, Eq a) => a -> HierarchicalIdentifierIR a
 
-    }
+deriving instance Show (HierarchicalIdentifierIR a)
+deriving instance Eq (HierarchicalIdentifierIR a)
+deriving instance Ord (HierarchicalIdentifierIR a)
+deriving instance Lift (HierarchicalIdentifierIR VariableOrNetIdentifierIR)
+
+depthOfHierarchicalIdentifier (I _) = 0
+depthOfHierarchicalIdentifier (H _ h) = 1 + depthOfHierarchicalIdentifier h
+
+sameRootHierarchicalIdentifier (I x) (I y) = True
+sameRootHierarchicalIdentifier (I _) (H _ _) = False
+sameRootHierarchicalIdentifier (H _ _) (I _) = False
+sameRootHierarchicalIdentifier (H m1 h1) (H m2 h2) = (m1 == m2) && sameRootHierarchicalIdentifier h1 h2
+
+getLeafFromHierachicalIdentifier :: HierarchicalIdentifierIR a -> a
+getLeafFromHierachicalIdentifier (H _ b) = getLeafFromHierachicalIdentifier b
+getLeafFromHierachicalIdentifier (I i) = i
+
+flattenHierarchicalIdentifier (I _) = []
+flattenHierarchicalIdentifier (H m h) = m : flattenHierarchicalIdentifier h
+
+data ExpandedIR =
+    ExpandedIR {
+        alwaysConstructs    :: Map.Map (HierarchicalIdentifierIR AlwaysConstructIdentifierIR) AlwaysConstructIR,
+        variables           :: Map.Map (HierarchicalIdentifierIR VariableOrNetIdentifierIR) VariableIR,
+        nets                :: Map.Map (HierarchicalIdentifierIR VariableOrNetIdentifierIR) NetIR,
+        connections         :: Map.Map (HierarchicalIdentifierIR VariableOrNetIdentifierIR) [(Maybe SelectIR, ConnectionIR)]
+    } deriving (Show, Generic)
 
 findIRFromModuleIdentifier irs iden =
     List.find (\ir -> ir.moduleIdentifier == iden) irs
 findIRFromSubmodule irs (SubmoduleIR iden _ _) =
     List.find (\ir -> ir.moduleIdentifier == iden) irs
 
-mkSensitiveProcessMapFromAlwaysConstructIR :: AlwaysConstructIR -> Map.Map VariableOrNetIdentifierIR (Set.Set AlwaysConstructIR)
+data AlwaysConstructIR =
+    AlwaysConstructIR {
+        _alwaysConstructIdentifier               :: AlwaysConstructIdentifierIR,
+        _sensitivity                             :: SensitivityIR,
+        _inputConnections                        :: Set.Set ConnectionIR,
+        _outputConnections                       :: Set.Set ConnectionIR,
+        _statementItems                          :: [StatementItemIR]
+    } deriving (Show, Eq, Ord, Generic)
+
+$(makeLenses ''AlwaysConstructIR)
+
+mkSensitiveProcessMapFromAlwaysConstructIR :: AlwaysConstructIR -> Map.Map (HierarchicalIdentifierIR VariableOrNetIdentifierIR) (Set.Set AlwaysConstructIR)
 mkSensitiveProcessMapFromAlwaysConstructIR alwaysConstructIR =
     (, Set.singleton alwaysConstructIR)
     <$> (Set.toList . getSensitiveSignals) alwaysConstructIR
     & Map.fromList
 
-mkSensitiveProcessesMapFromIR :: IR -> Map.Map VariableOrNetIdentifierIR (Set.Set AlwaysConstructIR)
+mkSensitiveProcessesMapFromIR :: ExpandedIR -> Map.Map (HierarchicalIdentifierIR VariableOrNetIdentifierIR) (Set.Set AlwaysConstructIR)
 mkSensitiveProcessesMapFromIR ir =
-    (mkSensitiveProcessMapFromAlwaysConstructIR <$> Map.elems ir.alwaysConstructs)
+    (mkSensitiveProcessMapFromAlwaysConstructIR <$> ir.alwaysConstructs)
     & Map.unionsWith Set.union

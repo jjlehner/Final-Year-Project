@@ -1,3 +1,3 @@
 module V2H.IR.NetTypes where
-
-data NetTypeIR = NetTypeIR deriving (Show, Eq, Ord)
+import Language.Haskell.TH.Syntax
+data NetTypeIR = NetTypeIR deriving (Show, Eq, Ord, Lift)

@@ -1,3 +1,4 @@
+{-# LANGUAGE DuplicateRecordFields #-}
 module V2H.Simple.Ast where
 
 import GHC.Generics

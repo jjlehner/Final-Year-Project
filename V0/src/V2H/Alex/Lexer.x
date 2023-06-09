@@ -17,7 +17,6 @@ module V2H.Alex.Lexer (
     runLexer
 ) where
 import qualified Data.ByteString.Lazy.Char8 as BS
-import qualified V2H.Ast as Ast
 }
 %wrapper "monadUserState-bytestring"
 $alpha = [a-zA-Z]
@@ -456,9 +455,9 @@ data Token =
             | LesserLesser
             | AmpersandAmpersandAmpersand
             -- Time_unit
-            | TimeUnitOperator Ast.TimeUnit
+            | TimeUnitOperator Integer
             -- Numbers
-            | UnsignedNumberT Ast.UnsignedNumber
+            | UnsignedNumberT Integer
             deriving (Eq, Show)
 
 alexEOF :: Alex RangedToken
