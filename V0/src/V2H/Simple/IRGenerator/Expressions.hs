@@ -5,6 +5,9 @@ import Data.Bits qualified as Bits
 import V2H.Simple.Ast qualified as SimpleAst
 import V2H.IR qualified as IR
 import V2H.IR.DataTypes qualified as IR
+import Text.Pretty.Simple
+import Data.Text.Lazy (unpack)
+import Debug.Trace
 
 fromBoolToInteger :: Bool -> Integer
 fromBoolToInteger False = 0
@@ -13,17 +16,15 @@ fromBoolToInteger True = 1
 mkSignalValueDataObjectFromInteger :: Integer -> IR.SVDataObject
 mkSignalValueDataObjectFromInteger i =
     IR.SVDataObject {
-        IR.unaryOpMinus = mkSignalValueDataObjectFromInteger . objIntegerToInteger (-i) ,
-        IR.unaryOpExclamationMark = \_ -> mkSignalValueDataObjectFromInteger $ fromBoolToInteger $ i /= 0 ,
+        IR.unaryOpMinus = \res -> mkSignalValueDataObjectFromInteger $ (-i) `mod` 2 ^ IR.getBitWidth res,
+        IR.unaryOpExclamationMark = \_ -> mkSignalValueDataObjectFromInteger $ fromBoolToInteger $ i == 0 ,
+        IR.binaryOpPlus =
+            \res b -> mkSignalValueDataObjectFromInteger $ (i + IR.objToInteger b res) `mod` 2 ^ IR.getBitWidth res,
         IR.getLSB = Bits.testBit i 0,
-        IR.objToInteger = objIntegerToInteger i,
+        IR.objToInteger = \res -> i `mod` 2 ^ IR.getBitWidth res,
         IR.objToString = show i,
         IR.binaryEqualEqual = \dataType other -> i == IR.objToInteger other dataType
     }
-
-objIntegerToInteger :: Integer -> IR.DataTypeIR -> Integer
-objIntegerToInteger i (IR.DTSingular (IR.STScalar sivt)) = i
-objIntegerToInteger _ _= undefined
 
 generateExpression ::
     IR.VariableMapIR
@@ -40,3 +41,17 @@ generateExpression variables nets (SimpleAst.EConnection (SimpleAst.VariableIden
         (Just v, Just n) -> undefined
         (Just v, Nothing) -> IR.EConnection $ IR.ConnectionVariableIR (IR.I v.identifier) Nothing
         (Nothing, Just n) -> IR.EConnection $ IR.ConnectionNetIR (IR.I n.identifier) Nothing
+
+generateExpression variables nets (SimpleAst.EUnaryOperator b exp) =
+    IR.EUnaryOperator (generateUnaryOperator b) $ generateExpression variables nets exp
+generateExpression variables nets (SimpleAst.EBinaryOperator b exp1 exp2) =
+    IR.EBinaryOperator (generateBinaryOperator b) (generateExpression variables nets exp1) (generateExpression variables nets exp2)
+generateUnaryOperator x =
+    case x of
+        SimpleAst.UOExclamationMark -> IR.UOLogicalNot
+        SimpleAst.UOTilde-> IR.UOBitwiseNot
+
+generateBinaryOperator x =
+    case x of
+        SimpleAst.BOPlus -> IR.BOPlus
+        SimpleAst.BOMinus -> IR.BOMinus

@@ -3,12 +3,22 @@
 {-# HLINT ignore "Use camelCase" #-}
 
 module V2H.Simple.Parser where
+
 import Text.Earley
 import Data.Maybe
 import Data.Functor
 import Control.Applicative
 import qualified V2H.Alex.Lexer as Lexer
 import qualified V2H.Simple.Ast as SimpleAst
+import Text.Pretty.Simple (pShow)
+import Data.Text.Lazy (unpack)
+import Debug.Trace
+
+peelExpressions :: SimpleAst.Expression -> SimpleAst.Expression
+peelExpressions root =
+    case root of
+        SimpleAst.EBlank exp -> peelExpressions exp
+        other -> other
 
 runParser :: [Lexer.RangedToken] -> Either String SimpleAst.SourceText
 runParser tokens =
@@ -45,7 +55,9 @@ hashtag = satisfy $ containsToken Lexer.Hashtag
 comma = satisfy $ containsToken Lexer.Comma
 edge = satisfy $ containsToken Lexer.Edge
 forward_slash = satisfy $ containsToken Lexer.Forwardslash
-
+exclamation_mark = satisfy $ containsToken Lexer.ExclamationMark
+tilde = satisfy $ containsToken Lexer.Tilde
+plus = satisfy $ containsToken Lexer.Plus
 plus_equal = satisfy $  containsToken Lexer.PlusEqual
 minus_equal = satisfy $ containsToken Lexer.MinusEqual
 asterisk_equal = satisfy $ containsToken Lexer.AsteriskEqual
@@ -100,6 +112,7 @@ integer = satisfy $ containsToken Lexer.Integer
 interface = satisfy $ containsToken Lexer.Interface
 ms = satisfy $ containsToken Lexer.Millisecond
 ns = satisfy $ containsToken Lexer.Nanosecond
+or' = satisfy $ containsToken Lexer.Or
 parameter = satisfy $ containsToken Lexer.Parameter
 picosecond = satisfy $ containsToken Lexer.Picosecond
 real = satisfy $ containsToken Lexer.Real
@@ -152,6 +165,18 @@ grammar = mdo
         SimpleAst.DModuleDeclaration
         <$> module_declaration
         <?> "description"
+    event_control <- rule $
+        SimpleAst.EventControl
+        <$> (at_sign *> ob *> event_expression) <* cb
+    event_expression <- rule $
+        SimpleAst.EE
+        <$> optional edge_identifier
+        <*> expression
+        <|> SimpleAst.EEList
+        <$> optional edge_identifier <*> expression <*> (comma *> event_expression)
+        <|> SimpleAst.EEList
+        <$> optional edge_identifier <*> expression <*> (or' *> event_expression)
+    edge_identifier <- rule $ (posedge $> SimpleAst.Posedge) <|> (negedge $> SimpleAst.Negedge) <|> (edge $> SimpleAst.Edge)
     module_header <- rule $ SimpleAst.ModuleHeader
                             <$> (module_keyword *> module_identifier)
                             <*> optional port_declarations <* semicolon
@@ -185,17 +210,35 @@ grammar = mdo
                                    <|> SimpleAst.NPMIAlwaysConstruct <$> always_construct
                                    <|> SimpleAst.NPMIModuleInstantiation <$> module_instantiation <?> "non_port_module_item"
 
-    always_construct <- rule $ SimpleAst.ACComb  <$> (always_comb *> statement_item) <?> "always_construct"
+    always_construct <- rule $ SimpleAst.ACComb  <$> (always_comb *> statement_item)
+                                <|> SimpleAst.ACFF <$> (always_ff *> statement_item) <?> "always_construct"
     statement_item <- rule $ SimpleAst.SIBlockingAssignment <$> blocking_assignment
-                             <|> SimpleAst.SISeqBlock <$> seq_block <?> "statement_item"
+                             <|> SimpleAst.SINonblockingAssignment <$> nonblocking_assignment
+                             <|> SimpleAst.SISeqBlock <$> seq_block
+                             <|> SimpleAst.SIProceduralTimingControlStatement <$> event_control <*> optional statement_item <?> "statement_item"
 
     blocking_assignment <- rule $ SimpleAst.BlockingAssignment <$> variable_lvalue <* equal <*> expression <* semicolon <?> "blocking_assignment"
+    nonblocking_assignment <- rule $ SimpleAst.NonblockingAssignment <$> variable_lvalue <* lesser_equal <*> expression <* semicolon <?> "blocking_assignment"
     seq_block <- rule $ SimpleAst.SeqBlock <$> (begin *> many statement_item) <* end <?> "seq_block"
-    expression <- rule $ SimpleAst.ELiteral <$> unsigned_number
-                            <|> SimpleAst.EConnection <$> variable_identifier <*> optional bit_select <*> optional part_select_range <?> "expression"
+    expression <- rule $ fmap peelExpressions $ SimpleAst.EBlank <$> additive_expression <?> "expression"
+    additive_expression <- rule $ SimpleAst.EBinaryOperator SimpleAst.BOPlus <$> additive_expression <*> (plus *> multiplicative_expression)
+                                    <|> fmap peelExpressions SimpleAst.EBlank <$> multiplicative_expression <?> "additive_expression"
+    multiplicative_expression <- rule $ SimpleAst.EBinaryOperator SimpleAst.BOAsterisk <$> multiplicative_expression <*> (asterisk *> unary_expression)
+                                    <|> fmap peelExpressions  SimpleAst.EBlank <$> unary_expression <?> "multiplicative_expression"
+    unary_expression <- rule $ SimpleAst.EUnaryOperator <$> unary_operator <*> primary_expression
+                                    <|> fmap peelExpressions  SimpleAst.EBlank <$> primary_expression <?> "unary_expression"
+    primary_expression  <- rule $ SimpleAst.ELiteral <$> unsigned_number
+                                    <|> SimpleAst.EConnection <$> variable_identifier <*> optional bit_select <*> optional part_select_range
+                                    <|> fmap peelExpressions  SimpleAst.EBlank <$> (ob *> expression <* cb) <?> "primary_expression"
+    unary_operator <- rule $ (exclamation_mark $> SimpleAst.UOExclamationMark) <|> (tilde $> SimpleAst.UOExclamationMark) <?> "unary_operator"
     data_declaration <- rule $ SimpleAst.DataDeclaration <$> data_type <*> variable_identifier <* semicolon <?> "data_declaration"
     net_type <- rule $ (wire $> SimpleAst.NTWire) <?> "net_type"
-    data_type <- rule $ SimpleAst.DTIntegerVector <$> integer_vector_type <?> "dataType"
+    data_type <- rule $ SimpleAst.DTIntegerVector
+                            <$> integer_vector_type <*> many packed_dimension <?> "dataType"
+    packed_dimension <- rule $ SimpleAst.PackedDimension
+                            <$> (osb *> constant_range) <* csb <?> "packed_dimension"
+    constant_range <- rule $ SimpleAst.ConstantRange
+                            <$> unsigned_number <* colon <*> unsigned_number <?> "constant_range"
     integer_vector_type <- rule $
                                 bit $> SimpleAst.IVTBit
                                 <|> logic $> SimpleAst.IVTLogic

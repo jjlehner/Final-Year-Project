@@ -35,29 +35,32 @@ instanceHierarchyToString = foldl (\a (IR.ModuleInstanceIdentifierIR iden) -> a 
 generateSumName instanceIdens (IR.VariableOrNetIdentifierIR iden) =
     instanceHierarchyToString instanceIdens ++ (toPascal . fromAny) iden
 
-generateDecConPair instanceIdens var =
+generateDecConPair instanceIdens var = do
     let sumNameStr = generateSumName instanceIdens var.identifier
-        sumName = mkName sumNameStr
-        instanceType = AppT (ConT ''Simulate.FetchHierarchicalIdentifierIR) $ AppT (AppT (ConT ''SignalChange) (PromotedT sumName)) $ VarT (mkName "naturalNumberTypeMarker")
-        body = NormalB $ VarE $ mkName $ "irIdentifier" ++ sumNameStr
-        clause = Clause [WildP] body []
-        instanceFunction = FunD 'Simulate.fetchHierarchicalIdentifierIR [clause]
-    in (InstanceD Nothing [] instanceType [instanceFunction],NormalC sumName [])
+    let sumName = mkName sumNameStr
+    let varDataType = var.dataType
+    let instanceType = AppT (ConT ''Simulate.FetchHierarchicalIdentifierIR) $ AppT (AppT (ConT ''SignalChange) (PromotedT sumName)) $ VarT (mkName "naturalNumberTypeMarker")
+    let body = NormalB $ VarE $ mkName $ "irIdentifier" ++ sumNameStr
+    let clause = Clause [WildP] body []
+    let instanceFunction = FunD 'Simulate.fetchHierarchicalIdentifierIR [clause]
+    x <- [e|varDataType|]
+    let clauseDataType = Clause [WildP] (NormalB x) []
+    let instanceFunctionDataType = FunD 'Simulate.fetchSignalDataType [clauseDataType]
+    pure (InstanceD Nothing [] instanceType [instanceFunction, instanceFunctionDataType],NormalC sumName [])
 
 generateSignalSumConstructors ::
     [IR.ModuleInstanceIdentifierIR]
     -> [IR.IR]
     -> IR.IR
-    -> [(Dec,Con)]
-generateSignalSumConstructors instanceIdens irs topLevelModule =
-    let variables = (generateDecConPair instanceIdens <$> topLevelModule.variables)
-        nets = (generateDecConPair instanceIdens <$> topLevelModule.nets)
-        applyCasing f (IR.ModuleInstanceIdentifierIR iden) =
-            IR.ModuleInstanceIdentifierIR $ f iden
-        newInstanceName submodule = instanceIdens ++ [applyCasing (toPascal . fromAny) submodule.submoduleInstanceIdentifier]
-        fetchIR s = Maybe.fromJust $ List.find (\elem -> elem.moduleIdentifier == s.submoduleIdentifier) irs
-        submodules = concatMap (\sub -> generateSignalSumConstructors (newInstanceName sub) irs (fetchIR sub)) topLevelModule.submodules
-    in variables ++ nets ++ submodules
+    -> Q [(Dec,Con)]
+generateSignalSumConstructors instanceIdens irs topLevelModule = do
+    variables <- traverse (generateDecConPair instanceIdens)  topLevelModule.variables
+    nets <- traverse (generateDecConPair instanceIdens) topLevelModule.nets
+    let applyCasing f (IR.ModuleInstanceIdentifierIR iden) = IR.ModuleInstanceIdentifierIR $ f iden
+    let newInstanceName submodule = instanceIdens ++ [applyCasing (toPascal . fromAny) submodule.submoduleInstanceIdentifier]
+    let fetchIR s = Maybe.fromJust $ List.find (\elem -> elem.moduleIdentifier == s.submoduleIdentifier) irs
+    submodules <- concatMapM (\sub -> generateSignalSumConstructors (newInstanceName sub) irs (fetchIR sub)) topLevelModule.submodules
+    pure (variables ++ nets ++ submodules)
 
 
 generateSignalSumTypesFromIRs ::
@@ -65,9 +68,10 @@ generateSignalSumTypesFromIRs ::
     -> IR.IR
     -> IR.ModuleInstanceIdentifierIR
     -> Q [Dec]
-generateSignalSumTypesFromIRs irs topLevel moduleInstanceIdentifier =
-    let (a,b) = unzip $ generateSignalSumConstructors [moduleInstanceIdentifier] irs topLevel
-    in pure $ DataD [] (mkName "SignalSumTypes") [] Nothing b [DerivClause Nothing [ConT ''Show]] : a
+generateSignalSumTypesFromIRs irs topLevel moduleInstanceIdentifier = do
+    x <- generateSignalSumConstructors [moduleInstanceIdentifier] irs topLevel
+    let (a,b) = unzip x
+    pure $ DataD [] (mkName "SignalSumTypes") [] Nothing b [DerivClause Nothing [ConT ''Show]] : a
 
 generateStringFromHierarchicalIdentifier ::
     IR.HierarchicalIdentifierIR IR.VariableOrNetIdentifierIR
@@ -81,7 +85,8 @@ generateSignalIdentifier ::
     -> Q Dec
 generateSignalIdentifier h = do
     let varName = "irIdentifier" ++ generateStringFromHierarchicalIdentifier h
-    value <- [e| h |]
+    let hPeel = peel h
+    value <- [e| hPeel |]
     pure $ ValD (VarP $ mkName varName) (NormalB value) []
 
 generateSignalIdentifiers ::
@@ -226,15 +231,24 @@ generateAccessor ::
     Name
     -> IR.HierarchicalIdentifierIR IR.VariableOrNetIdentifierIR
     -> Exp
-generateAccessor name = generateAccessorTail (VarE name)
+generateAccessor name = generateAccessorTail $ GetFieldE (VarE name) "_stimulatedState"
 
-generateMapElem ::
+generateMapElemStart ::
     Name
     -> IR.HierarchicalIdentifierIR IR.VariableOrNetIdentifierIR
     -> Q Exp
-generateMapElem name key = do
+generateMapElemStart name key = do
     keyExp <- [e| key|]
-    signalChangeToDynamicExp <- [e|signalChangeToDynamic|]
+    signalChangeToDynamicExp <- [e|signalChangeToDynamicStart|]
+    return $ TupE [Just keyExp, Just $ AppE signalChangeToDynamicExp $ generateAccessor name key]
+
+generateMapElemEnd ::
+    Name
+    -> IR.HierarchicalIdentifierIR IR.VariableOrNetIdentifierIR
+    -> Q Exp
+generateMapElemEnd name key = do
+    keyExp <- [e| key|]
+    signalChangeToDynamicExp <- [e|signalChangeToDynamicEnd|]
     return $ TupE [Just keyExp, Just $ AppE signalChangeToDynamicExp $ generateAccessor name key]
 
 peel (IR.H _ h) = h
@@ -243,9 +257,13 @@ generateConvertToDynamicFunction ::
     -> IR.ExpandedIR
     -> Q [Dec]
 generateConvertToDynamicFunction name expandedIR = do
-    a <- traverse (generateMapElem name . peel) (Map.keys expandedIR.variables)
+    a <- traverse (generateMapElemStart name . peel) (Map.keys expandedIR.variables)
+    b <- traverse (generateMapElemEnd name . peel) (Map.keys expandedIR.variables)
     toMapExp <- [e|Map.fromList|]
-    let body = NormalB $ AppE toMapExp $ ListE a
+    stimulatedCircuitConstructor <- [e|StimulatedCircuit|]
+    fetchChangedSignals <- [e|\a -> a._stimulatedSignals|]
+    let tupleAB = TupE [Just $ AppE toMapExp (ListE a), Just $ AppE toMapExp (ListE b)]
+    let body = NormalB $ stimulatedCircuitConstructor `AppE` tupleAB `AppE` (fetchChangedSignals `AppE` VarE name)
     (pure . pure) $ FunD (mkName "convertToDynamic") [Clause [VarP name] body []]
 
 
@@ -272,3 +290,10 @@ generateEmptyValue expandedIR = do
 generateExpandedIRValue toplevelModuleName sourceFiles = do
     generateIRsFromSourceCodesAsExp <- [e|uncurry generateExpandedIR $ Either.fromRight' $ generateIRsFromSourceCodes toplevelModuleName sourceFiles|]
     (pure . pure) $ ValD (VarP $ mkName "expandedIR") (NormalB generateIRsFromSourceCodesAsExp) []
+
+
+generateEval :: IR.ExpandedIR -> Q [Dec]
+generateEval expandedIR = do
+    evalStimulatedCircuitAsExp <- [e|evalStimulatedCircuit|]
+    let body = NormalB $ AppE (AppE (AppE evalStimulatedCircuitAsExp (VarE $ mkName "expandedIR")) (VarE $ mkName "convertToDynamic")) (VarE $ mkName "convertFromDynamic")
+    (pure . pure) $ ValD (VarP $ mkName "eval'") body []

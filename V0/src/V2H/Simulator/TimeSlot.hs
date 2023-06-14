@@ -6,7 +6,8 @@ import Control.Lens
 import Control.Monad.State.Strict
 import V2H.IR
 import V2H.Simulator.Circuit
-data TimeSlotEvent = UpdateNetVariable ConnectionIR ExpressionIR | ScheduleNBAUpdate ConnectionIR ExpressionIR deriving (Show, Eq)
+data TimeSlotEvent = UpdateNetVariable ConnectionIR ExpressionIR
+                    | ScheduleNBAUpdate ConnectionIR ExpressionIR deriving (Show, Eq)
 
 data TimeSlot =
     TimeSlot {
@@ -64,4 +65,6 @@ addToReactiveRegion = addToRegion reActiveRegion
 addToReNbaRegion :: TimeSlot -> TimeSlotEvent -> TimeSlot
 addToReNbaRegion = addToRegion reNbaRegion
 
+addManyToReactiveRegion :: TimeSlot -> [TimeSlotEvent] -> TimeSlot
+addManyToReactiveRegion = foldl addToReactiveRegion
 addToRegion regionLens timeSlot event = over regionLens (Queue.|> event) timeSlot

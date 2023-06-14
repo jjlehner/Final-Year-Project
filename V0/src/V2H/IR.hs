@@ -4,6 +4,7 @@ module V2H.IR where
 
 import Data.List qualified as List
 import Control.Lens
+import Data.Maybe qualified as Maybe
 import GHC.Generics
 
 import V2H.IR.DataTypes
@@ -46,18 +47,27 @@ data SelectIR = SelectIR {
 data SensitivityIR = Comb | FF (Set.Set EventExpressionIR) | Latch deriving (Show, Eq, Ord, Generic)
 
 data StatementItemIR =  BlockingAssignment ConnectionIR ExpressionIR
-                        | NonblockingAssignment ConnectionIR ExpressionIR deriving (Show, Eq, Ord, Generic)
+                        | NonblockingAssignment ConnectionIR ExpressionIR
+                        | SeqBlock [StatementItemIR]
+                        | ProceduralTimingControlStatement [EventExpressionIR] (Maybe StatementItemIR) deriving (Show, Eq, Ord, Generic)
 
+getInputToStatementIR :: StatementItemIR -> [ConnectionIR]
 getInputToStatementIR (BlockingAssignment _ expr) =
     getConnectionsInExpression expr
 getInputToStatementIR (NonblockingAssignment _ expr) =
     getConnectionsInExpression expr
-
+getInputToStatementIR (ProceduralTimingControlStatement _ statementItem) =
+    maybe [] getInputToStatementIR statementItem
+getInputToStatementIR (SeqBlock statementItems) =
+    concatMap getInputToStatementIR statementItems
 getOutputToStatementIR (BlockingAssignment conn _) =
     [conn]
 getOutputToStatementIR (NonblockingAssignment conn _) =
     [conn]
-
+getOutputToStatementIR (ProceduralTimingControlStatement _ statementItems) =
+    maybe [] getOutputToStatementIR statementItems
+getOutputToStatementIR (SeqBlock statementItems) =
+    concatMap getOutputToStatementIR statementItems
 -- class (Show svdt, Ord svdt, Eq svdt) => SVDataObject svdt where
 --     unaryOpMinus :: DataTypeIR -> svdt -> SignalValue
 --     unaryOpExclamationMark :: DataTypeIR -> svdt -> SignalValue
@@ -77,6 +87,7 @@ data SVDataObject =
     SVDataObject {
         unaryOpMinus :: DataTypeIR -> SVDataObject,
         unaryOpExclamationMark :: DataTypeIR -> SVDataObject,
+        binaryOpPlus :: DataTypeIR -> SVDataObject -> SVDataObject,
         getLSB :: Bool,
         objToInteger :: DataTypeIR -> Integer,
         objToString :: String,
@@ -94,20 +105,22 @@ instance Eq SignalValue where
 instance Ord SignalValue where
     (<=) (SignalValue dt1 obj1) (SignalValue dt2 obj2) =
         objToInteger obj1 dt1 <= objToInteger obj2 dt2
-signalValueToInteger (SignalValue dataType svdo) = objToInteger svdo
+signalValueToInteger (SignalValue dataType svdo) = objToInteger svdo dataType
 signalValueToDataType (SignalValue dataType _) = dataType
 
 data ExpressionIR = EConnection ConnectionIR
                         | ELiteral SignalValue
-                        | EUnaryOperator UnaryOperatorIR ExpressionIR deriving (Show, Eq, Ord, Generic)
+                        | EUnaryOperator UnaryOperatorIR ExpressionIR
+                        | EBinaryOperator BinaryOperatorIR ExpressionIR ExpressionIR deriving (Show, Eq, Ord, Generic)
+
 getConnectionsInExpression (EConnection conn) = [conn]
 getConnectionsInExpression (EUnaryOperator _ expr) = getConnectionsInExpression expr
 getConnectionsInExpression _ = []
 
 data UnaryOperatorIR =  UOPlus
                         | UOMinus
-                        | UOExclamationMark
-                        | UOTilda
+                        | UOLogicalNot
+                        | UOBitwiseNot
                         | UOAmpersand
                         | UOTildaAmpersand
                         | UOPipe
@@ -116,6 +129,10 @@ data UnaryOperatorIR =  UOPlus
                         | UOTildeCaret
                         | UOCaretTilde deriving (Show, Eq, Ord, Generic)
 
+data BinaryOperatorIR = BOPlus
+                      | BOMinus
+                      | BOAsterisk
+                      | BOForwardSlash deriving (Show, Eq, Ord, Generic)
 -- Should be changed to CVariableIR and CNetIR, separated as VariableORNetIdentifier will be split into variableIdentifier and NetIdentifier
 data ConnectionIR =
     ConnectionVariableIR (HierarchicalIdentifierIR VariableOrNetIdentifierIR) (Maybe SelectIR)
@@ -224,7 +241,7 @@ data AlwaysConstructIR =
         _sensitivity                             :: SensitivityIR,
         _inputConnections                        :: Set.Set ConnectionIR,
         _outputConnections                       :: Set.Set ConnectionIR,
-        _statementItems                          :: [StatementItemIR]
+        _statementItems                          :: Maybe StatementItemIR
     } deriving (Show, Eq, Ord, Generic)
 
 $(makeLenses ''AlwaysConstructIR)

@@ -76,6 +76,8 @@ tokens :-
 <0> "local::"                   { tok LocalColonColon }
 <0> "."                         { tok FullStop }
 <0> "<="                        { tok LesserEqual }
+<0> "!"                         { tok ExclamationMark }
+<0> "+"                         { tok Plus }
 <0> @identifier                 { tokId }
 <0> $decimalDigit+              { tokDecimal }
 {
@@ -424,6 +426,9 @@ data Token =
             | CloseSquareBracket
             | Semicolon
             | Colon
+            | ExclamationMark
+            | Tilde
+            | Plus
             | FullStop
             | Asterisk
             | Apostrophe

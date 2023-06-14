@@ -30,17 +30,45 @@ data NonPortModuleItem =
 data AlwaysConstruct =
     ACComb {
         statementItem :: StatementItem
-    } | ACFF deriving (Show, Generic)
+    } | ACFF {
+        statementItem :: StatementItem
+    } deriving (Show, Generic)
+data EventControl =
+    EventControl {
+        eventExpression :: EventExpression
+    } deriving (Show, Generic)
 
+data EventExpression = EE {
+    edgeIdentifier :: Maybe EdgeIdentifier,
+    expression :: Expression
+} | EEList {
+    edgeIdentifier :: Maybe EdgeIdentifier,
+    expression :: Expression,
+    next :: EventExpression
+} deriving (Show, Generic)
+
+data EdgeIdentifier = Posedge | Negedge | Edge deriving (Show, Generic)
 data StatementItem =
     SIBlockingAssignment {
         blockingAssignment :: BlockingAssignment
+    } | SINonblockingAssignment {
+        nonblockingAssignment :: NonblockingAssignment
     } | SISeqBlock {
         seqBlock :: SeqBlock
+    } | SIProceduralTimingControlStatement {
+        eventControl :: EventControl,
+        statementItem :: Maybe StatementItem
     } deriving (Show, Generic)
+
 
 data BlockingAssignment =
     BlockingAssignment {
+        variableLvalue :: VariableLvalue,
+        expression :: Expression
+    } deriving (Show, Generic)
+
+data NonblockingAssignment =
+    NonblockingAssignment {
         variableLvalue :: VariableLvalue,
         expression :: Expression
     } deriving (Show, Generic)
@@ -87,9 +115,16 @@ newtype BitSelect = BitSelect Expression deriving (Show, Generic)
 data PartSelectRange = PartSelectRange Integer Integer deriving (Show, Generic)
 
 data ModuleKeyword = MKModule | MKMacromodule deriving (Show, Generic)
-data Expression = ELiteral Integer | EConnection VariableIdentifier (Maybe BitSelect) (Maybe PartSelectRange) deriving (Show, Generic)
+data Expression =
+    ELiteral Integer
+    | EConnection VariableIdentifier (Maybe BitSelect) (Maybe PartSelectRange)
+    | EBlank Expression
+    | EBinaryOperator BinaryOperator Expression Expression
+    | EUnaryOperator UnaryOperator Expression deriving (Show, Generic)
+
+
 data NetType = NTWire deriving (Show, Generic)
-data DataType = DTIntegerVector IntegerVectorType | DTString deriving (Show, Generic)
+data DataType = DTIntegerVector IntegerVectorType [PackedDimension] | DTString deriving (Show, Generic)
 data IntegerVectorType = IVTBit | IVTLogic | IVTReg deriving (Show, Generic)
 data PortDirection = PDInput | PDOutput deriving (Show, Generic)
 newtype ModuleIdentifier = ModuleIdentifier String deriving (Show, Generic)
@@ -98,3 +133,7 @@ newtype VariableIdentifier = VariableIdentifier String deriving (Show, Generic)
 newtype AlwaysConstructIdentifier = AlwaysConstructIdentifier String deriving (Show, Generic)
 newtype NetIdentifier = NetIdentifier String deriving (Show, Generic)
 newtype ModuleInstanceIdentifier = ModuleInstanceIdentifier String deriving (Show, Generic)
+data BinaryOperator = BOPipePipe | BOAmpersandAmpersand | BOEqualEqual | BOPlus | BOMinus | BOAsterisk | BOForwarslash deriving (Show, Generic)
+data UnaryOperator = UOExclamationMark | UOTilde deriving (Show, Generic)
+newtype PackedDimension = PackedDimension ConstantRange deriving (Show, Generic)
+data ConstantRange = ConstantRange Integer Integer deriving (Show, Generic)

@@ -5,43 +5,52 @@ import V2H.Simulator.Signal
 import V2H.Simulator.Simulate
 import V2H.Simple.V2H
 import V2H.Simple.IRGenerator
+
+import V2H.Simulator.EDSL
 import Control.Lens.Combinators
 import Control.Monad.State.Strict
 import Text.Pretty.Simple
 import Data.Set qualified as Set
-$(setup "top" [
-        "tests/parser/simple/empty_module.sv",
-        "tests/parser/simple/submodule.sv",
-        "tests/parser/simple/sub_sub_module.sv"
-    ])
 
-$(makeFieldsNoPrefix ''Top)
-$(makeFieldsNoPrefix ''TopX)
-$(makeFieldsNoPrefix ''TopW)
+import Debug.Trace
+import Control.Monad
+$(setup "flipper" [
+        "tests/parser/simple/flipper.sv"
+    ])
+$(makeFieldsNoPrefix ''Flipper)
 
 b = convertFromDynamic empty
 runTest test startState =
     _stimulatedState $ execState test $ mkStimulatedCircuit startState
 
-evalTestbench = do
-    (StimulatedCircuit testbenchState changingSignals) <- get
-    let testbenchStateDynamic = convertToDynamic testbenchState
-    let (StimulatedCircuit newStateDynamic _) =  execState (eval expandedIR) $ StimulatedCircuit testbenchStateDynamic changingSignals
-    let newState = convertFromDynamic newStateDynamic
-    put $ StimulatedCircuit newState Set.empty
+--- >>> :t d
+-- d :: HasD s a => Lens' s a
+assert :: Bool -> a -> a
+assert False x = error "assertion failed!"
+assert _     x = x
 
+main :: IO ()
 main =
-    let toggleClock (clk'::Lens' a (SignalChange b' (Signal c)))  a' = do
+    let toggleClock' (clk'::Lens' a (SignalChange b' (Signal c)))  a' = do
             clk' <== Signal 0
-            evalTestbench
+            eval'
             a'
-            evalTestbench
+            eval'
             clk' <== Signal 1
-            evalTestbench
+            eval'
+
+        toggleClk = do
+            clk <== mkSignal @0
+            eval'
+            clk <== mkSignal @1
+            eval'
+
+
 
         test1 = do
-            toggleClock clk (a <== Signal 1)
-            toggleClock clk (a <== Signal 0)
-            toggleClock clk (a <== Signal 1)
-    in
-        print $ runTest test1 b
+            initialDValue <- fetchValue d
+            toggleClk
+            finalDValue <- fetchValue d
+            assert (finalDValue /= initialDValue) $ pure ()
+    in do
+        pPrint $ runTest (replicateM_ 10 test1) b

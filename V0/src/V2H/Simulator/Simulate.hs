@@ -6,6 +6,7 @@ import Control.Monad.State.Strict
 import Data.Set qualified as Set
 import Data.Map qualified as Map
 import Data.Sequence.Queue as Queue
+import Data.Foldable
 import Data.Maybe
 
 import Data.Bits
@@ -16,20 +17,30 @@ import GHC.Integer
 import V2H.IR.DataTypes
 import V2H.Simulator.Signal
 import V2H.Simulator.Circuit
+import V2H.Simple.IRGenerator.Expressions qualified as IR
 import Debug.Trace
+import Text.Pretty.Simple
+import Data.Text.Lazy (unpack)
+import qualified V2H.IR as IR
 
 data SignalValueChange = SignalValueChange {
     connection :: ConnectionIR,
     old :: SignalValue,
     new :: SignalValue
-}
+} deriving Show
 
 fetchConnectionFromSignalValueChange (SignalValueChange{connection=conn})
     = conn
 
+signalChangeToDynamicEnd signalChange =
+    IR.SignalValue (fetchSignalDataType signalChange) $ IR.mkSignalValueDataObjectFromInteger signalChange._end.value
+
+signalChangeToDynamicStart signalChange =
+    IR.SignalValue (fetchSignalDataType signalChange) $ IR.mkSignalValueDataObjectFromInteger signalChange._start.value
+
 class FetchHierarchicalIdentifierIR s where
     fetchHierarchicalIdentifierIR :: s -> HierarchicalIdentifierIR VariableOrNetIdentifierIR
-
+    fetchSignalDataType :: s -> DataTypeIR
 -- updateSignals :: IR -> (moduleSignals, Set.Set ModuleItemIdentifierIR) -> TimeSlot
 -- updateSignals ir (moduleSignals, updateSet) =
 
@@ -50,15 +61,6 @@ data StimulatedCircuit a =
 $(makeLenses ''StimulatedCircuit)
 mkStimulatedCircuit initialState = StimulatedCircuit initialState Set.empty
 
-(<==) :: (FetchHierarchicalIdentifierIR (SignalChange a b))
-    => Lens' t (SignalChange a b)
-    -> b
-    -> State (StimulatedCircuit t) ()
-(<==) ln newValue = do
-    (StimulatedCircuit circuitState changedSignals) <- get
-    let b = set (ln . end) newValue circuitState
-    put $ StimulatedCircuit b $ Set.insert (fetchHierarchicalIdentifierIR $ view ln circuitState) changedSignals
-
 executeTimeSlot ::
     ExpandedIR
     -> State (DynamicCircuitState,TimeSlot) ()
@@ -68,17 +70,18 @@ executeTimeSlot ir = do
     emptyTimeSlot <- isTimeSlotEmpty
     unless emptyTimeSlot $ executeTimeSlot ir
 
-statementItemToTimeSlotEvent :: StatementItemIR -> TimeSlotEvent
+statementItemToTimeSlotEvent :: StatementItemIR -> [TimeSlotEvent]
 statementItemToTimeSlotEvent statementItem =
     case statementItem of
-        NonblockingAssignment connection expression -> ScheduleNBAUpdate connection expression
-        BlockingAssignment connection expression -> UpdateNetVariable connection expression
-
+        NonblockingAssignment connection expression -> singleton $ ScheduleNBAUpdate connection expression
+        BlockingAssignment connection expression -> singleton $ UpdateNetVariable connection expression
+        SeqBlock statements -> concatMap statementItemToTimeSlotEvent statements
+        _ -> traceShow statementItem undefined
 updateTimeSlotFromSensitiveProcess :: AlwaysConstructIR -> State TimeSlot ()
 updateTimeSlotFromSensitiveProcess alwaysConstruct =
     do
         timeSlotInit <- get
-        put $ foldl (\ts si -> addToReactiveRegion ts (statementItemToTimeSlotEvent si)) timeSlotInit alwaysConstruct._statementItems
+        put $ foldl (\ts si -> addManyToReactiveRegion ts (statementItemToTimeSlotEvent si)) timeSlotInit alwaysConstruct._statementItems
         return ()
 
 -- Should throw some exception when data types don't allign?
@@ -148,7 +151,9 @@ generateTimeSlotEventWithIdentifier ::
         -> HierarchicalIdentifierIR VariableOrNetIdentifierIR
         -> TimeSlotEvent
 generateTimeSlotEventWithIdentifier stimulatedCircuit sigIdentifier =
-    let newVal = stimulatedCircuit Map.! sigIdentifier
+    let newVal = case Map.lookup sigIdentifier stimulatedCircuit of
+                    Just a -> a
+                    _ -> trace (unpack $ pShow stimulatedCircuit) $ traceShow sigIdentifier undefined
     in ScheduleNBAUpdate (ConnectionVariableIR sigIdentifier Nothing) $ ELiteral newVal
 
 generateTimeSlotFromStimulatedCircuit ::
@@ -163,7 +168,13 @@ generateTimeSlotFromStimulatedCircuit ir (StimulatedCircuit stimState stimSignal
 
 getValueFromConnection :: DynamicCircuitState -> ConnectionIR -> SignalValue
 getValueFromConnection dynamicCircuitState (ConnectionVariableIR h Nothing) =
-    dynamicCircuitState Map.! h
+     case Map.lookup h dynamicCircuitState of
+        Just a -> a
+        _ -> undefined
+getValueFromConnection dynamicCircuitState (ConnectionNetIR h Nothing) =
+     case Map.lookup h dynamicCircuitState of
+        Just a -> a
+        _ -> undefined
 
 evaluateExpression ::
     ExpandedIR
@@ -179,8 +190,8 @@ evaluateExpression ir resultType circuitState (EUnaryOperator unaryOp expr) =
     case unaryOp of
         UOPlus -> evaluateExpression ir resultType circuitState expr
         UOMinus ->  SignalValue resultType $ unaryOpMinus (toSVDataObject $ evaluateExpression ir resultType circuitState expr) resultType
-        UOExclamationMark -> SignalValue resultType $ unaryOpExclamationMark (toSVDataObject $ evaluateExpression ir resultType circuitState expr) resultType
-        UOTilda -> undefined
+        UOLogicalNot -> SignalValue resultType $ unaryOpExclamationMark (toSVDataObject $ evaluateExpression ir resultType circuitState expr) resultType
+        UOBitwiseNot -> undefined
         UOAmpersand -> undefined
         UOTildaAmpersand -> undefined
         UOPipe -> undefined
@@ -189,18 +200,60 @@ evaluateExpression ir resultType circuitState (EUnaryOperator unaryOp expr) =
         UOTildeCaret -> undefined
         UOCaretTilde -> undefined
 
+evaluateExpression ir resultType circuitState (EBinaryOperator binaryOp expr1 expr2) =
+    let expr1DataObject = toSVDataObject $ evaluateExpression ir resultType circuitState expr1
+        expr2DataObject = toSVDataObject $ evaluateExpression ir resultType circuitState expr2
+    in case binaryOp of
+        BOPlus -> SignalValue resultType $ binaryOpPlus expr1DataObject resultType expr2DataObject
+
+
+generateUpdateNetVariableFromConnection ::
+    DynamicCircuitState
+    -> HierarchicalIdentifierIR VariableOrNetIdentifierIR
+    -> (Maybe SelectIR, ConnectionIR)
+    -> TimeSlotEvent
+generateUpdateNetVariableFromConnection circuitState iden (Nothing, conn) =
+    case conn of
+        ConnectionVariableIR h1 Nothing ->
+            let signalValue = case Map.lookup iden circuitState of
+                                    Just a -> a
+                                    _ -> undefined
+            in UpdateNetVariable conn $ ELiteral signalValue
+        ConnectionNetIR h1 Nothing ->
+            let signalValue = case Map.lookup iden circuitState of
+                                    Just a -> a
+                                    _ -> undefined
+            in UpdateNetVariable conn $ ELiteral signalValue
+        _ -> traceShow conn undefined
+
+propagateUpdate ::
+    ExpandedIR
+    -> ConnectionIR
+    -> State (DynamicCircuitState, TimeSlot) ()
+propagateUpdate expandedIR conn =
+        let propagate changedSignal =
+                do
+                    (circuitState, _) <- get
+                    Map.lookup changedSignal expandedIR.connections
+                        & concatMap (fmap (generateUpdateNetVariableFromConnection circuitState changedSignal))
+                        & traverse_ (executeEvent expandedIR)
+        in case conn of
+            (ConnectionVariableIR changedSignal Nothing) -> propagate changedSignal
+            (ConnectionNetIR changedSignal Nothing) -> propagate changedSignal
+
 executeEvent ::
     ExpandedIR
     -> TimeSlotEvent
     -> State (DynamicCircuitState, TimeSlot) ()
-executeEvent expandedIr (UpdateNetVariable toSet expr) = do
+executeEvent expandedIr x@(UpdateNetVariable toSet expr) = do
+    -- traceShow toSet $ pure ()
+    -- traceShow expr $ pure ()
     (initialCircuitState, initialTimeSlot) <- get
     let signalIdentifier = fetchHierarchicalIdentifierFromConnection toSet
     let startValue@(SignalValue dataType _) = initialCircuitState Map.! signalIdentifier
     let evaluatedExpr = evaluateExpression expandedIr dataType initialCircuitState expr
     let updatedCircuitState = Map.insert signalIdentifier evaluatedExpr initialCircuitState
     let sensitiveProcessMap = mkSensitiveProcessesMapFromIR expandedIr
-
     let signalValueChange =
             SignalValueChange{
                 connection = toSet,
@@ -208,14 +261,19 @@ executeEvent expandedIr (UpdateNetVariable toSet expr) = do
                 new = evaluatedExpr
             }
     let timeSlotUpdater =
-            updateTimeSlotFromSignalValueUpdate sensitiveProcessMap  signalValueChange
+            updateTimeSlotFromSignalValueUpdate sensitiveProcessMap signalValueChange
+
     let updatedTimeSlot = execState timeSlotUpdater initialTimeSlot
+    -- trace (unpack (pShow toSet) ++ " " ++ unpack (pShow startValue) ++ "---\n" ++ unpack (pShow evaluatedExpr) ++ "\n") $ pure ()
     put (updatedCircuitState, updatedTimeSlot)
+    propagateUpdate expandedIr toSet
 
 executeEvent expandedIr (ScheduleNBAUpdate toSet expr) = do
     (circuitState, initialTimeSlot) <- get
     let signalIdentifier = fetchHierarchicalIdentifierFromConnection toSet
-    let (SignalValue dataType _) = circuitState Map.! signalIdentifier
+    let (SignalValue dataType _) = case Map.lookup signalIdentifier circuitState of
+                                        Just a -> a
+                                        _ -> undefined
     let evaluatedExpr = evaluateExpression expandedIr dataType circuitState expr
     let updatedTimeSlot = addToNbaRegion initialTimeSlot $ UpdateNetVariable toSet $ ELiteral evaluatedExpr
     put (circuitState, updatedTimeSlot)
@@ -250,11 +308,10 @@ executeReActiveRegionSet ir = do
 
 eval ::
     ExpandedIR
-    -> State (StimulatedCircuit DynamicCircuitState) ()
-eval ir = do
-    stimulatedCircuit@StimulatedCircuit{_stimulatedState=stimulatedState} <- get
-    let timeSlot = generateTimeSlotFromStimulatedCircuit ir stimulatedCircuit
-    let newState =  (stimulatedState, generateTimeSlotFromStimulatedCircuit ir stimulatedCircuit)
-                    & execState (executeTimeSlot ir)
-                    & fst
-    put $ StimulatedCircuit newState Set.empty
+    -> StimulatedCircuit (DynamicCircuitState,DynamicCircuitState)
+    -> DynamicCircuitState
+eval ir stimulatedCircuit@StimulatedCircuit{_stimulatedState=(start,end), _stimulatedSignals=sigs} =
+    let timeSlot = generateTimeSlotFromStimulatedCircuit ir $ StimulatedCircuit end sigs
+    in  (start, timeSlot)
+            & execState (executeTimeSlot ir)
+            & fst

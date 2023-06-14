@@ -24,16 +24,37 @@ generateStatementItemIRs ::
     IR.VariableMapIR
     -> IR.NetMapIR
     -> SimpleAst.StatementItem
-    -> [IR.StatementItemIR]
+    -> IR.StatementItemIR
 generateStatementItemIRs variables nets (SimpleAst.SIBlockingAssignment blockingAssignment) =
     let conn = generateConnection blockingAssignment.variableLvalue
         expr = generateExpression variables nets blockingAssignment.expression
-    in List.singleton $ IR.BlockingAssignment conn expr
+    in IR.BlockingAssignment conn expr
+
+generateStatementItemIRs variables nets (SimpleAst.SINonblockingAssignment nonblockingAssignment) =
+    let conn = generateConnection nonblockingAssignment.variableLvalue
+        expr = generateExpression variables nets nonblockingAssignment.expression
+    in IR.NonblockingAssignment conn expr
 
 generateStatementItemIRs variables nets (SimpleAst.SISeqBlock (SimpleAst.SeqBlock statements)) =
-    concatMap (generateStatementItemIRs variables nets) statements
+    IR.SeqBlock $ generateStatementItemIRs variables nets <$> statements
 
+generateStatementItemIRs variables nets (SimpleAst.SIProceduralTimingControlStatement (SimpleAst.EventControl eventExpression) nextStatementItem) =
+    let generateConnectionFromExpression expr =
+            case generateExpression variables nets expr of
+                (IR.EConnection conn) -> conn
+                _ -> undefined
+        generate (SimpleAst.EE edgeIdentifier expression) =
+            List.singleton $ IR.EventExpressionIR (generateEdgeIdentifier edgeIdentifier) $ generateConnectionFromExpression expression
+        generate (SimpleAst.EEList edgeIdentifier expression next) =
+            IR.EventExpressionIR (generateEdgeIdentifier edgeIdentifier) (generateConnectionFromExpression expression) : generate next
+    in IR.ProceduralTimingControlStatement (generate eventExpression) $ fmap (generateStatementItemIRs variables nets) nextStatementItem
 
+generateEdgeIdentifier =
+    let converter e = case e of
+                    SimpleAst.Posedge -> IR.Posedge
+                    SimpleAst.Negedge -> IR.Negedge
+                    SimpleAst.Edge -> IR.Edge
+    in fmap converter
 generateAlwaysConstructIR ::
     IR.VariableMapIR
     -> IR.NetMapIR
@@ -46,10 +67,26 @@ generateAlwaysConstructIR variables nets num (SimpleAst.ACComb statementItem) =
     in (iden, IR.AlwaysConstructIR {
         _alwaysConstructIdentifier = iden,
         _sensitivity = IR.Comb,
-        _inputConnections =  Set.fromList $ concatMap IR.getInputToStatementIR statementItemIRs,
-        _outputConnections = Set.fromList $ concatMap IR.getOutputToStatementIR statementItemIRs,
-        _statementItems = statementItemIRs
+        _inputConnections =  Set.fromList $ IR.getInputToStatementIR statementItemIRs,
+        _outputConnections = Set.fromList $ IR.getOutputToStatementIR statementItemIRs,
+        _statementItems = Just statementItemIRs
     })
+
+generateAlwaysConstructIR variables nets num (SimpleAst.ACFF statementItem) =
+    let iden = IR.AlwaysConstructIdentifierIR $  "always_construct." ++ show num
+        getProceduralTimingControlStatement (IR.ProceduralTimingControlStatement ee nextStatementItem) = (nextStatementItem, Just ee)
+        getProceduralTimingControlStatement nextStatementItem = (Just nextStatementItem, Nothing)
+        (statementItemIR, sensitivity) =
+            generateStatementItemIRs variables nets statementItem
+            & getProceduralTimingControlStatement
+    in (iden, IR.AlwaysConstructIR {
+        _alwaysConstructIdentifier = iden,
+        _sensitivity = IR.FF $ Set.fromList $ concat sensitivity,
+        _inputConnections = Set.fromList $ maybe [] IR.getInputToStatementIR statementItemIR,
+        _outputConnections = Set.fromList $ maybe [] IR.getOutputToStatementIR statementItemIR,
+        _statementItems = statementItemIR
+    })
+
 mapi f m = uncurry f <$> zip [0..] m
 
 generateAlwaysConstructIRs ::
@@ -203,13 +240,14 @@ connect ::
     -> IR.PortDeclarationIR
     -> Maybe (IR.HierarchicalIdentifierIR IR.VariableOrNetIdentifierIR, [(Maybe IR.SelectIR, IR.ConnectionIR)])
 connect submodule superIdentifierGenerator subIdentifierGenerator (IR.PortDeclarationIR portIdentifier IR.PDInput pConn) =
-    case (Map.!) submodule.connections portIdentifier of
-        IR.EConnection conn -> Just (superIdentifierGenerator $ IR.fetchHierarchicalIdentifierFromConnection conn, [(IR.fetchMaybeSelectIRFromConnection conn, updateConnectionIRHierarchicalIdentifierIRs subIdentifierGenerator pConn)])
-        _ -> Nothing
+    case Map.lookup portIdentifier submodule.connections  of
+        Just (IR.EConnection conn) -> Just (peel $ superIdentifierGenerator $ IR.fetchHierarchicalIdentifierFromConnection conn, [(IR.fetchMaybeSelectIRFromConnection conn, updateConnectionIRHierarchicalIdentifierIRs subIdentifierGenerator pConn)])
+        Just _ -> Nothing
 connect submodule superIdentifierGenerator subIdentifierGenerator (IR.PortDeclarationIR portIdentifier IR.PDOutput pConn) =
-    case (Map.!) submodule.connections portIdentifier of
-        IR.EConnection conn -> Just (subIdentifierGenerator $ IR.fetchHierarchicalIdentifierFromConnection pConn, [(Nothing, updateConnectionIRHierarchicalIdentifierIRs superIdentifierGenerator conn)])
-        _ -> Nothing
+    case Map.lookup  portIdentifier submodule.connections of
+        Just (IR.EConnection conn) -> Just (peel $ subIdentifierGenerator $ IR.fetchHierarchicalIdentifierFromConnection pConn, [(Nothing, updateConnectionIRHierarchicalIdentifierIRs superIdentifierGenerator conn)])
+        Just _ -> Nothing
+        Nothing -> traceShow portIdentifier traceShow submodule.connections undefined
 
 addIRsAndConnect ::
     [IR.IR]
@@ -229,12 +267,13 @@ addIRsAndConnect irs ir identifier expanded submodule =
         connections = Map.unionWith (++) expandedSub.connections conns
         }
 
+peel (IR.H _ h) = h
 updateConnectionIRHierarchicalIdentifierIRs ::
     (forall a . (Ord a, Show a) => IR.HierarchicalIdentifierIR a -> IR.HierarchicalIdentifierIR a)
     -> IR.ConnectionIR
     -> IR.ConnectionIR
-updateConnectionIRHierarchicalIdentifierIRs idenGen (IR.ConnectionVariableIR h s) = IR.ConnectionNetIR (idenGen h) s
-updateConnectionIRHierarchicalIdentifierIRs idenGen (IR.ConnectionNetIR h s) = IR.ConnectionNetIR (idenGen h) s
+updateConnectionIRHierarchicalIdentifierIRs idenGen (IR.ConnectionVariableIR h s) = IR.ConnectionNetIR (peel $ idenGen h) s
+updateConnectionIRHierarchicalIdentifierIRs idenGen (IR.ConnectionNetIR h s) = IR.ConnectionNetIR (peel $ idenGen h) s
 
 updateExpressionIRHierarchicalIdentifiersIRs ::
     (forall a . (Ord a, Show a) => IR.HierarchicalIdentifierIR a -> IR.HierarchicalIdentifierIR a)
@@ -252,7 +291,8 @@ updateStatementItemIRHierarchicalIdentifierIRs idenGen (IR.BlockingAssignment co
     IR.BlockingAssignment (updateConnectionIRHierarchicalIdentifierIRs idenGen conn) $ updateExpressionIRHierarchicalIdentifiersIRs idenGen expression
 updateStatementItemIRHierarchicalIdentifierIRs idenGen (IR.NonblockingAssignment conn expression) =
     IR.NonblockingAssignment (updateConnectionIRHierarchicalIdentifierIRs idenGen conn) $ updateExpressionIRHierarchicalIdentifiersIRs idenGen expression
-
+updateStatementItemIRHierarchicalIdentifierIRs idenGen (IR.SeqBlock statementItems) =
+    IR.SeqBlock $ updateStatementItemIRHierarchicalIdentifierIRs idenGen <$> statementItems
 
 updateAlwaysConstructIRHierarchicalIdentifierIRs ::
     (forall a . (Ord a, Show a) => IR.HierarchicalIdentifierIR a -> IR.HierarchicalIdentifierIR a)
