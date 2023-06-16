@@ -23,7 +23,14 @@ mkSignalValueDataObjectFromInteger i =
         IR.getLSB = Bits.testBit i 0,
         IR.objToInteger = \res -> i `mod` 2 ^ IR.getBitWidth res,
         IR.objToString = show i,
-        IR.binaryEqualEqual = \dataType other -> i == IR.objToInteger other dataType
+        IR.binaryEqualEqual = \dataType other ->  mkSignalValueDataObjectFromInteger $ fromBoolToInteger $ i == IR.objToInteger other dataType,
+        IR.binaryAsterisk =
+            \res b -> mkSignalValueDataObjectFromInteger $ (i * IR.objToInteger b res) `mod` 2 ^ IR.getBitWidth res,
+        IR.binaryMinus =
+            \res b -> mkSignalValueDataObjectFromInteger $ (i - IR.objToInteger b res) `mod` 2 ^ IR.getBitWidth res,
+        IR.isTrue = i/=0,
+        IR.isFalse = i==0,
+        IR.cast = \dt -> IR.SignalValue dt $ mkSignalValueDataObjectFromInteger $ i `mod` 2 ^ IR.getBitWidth dt
     }
 
 generateExpression ::
@@ -37,7 +44,7 @@ generateExpression variables nets (SimpleAst.EConnection (SimpleAst.VariableIden
     let variable = Map.lookup (IR.VariableOrNetIdentifierIR identifier) variables
         net = Map.lookup (IR.VariableOrNetIdentifierIR identifier) nets
     in case (variable, net) of
-        (Nothing, Nothing) -> undefined
+        (Nothing, Nothing) -> traceShow identifier undefined
         (Just v, Just n) -> undefined
         (Just v, Nothing) -> IR.EConnection $ IR.ConnectionVariableIR (IR.I v.identifier) Nothing
         (Nothing, Just n) -> IR.EConnection $ IR.ConnectionNetIR (IR.I n.identifier) Nothing
@@ -55,3 +62,5 @@ generateBinaryOperator x =
     case x of
         SimpleAst.BOPlus -> IR.BOPlus
         SimpleAst.BOMinus -> IR.BOMinus
+        SimpleAst.BOEqualEqual -> IR.BOEqualEqual
+        SimpleAst.BOAsterisk -> IR.BOAsterisk

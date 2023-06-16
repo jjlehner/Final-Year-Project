@@ -55,6 +55,8 @@ data StatementItem =
         nonblockingAssignment :: NonblockingAssignment
     } | SISeqBlock {
         seqBlock :: SeqBlock
+    } | SIConditionalStatement {
+        conditionalStatement :: ConditionalStatement
     } | SIProceduralTimingControlStatement {
         eventControl :: EventControl,
         statementItem :: Maybe StatementItem
@@ -122,7 +124,6 @@ data Expression =
     | EBinaryOperator BinaryOperator Expression Expression
     | EUnaryOperator UnaryOperator Expression deriving (Show, Generic)
 
-
 data NetType = NTWire deriving (Show, Generic)
 data DataType = DTIntegerVector IntegerVectorType [PackedDimension] | DTString deriving (Show, Generic)
 data IntegerVectorType = IVTBit | IVTLogic | IVTReg deriving (Show, Generic)
@@ -137,3 +138,7 @@ data BinaryOperator = BOPipePipe | BOAmpersandAmpersand | BOEqualEqual | BOPlus 
 data UnaryOperator = UOExclamationMark | UOTilde deriving (Show, Generic)
 newtype PackedDimension = PackedDimension ConstantRange deriving (Show, Generic)
 data ConstantRange = ConstantRange Integer Integer deriving (Show, Generic)
+data IfBranch = IfBranch Expression StatementItem deriving (Show, Generic)
+data ElseIfBranch = ElseIfBranch Expression StatementItem deriving (Show, Generic)
+newtype ElseBranch = ElseBranch StatementItem deriving (Show, Generic)
+data ConditionalStatement = ConditionalStatement IfBranch [ElseIfBranch] (Maybe ElseBranch) deriving (Show, Generic)

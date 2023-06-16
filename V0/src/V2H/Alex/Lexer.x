@@ -41,6 +41,7 @@ tokens :-
 <0> "bit"                       { tok Bit }
 
 <0> "edge"                      { tok Edge }
+<0> "else if"                   { tok ElseIf }
 <0> "else"                      { tok Else }
 <0> "end"                       { tok End }
 <0> "endmodule"                 { tok Endmodule }
@@ -78,6 +79,8 @@ tokens :-
 <0> "<="                        { tok LesserEqual }
 <0> "!"                         { tok ExclamationMark }
 <0> "+"                         { tok Plus }
+<0> "=="                        { tok EqualEqual }
+<0> "-"                         { tok Minus }
 <0> @identifier                 { tokId }
 <0> $decimalDigit+              { tokDecimal }
 {
@@ -199,6 +202,7 @@ data Token =
             | Do
             | Edge
             | Else
+            | ElseIf
             | End
             | Endcase
             | Endchecker
@@ -427,6 +431,7 @@ data Token =
             | Semicolon
             | Colon
             | ExclamationMark
+            | Minus
             | Tilde
             | Plus
             | FullStop
@@ -458,6 +463,7 @@ data Token =
             | DollarRoot
             | GreaterGreater
             | LesserLesser
+            | EqualEqual
             | AmpersandAmpersandAmpersand
             -- Time_unit
             | TimeUnitOperator Integer

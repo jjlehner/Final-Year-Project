@@ -22,6 +22,7 @@ import Debug.Trace
 import Text.Pretty.Simple
 import Data.Text.Lazy (unpack)
 import qualified V2H.IR as IR
+import qualified V2H.IR.DataTypes as IR
 
 data SignalValueChange = SignalValueChange {
     connection :: ConnectionIR,
@@ -73,10 +74,13 @@ executeTimeSlot ir = do
 statementItemToTimeSlotEvent :: StatementItemIR -> [TimeSlotEvent]
 statementItemToTimeSlotEvent statementItem =
     case statementItem of
-        NonblockingAssignment connection expression -> singleton $ ScheduleNBAUpdate connection expression
-        BlockingAssignment connection expression -> singleton $ UpdateNetVariable connection expression
-        SeqBlock statements -> concatMap statementItemToTimeSlotEvent statements
-        _ -> traceShow statementItem undefined
+            NonblockingAssignment connection expression -> singleton $ ScheduleNBAUpdate connection expression
+            BlockingAssignment connection expression -> singleton $ UpdateNetVariable connection expression
+            SeqBlock statements -> concatMap statementItemToTimeSlotEvent statements
+            ConditionalStatement conditionalStatement ->
+                let ifAndElseIfBranches = (fmap . fmap) statementItemToTimeSlotEvent conditionalStatement.ifAndElseIfBranches
+                    elseBranch = fmap statementItemToTimeSlotEvent conditionalStatement.elseBranch
+                in pure (ConditialTimeSlotEvent ifAndElseIfBranches elseBranch)
 updateTimeSlotFromSensitiveProcess :: AlwaysConstructIR -> State TimeSlot ()
 updateTimeSlotFromSensitiveProcess alwaysConstruct =
     do
@@ -84,12 +88,12 @@ updateTimeSlotFromSensitiveProcess alwaysConstruct =
         put $ foldl (\ts si -> addManyToReactiveRegion ts (statementItemToTimeSlotEvent si)) timeSlotInit alwaysConstruct._statementItems
         return ()
 
+
 -- Should throw some exception when data types don't allign?
 doesTriggerLevelChange (SignalValueChange {old=(SignalValue dt vOld), new=(SignalValue _ vNew), connection=(ConnectionVariableIR h1 Nothing)}) (ConnectionVariableIR h2 Nothing)
-    = (h1==h2) && binaryEqualEqual vOld dt vNew
+    = (h1==h2) && isFalse (binaryEqualEqual vOld dt vNew)
 doesTriggerLevelChange (SignalValueChange {old=(SignalValue dt vOld), new=(SignalValue _ vNew), connection=(ConnectionNetIR h1 Nothing)}) (ConnectionNetIR h2 Nothing)
-    = (h1==h2) && binaryEqualEqual vOld dt vNew
-
+    = (h1==h2) && isFalse (binaryEqualEqual vOld dt vNew)
 doesTriggerPosedge (SignalValueChange {old=(SignalValue _ vOld), new=(SignalValue _ vNew), connection=(ConnectionVariableIR h1 Nothing)}) (ConnectionVariableIR h2 Nothing) =
     (h1 == h2 )
     && case (getLSB vOld, getLSB vNew) of
@@ -175,22 +179,51 @@ getValueFromConnection dynamicCircuitState (ConnectionNetIR h Nothing) =
      case Map.lookup h dynamicCircuitState of
         Just a -> a
         _ -> undefined
+data ExpressionType = SelfDetermined | ContextDetermined DataTypeIR deriving (Show)
+whenSD SelfDetermined dt = dt
+whenSD (ContextDetermined dt) _ = dt
+
+chooseWith f (a,b) =
+    if f a > f b then a
+    else b
+getDataTypeOfSelfDeterminedExpression ::
+    IR.ExpandedIR
+    -> IR.ExpressionIR
+    -> IR.DataTypeIR
+getDataTypeOfSelfDeterminedExpression expandedIR expr =
+    case expr of
+        (ELiteral (SignalValue dt _)) -> dt
+        (EConnection (ConnectionVariableIR hn Nothing) ) -> traceShow (hn, expandedIR.variables) $ (expandedIR.variables Map.! hn).dataType
+        (EUnaryOperator _ _) -> DTSingular $ STScalar SIVTLogic
+        (EBinaryOperator bop expr1 expr2)
+            ->  let maxSubExpr = (getDataTypeOfSelfDeterminedExpression expandedIR expr1, getDataTypeOfSelfDeterminedExpression expandedIR expr2)
+                                    & chooseWith IR.getBitWidth
+                in case bop of
+                        BOPlus -> maxSubExpr
+                        BOMinus -> maxSubExpr
+                        BOAsterisk -> maxSubExpr
+                        BOForwardSlash -> maxSubExpr
+                        BOEqualEqual -> DTSingular $ STScalar SIVTLogic
 
 evaluateExpression ::
     ExpandedIR
-    -> DataTypeIR
+    -> ExpressionType
     -> DynamicCircuitState
     -> ExpressionIR
     -> SignalValue
 evaluateExpression _ _ _ (ELiteral x) = x
-evaluateExpression _ dt state (EConnection conn) =
-    SignalValue dt $ toSVDataObject $ getValueFromConnection state conn
-
-evaluateExpression ir resultType circuitState (EUnaryOperator unaryOp expr) =
-    case unaryOp of
-        UOPlus -> evaluateExpression ir resultType circuitState expr
-        UOMinus ->  SignalValue resultType $ unaryOpMinus (toSVDataObject $ evaluateExpression ir resultType circuitState expr) resultType
-        UOLogicalNot -> SignalValue resultType $ unaryOpExclamationMark (toSVDataObject $ evaluateExpression ir resultType circuitState expr) resultType
+evaluateExpression _ (ContextDetermined dt) state (EConnection conn) =
+    cast (toSVDataObject $ getValueFromConnection state conn) dt
+evaluateExpression _ SelfDetermined state (EConnection conn) =
+    getValueFromConnection state conn
+evaluateExpression ir expressionType circuitState (EUnaryOperator unaryOp expr) =
+    let oneBitResultType = whenSD expressionType $ DTSingular (STScalar SIVTLogic)
+    in case unaryOp of
+        UOPlus -> evaluateExpression ir expressionType circuitState expr
+        UOMinus ->
+            SignalValue oneBitResultType $ unaryOpMinus (toSVDataObject $ evaluateExpression ir expressionType circuitState expr) oneBitResultType
+        UOLogicalNot ->
+            SignalValue oneBitResultType $ unaryOpExclamationMark (toSVDataObject $ evaluateExpression ir expressionType circuitState expr) oneBitResultType
         UOBitwiseNot -> undefined
         UOAmpersand -> undefined
         UOTildaAmpersand -> undefined
@@ -200,12 +233,19 @@ evaluateExpression ir resultType circuitState (EUnaryOperator unaryOp expr) =
         UOTildeCaret -> undefined
         UOCaretTilde -> undefined
 
-evaluateExpression ir resultType circuitState (EBinaryOperator binaryOp expr1 expr2) =
-    let expr1DataObject = toSVDataObject $ evaluateExpression ir resultType circuitState expr1
-        expr2DataObject = toSVDataObject $ evaluateExpression ir resultType circuitState expr2
-    in case binaryOp of
-        BOPlus -> SignalValue resultType $ binaryOpPlus expr1DataObject resultType expr2DataObject
+evaluateExpression ir expressionType circuitState e@(EBinaryOperator binaryOp expr1 expr2) =
+    let resultType = whenSD expressionType $ getDataTypeOfSelfDeterminedExpression ir e
+        resultTypeLeft = whenSD expressionType $ getDataTypeOfSelfDeterminedExpression ir expr1
+        resultTypeRight = whenSD expressionType $ getDataTypeOfSelfDeterminedExpression ir expr2
+        largestBitWidthOfInnerTypes = chooseWith getBitWidth (resultTypeLeft, resultTypeRight)
+        expr1DataObject = toSVDataObject $ evaluateExpression ir expressionType circuitState expr1
+        expr2DataObject = toSVDataObject $ evaluateExpression ir expressionType circuitState expr2
 
+    in case binaryOp of
+        BOPlus -> cast (binaryOpPlus expr1DataObject largestBitWidthOfInnerTypes expr2DataObject) resultType
+        BOEqualEqual -> cast (binaryEqualEqual expr1DataObject largestBitWidthOfInnerTypes expr2DataObject) (DTSingular (STScalar SIVTLogic))
+        BOAsterisk -> cast (binaryAsterisk expr1DataObject largestBitWidthOfInnerTypes expr2DataObject) resultType
+        BOMinus -> cast (binaryMinus expr1DataObject largestBitWidthOfInnerTypes expr2DataObject) resultType
 
 generateUpdateNetVariableFromConnection ::
     DynamicCircuitState
@@ -251,7 +291,7 @@ executeEvent expandedIr x@(UpdateNetVariable toSet expr) = do
     (initialCircuitState, initialTimeSlot) <- get
     let signalIdentifier = fetchHierarchicalIdentifierFromConnection toSet
     let startValue@(SignalValue dataType _) = initialCircuitState Map.! signalIdentifier
-    let evaluatedExpr = evaluateExpression expandedIr dataType initialCircuitState expr
+    let evaluatedExpr = evaluateExpression expandedIr (ContextDetermined dataType) initialCircuitState expr
     let updatedCircuitState = Map.insert signalIdentifier evaluatedExpr initialCircuitState
     let sensitiveProcessMap = mkSensitiveProcessesMapFromIR expandedIr
     let signalValueChange =
@@ -264,18 +304,24 @@ executeEvent expandedIr x@(UpdateNetVariable toSet expr) = do
             updateTimeSlotFromSignalValueUpdate sensitiveProcessMap signalValueChange
 
     let updatedTimeSlot = execState timeSlotUpdater initialTimeSlot
-    -- trace (unpack (pShow toSet) ++ " " ++ unpack (pShow startValue) ++ "---\n" ++ unpack (pShow evaluatedExpr) ++ "\n") $ pure ()
     put (updatedCircuitState, updatedTimeSlot)
     propagateUpdate expandedIr toSet
 
-executeEvent expandedIr (ScheduleNBAUpdate toSet expr) = do
+executeEvent expandedIr e@(ScheduleNBAUpdate toSet expr) = do
     (circuitState, initialTimeSlot) <- get
     let signalIdentifier = fetchHierarchicalIdentifierFromConnection toSet
     let (SignalValue dataType _) = case Map.lookup signalIdentifier circuitState of
                                         Just a -> a
                                         _ -> undefined
-    let evaluatedExpr = evaluateExpression expandedIr dataType circuitState expr
+    let evaluatedExpr = evaluateExpression expandedIr (ContextDetermined dataType) circuitState expr
     let updatedTimeSlot = addToNbaRegion initialTimeSlot $ UpdateNetVariable toSet $ ELiteral evaluatedExpr
+    put (circuitState, updatedTimeSlot)
+
+executeEvent expandedIR (ConditialTimeSlotEvent ifAndElseIfBranches elseBranch) = do
+    (circuitState, initialTimeSlot) <- get
+    let branchConditionTrue (expression,_) = isTrue $ toSVDataObject $ evaluateExpression expandedIR SelfDetermined circuitState expression
+    let timeSlotEventsToAdd = maybe (concat elseBranch) snd (find branchConditionTrue ifAndElseIfBranches)
+    let updatedTimeSlot = addManyToNbaRegion initialTimeSlot timeSlotEventsToAdd
     put (circuitState, updatedTimeSlot)
 
 executeEvents ::
@@ -315,3 +361,11 @@ eval ir stimulatedCircuit@StimulatedCircuit{_stimulatedState=(start,end), _stimu
     in  (start, timeSlot)
             & execState (executeTimeSlot ir)
             & fst
+
+triggerAllAlwaysCombBlocks :: ExpandedIR -> DynamicCircuitState -> DynamicCircuitState
+triggerAllAlwaysCombBlocks expandedIR dynamicStart = do
+    let alwaysCombConstructs = Map.elems $ Map.filter (\a -> a._sensitivity == Comb) expandedIR.alwaysConstructs
+        timeSlot' = traverse_ updateTimeSlotFromSensitiveProcess alwaysCombConstructs
+                    & flip execState emptyTimeSlot
+
+    fst $ execState (executeTimeSlot expandedIR) (dynamicStart, timeSlot')

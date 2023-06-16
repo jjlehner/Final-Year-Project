@@ -58,6 +58,8 @@ forward_slash = satisfy $ containsToken Lexer.Forwardslash
 exclamation_mark = satisfy $ containsToken Lexer.ExclamationMark
 tilde = satisfy $ containsToken Lexer.Tilde
 plus = satisfy $ containsToken Lexer.Plus
+minus = satisfy $ containsToken Lexer.Minus
+equal_equal = satisfy $ containsToken Lexer.EqualEqual
 plus_equal = satisfy $  containsToken Lexer.PlusEqual
 minus_equal = satisfy $ containsToken Lexer.MinusEqual
 asterisk_equal = satisfy $ containsToken Lexer.AsteriskEqual
@@ -94,6 +96,8 @@ local_colon_colon = satisfy $ containsToken Lexer.LocalColonColon
 bit = satisfy $ containsToken Lexer.Bit
 byte = satisfy $ containsToken Lexer.Byte
 const' = satisfy $ containsToken Lexer.Const
+elseif = satisfy $ containsToken Lexer.ElseIf
+
 else' = satisfy $ containsToken Lexer.Else
 end = satisfy $ containsToken Lexer.End
 endmodule = satisfy $ containsToken Lexer.Endmodule
@@ -215,13 +219,17 @@ grammar = mdo
     statement_item <- rule $ SimpleAst.SIBlockingAssignment <$> blocking_assignment
                              <|> SimpleAst.SINonblockingAssignment <$> nonblocking_assignment
                              <|> SimpleAst.SISeqBlock <$> seq_block
+                             <|> SimpleAst.SIConditionalStatement <$> conditional_statement
                              <|> SimpleAst.SIProceduralTimingControlStatement <$> event_control <*> optional statement_item <?> "statement_item"
 
     blocking_assignment <- rule $ SimpleAst.BlockingAssignment <$> variable_lvalue <* equal <*> expression <* semicolon <?> "blocking_assignment"
     nonblocking_assignment <- rule $ SimpleAst.NonblockingAssignment <$> variable_lvalue <* lesser_equal <*> expression <* semicolon <?> "blocking_assignment"
     seq_block <- rule $ SimpleAst.SeqBlock <$> (begin *> many statement_item) <* end <?> "seq_block"
-    expression <- rule $ fmap peelExpressions $ SimpleAst.EBlank <$> additive_expression <?> "expression"
+    expression <- rule $ fmap peelExpressions $ SimpleAst.EBlank <$> equality_expression <?> "expression"
+    equality_expression <- rule $ SimpleAst.EBinaryOperator SimpleAst.BOEqualEqual <$> equality_expression <*> (equal_equal *> additive_expression)
+                                    <|> fmap peelExpressions SimpleAst.EBlank <$> additive_expression <?> "equality_expression"
     additive_expression <- rule $ SimpleAst.EBinaryOperator SimpleAst.BOPlus <$> additive_expression <*> (plus *> multiplicative_expression)
+                                    <|> SimpleAst.EBinaryOperator SimpleAst.BOMinus <$> additive_expression <*> (minus *> multiplicative_expression)
                                     <|> fmap peelExpressions SimpleAst.EBlank <$> multiplicative_expression <?> "additive_expression"
     multiplicative_expression <- rule $ SimpleAst.EBinaryOperator SimpleAst.BOAsterisk <$> multiplicative_expression <*> (asterisk *> unary_expression)
                                     <|> fmap peelExpressions  SimpleAst.EBlank <$> unary_expression <?> "multiplicative_expression"
@@ -257,4 +265,13 @@ grammar = mdo
     hierarchical_instance <- rule $ SimpleAst.HierarchicalInstance <$> (module_instance_identifier <* ob) <*> ((:) <$> port_connection <*> many (comma *> port_connection)) <* cb
     port_connection <- rule $ SimpleAst.PCNamed <$> (fullstop *> port_identifier) <*> (ob *> expression <* cb) <?> "port_connection"
     module_instance_identifier <- rule $ SimpleAst.ModuleInstanceIdentifier <$> identifier <?> "instance_identifier"
+    conditional_statement <- rule $ SimpleAst.ConditionalStatement
+                                        <$> if_branch
+                                        <*> many else_if_branch
+                                        <*> optional else_branch
+    if_branch <- rule $ SimpleAst.IfBranch
+                            <$>  (if' *> ob *> expression <* cb) <*> statement_item <?> "if_branch"
+    else_if_branch <- rule $ SimpleAst.ElseIfBranch
+                                        <$> (elseif *> ob *> expression <* cb) <*> statement_item <?> "else_if_branch"
+    else_branch <- rule $ SimpleAst.ElseBranch <$> (else' *> statement_item) <?> "else_branch"
     return (source_text <* eof)

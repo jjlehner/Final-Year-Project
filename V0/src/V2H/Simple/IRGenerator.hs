@@ -49,6 +49,12 @@ generateStatementItemIRs variables nets (SimpleAst.SIProceduralTimingControlStat
             IR.EventExpressionIR (generateEdgeIdentifier edgeIdentifier) (generateConnectionFromExpression expression) : generate next
     in IR.ProceduralTimingControlStatement (generate eventExpression) $ fmap (generateStatementItemIRs variables nets) nextStatementItem
 
+generateStatementItemIRs variables nets (SimpleAst.SIConditionalStatement (SimpleAst.ConditionalStatement ifBranch elseIfBranches maybeElseBranch)) =
+    let tupIfBranch (SimpleAst.IfBranch expr statementItems) = (generateExpression variables nets expr, generateStatementItemIRs variables nets statementItems)
+        tupElseIfBranch (SimpleAst.ElseIfBranch expr statementItems) = (generateExpression variables nets expr, generateStatementItemIRs variables nets statementItems)
+        exprElseBranch (SimpleAst.ElseBranch x) = generateStatementItemIRs variables nets x
+    in IR.ConditionalStatement $ IR.ConditionalStatementIR (tupIfBranch ifBranch:(tupElseIfBranch <$> elseIfBranches)) $ exprElseBranch <$> maybeElseBranch
+
 generateEdgeIdentifier =
     let converter e = case e of
                     SimpleAst.Posedge -> IR.Posedge
@@ -241,11 +247,11 @@ connect ::
     -> Maybe (IR.HierarchicalIdentifierIR IR.VariableOrNetIdentifierIR, [(Maybe IR.SelectIR, IR.ConnectionIR)])
 connect submodule superIdentifierGenerator subIdentifierGenerator (IR.PortDeclarationIR portIdentifier IR.PDInput pConn) =
     case Map.lookup portIdentifier submodule.connections  of
-        Just (IR.EConnection conn) -> Just (peel $ superIdentifierGenerator $ IR.fetchHierarchicalIdentifierFromConnection conn, [(IR.fetchMaybeSelectIRFromConnection conn, updateConnectionIRHierarchicalIdentifierIRs subIdentifierGenerator pConn)])
+        Just (IR.EConnection conn) -> Just (superIdentifierGenerator $ IR.fetchHierarchicalIdentifierFromConnection conn, [(IR.fetchMaybeSelectIRFromConnection conn, updateConnectionIRHierarchicalIdentifierIRs subIdentifierGenerator pConn)])
         Just _ -> Nothing
 connect submodule superIdentifierGenerator subIdentifierGenerator (IR.PortDeclarationIR portIdentifier IR.PDOutput pConn) =
     case Map.lookup  portIdentifier submodule.connections of
-        Just (IR.EConnection conn) -> Just (peel $ subIdentifierGenerator $ IR.fetchHierarchicalIdentifierFromConnection pConn, [(Nothing, updateConnectionIRHierarchicalIdentifierIRs superIdentifierGenerator conn)])
+        Just (IR.EConnection conn) -> Just (subIdentifierGenerator $ IR.fetchHierarchicalIdentifierFromConnection pConn, [(Nothing, updateConnectionIRHierarchicalIdentifierIRs superIdentifierGenerator conn)])
         Just _ -> Nothing
         Nothing -> traceShow portIdentifier traceShow submodule.connections undefined
 
@@ -267,13 +273,12 @@ addIRsAndConnect irs ir identifier expanded submodule =
         connections = Map.unionWith (++) expandedSub.connections conns
         }
 
-peel (IR.H _ h) = h
 updateConnectionIRHierarchicalIdentifierIRs ::
     (forall a . (Ord a, Show a) => IR.HierarchicalIdentifierIR a -> IR.HierarchicalIdentifierIR a)
     -> IR.ConnectionIR
     -> IR.ConnectionIR
-updateConnectionIRHierarchicalIdentifierIRs idenGen (IR.ConnectionVariableIR h s) = IR.ConnectionNetIR (peel $ idenGen h) s
-updateConnectionIRHierarchicalIdentifierIRs idenGen (IR.ConnectionNetIR h s) = IR.ConnectionNetIR (peel $ idenGen h) s
+updateConnectionIRHierarchicalIdentifierIRs idenGen (IR.ConnectionVariableIR h s) = IR.ConnectionVariableIR (idenGen h) s
+updateConnectionIRHierarchicalIdentifierIRs idenGen (IR.ConnectionNetIR h s) = IR.ConnectionNetIR (idenGen h) s
 
 updateExpressionIRHierarchicalIdentifiersIRs ::
     (forall a . (Ord a, Show a) => IR.HierarchicalIdentifierIR a -> IR.HierarchicalIdentifierIR a)
@@ -281,7 +286,8 @@ updateExpressionIRHierarchicalIdentifiersIRs ::
     -> IR.ExpressionIR
 updateExpressionIRHierarchicalIdentifiersIRs idenGen (IR.EConnection conn) = IR.EConnection (updateConnectionIRHierarchicalIdentifierIRs idenGen conn)
 updateExpressionIRHierarchicalIdentifiersIRs idenGen (IR.EUnaryOperator u e) = IR.EUnaryOperator u (updateExpressionIRHierarchicalIdentifiersIRs idenGen e)
-updateExpressionIRHierarchicalIdentifiersIRs _ x = x
+updateExpressionIRHierarchicalIdentifiersIRs idenGen (IR.EBinaryOperator op expr1 expr2) = IR.EBinaryOperator op (updateExpressionIRHierarchicalIdentifiersIRs idenGen expr1) (updateExpressionIRHierarchicalIdentifiersIRs idenGen expr2)
+updateExpressionIRHierarchicalIdentifiersIRs _ (IR.ELiteral x) = IR.ELiteral x
 
 updateStatementItemIRHierarchicalIdentifierIRs ::
     (forall a . (Ord a, Show a) => IR.HierarchicalIdentifierIR a -> IR.HierarchicalIdentifierIR a)
@@ -293,6 +299,25 @@ updateStatementItemIRHierarchicalIdentifierIRs idenGen (IR.NonblockingAssignment
     IR.NonblockingAssignment (updateConnectionIRHierarchicalIdentifierIRs idenGen conn) $ updateExpressionIRHierarchicalIdentifiersIRs idenGen expression
 updateStatementItemIRHierarchicalIdentifierIRs idenGen (IR.SeqBlock statementItems) =
     IR.SeqBlock $ updateStatementItemIRHierarchicalIdentifierIRs idenGen <$> statementItems
+updateStatementItemIRHierarchicalIdentifierIRs idenGen (IR.ConditionalStatement (IR.ConditionalStatementIR ifAndElseIfBranches elseBranch)) =
+    let updater (expr, statementItem) = (updateExpressionIRHierarchicalIdentifiersIRs idenGen expr, updateStatementItemIRHierarchicalIdentifierIRs idenGen statementItem)
+    in IR.ConditionalStatement $ IR.ConditionalStatementIR (updater <$> ifAndElseIfBranches) (updateStatementItemIRHierarchicalIdentifierIRs idenGen <$> elseBranch)
+
+updateEventExpressionIRHierarchicalIdentifierIR ::
+    (forall a . (Ord a, Show a) => IR.HierarchicalIdentifierIR a -> IR.HierarchicalIdentifierIR a)
+    -> IR.EventExpressionIR
+    -> IR.EventExpressionIR
+updateEventExpressionIRHierarchicalIdentifierIR idenGen (IR.EventExpressionIR edgeIdentifier connection) =
+    IR.EventExpressionIR edgeIdentifier $ updateConnectionIRHierarchicalIdentifierIRs idenGen connection
+
+updateSensitivityIRHierarchicalIdentifierIRs ::
+    (forall a . (Ord a, Show a) => IR.HierarchicalIdentifierIR a -> IR.HierarchicalIdentifierIR a)
+    -> IR.SensitivityIR
+    -> IR.SensitivityIR
+updateSensitivityIRHierarchicalIdentifierIRs _ IR.Comb = IR.Comb
+updateSensitivityIRHierarchicalIdentifierIRs _ IR.Latch = IR.Latch
+updateSensitivityIRHierarchicalIdentifierIRs idenGen (IR.FF eventExpressions) =
+    IR.FF $ Set.map (updateEventExpressionIRHierarchicalIdentifierIR idenGen) eventExpressions
 
 updateAlwaysConstructIRHierarchicalIdentifierIRs ::
     (forall a . (Ord a, Show a) => IR.HierarchicalIdentifierIR a -> IR.HierarchicalIdentifierIR a)
@@ -302,6 +327,8 @@ updateAlwaysConstructIRHierarchicalIdentifierIRs idenGen alwaysConstruct =
     over IR.inputConnections (Set.map $ updateConnectionIRHierarchicalIdentifierIRs idenGen) alwaysConstruct
     & over IR.outputConnections (Set.map $ updateConnectionIRHierarchicalIdentifierIRs idenGen)
     & over IR.statementItems (fmap $ updateStatementItemIRHierarchicalIdentifierIRs idenGen)
+    & over IR.sensitivity (updateSensitivityIRHierarchicalIdentifierIRs idenGen)
+
 
 generateExpandedIRSubmodule ::
     [IR.IR]

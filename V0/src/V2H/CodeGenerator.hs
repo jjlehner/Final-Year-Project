@@ -85,8 +85,7 @@ generateSignalIdentifier ::
     -> Q Dec
 generateSignalIdentifier h = do
     let varName = "irIdentifier" ++ generateStringFromHierarchicalIdentifier h
-    let hPeel = peel h
-    value <- [e| hPeel |]
+    value <- [e| h |]
     pure $ ValD (VarP $ mkName varName) (NormalB value) []
 
 generateSignalIdentifiers ::
@@ -186,7 +185,7 @@ generateBody :: Name -> [X] -> Q Exp
 generateBody dynamicCircuitRecordName [HDec a] = return $ snd $ IR.getLeafFromHierachicalIdentifier a
 generateBody dynamicCircuitRecordName hierarchyAsList = do
     let mkRecordField (HVoni hVoni) = do
-            hAsExp <- lift $ peel hVoni
+            hAsExp <- lift hVoni
             mkStableAsExpr <- [e|mkStableFromSignalValue|]
             let name = mkName $ generateVariableFieldName $ IR.getLeafFromHierachicalIdentifier hVoni
             mapIndex <- [e|(Map.!)|]
@@ -227,11 +226,13 @@ generateAccessorTail a (IR.H s h) =
 generateAccessorTail a (IR.I (IR.VariableOrNetIdentifierIR str)) =
     GetFieldE a $ generateSubmoduleFieldName $ IR.ModuleInstanceIdentifierIR str
 
+peel (IR.H _ h) = h
+
 generateAccessor ::
     Name
     -> IR.HierarchicalIdentifierIR IR.VariableOrNetIdentifierIR
     -> Exp
-generateAccessor name = generateAccessorTail $ GetFieldE (VarE name) "_stimulatedState"
+generateAccessor name h = generateAccessorTail (GetFieldE (VarE name) "_stimulatedState") $ peel h
 
 generateMapElemStart ::
     Name
@@ -251,14 +252,13 @@ generateMapElemEnd name key = do
     signalChangeToDynamicExp <- [e|signalChangeToDynamicEnd|]
     return $ TupE [Just keyExp, Just $ AppE signalChangeToDynamicExp $ generateAccessor name key]
 
-peel (IR.H _ h) = h
 generateConvertToDynamicFunction ::
     Name
     -> IR.ExpandedIR
     -> Q [Dec]
 generateConvertToDynamicFunction name expandedIR = do
-    a <- traverse (generateMapElemStart name . peel) (Map.keys expandedIR.variables)
-    b <- traverse (generateMapElemEnd name . peel) (Map.keys expandedIR.variables)
+    a <- traverse (generateMapElemStart name) (Map.keys expandedIR.variables)
+    b <- traverse (generateMapElemEnd name) (Map.keys expandedIR.variables)
     toMapExp <- [e|Map.fromList|]
     stimulatedCircuitConstructor <- [e|StimulatedCircuit|]
     fetchChangedSignals <- [e|\a -> a._stimulatedSignals|]
@@ -268,7 +268,7 @@ generateConvertToDynamicFunction name expandedIR = do
 
 
 generateZeoredElem (key, var) = do
-    keyExp <- [e| (peel key)|]
+    keyExp <- [e| key |]
     signalChangeToDynamicExp <- [e|signalChangeToDynamic|]
     let dataType = var.dataType
     dataTypeAsExpr <- [e|dataType|]

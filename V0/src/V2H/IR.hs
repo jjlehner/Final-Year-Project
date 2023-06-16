@@ -18,6 +18,7 @@ import Data.Function
 import GHC.Base
 
 import Language.Haskell.TH.Syntax
+import Debug.Trace
 
 newtype AlwaysConstructIdentifierIR = AlwaysConstructIdentifierIR String deriving (Show, Eq, Ord, Generic)
 newtype VariableOrNetIdentifierIR = VariableOrNetIdentifierIR String deriving (Show, Eq, Ord, Generic, Lift)
@@ -49,7 +50,8 @@ data SensitivityIR = Comb | FF (Set.Set EventExpressionIR) | Latch deriving (Sho
 data StatementItemIR =  BlockingAssignment ConnectionIR ExpressionIR
                         | NonblockingAssignment ConnectionIR ExpressionIR
                         | SeqBlock [StatementItemIR]
-                        | ProceduralTimingControlStatement [EventExpressionIR] (Maybe StatementItemIR) deriving (Show, Eq, Ord, Generic)
+                        | ProceduralTimingControlStatement [EventExpressionIR] (Maybe StatementItemIR)
+                        | ConditionalStatement ConditionalStatementIR  deriving (Show, Eq, Ord, Generic)
 
 getInputToStatementIR :: StatementItemIR -> [ConnectionIR]
 getInputToStatementIR (BlockingAssignment _ expr) =
@@ -60,6 +62,13 @@ getInputToStatementIR (ProceduralTimingControlStatement _ statementItem) =
     maybe [] getInputToStatementIR statementItem
 getInputToStatementIR (SeqBlock statementItems) =
     concatMap getInputToStatementIR statementItems
+getInputToStatementIR (ConditionalStatement conditionalStatement) =
+    let elseBranchInputs = fmap getInputToStatementIR conditionalStatement.elseBranch
+                                & Maybe.maybeToList
+                                & concat
+        ifAndElseBranchStatementInputs = concatMap (getInputToStatementIR . snd) (conditionalStatement.ifAndElseIfBranches)
+        ifAndElseBranchExpressionInputs = concatMap (getConnectionsInExpression . fst) (conditionalStatement.ifAndElseIfBranches)
+    in elseBranchInputs ++ ifAndElseBranchStatementInputs ++ ifAndElseBranchExpressionInputs
 getOutputToStatementIR (BlockingAssignment conn _) =
     [conn]
 getOutputToStatementIR (NonblockingAssignment conn _) =
@@ -68,6 +77,11 @@ getOutputToStatementIR (ProceduralTimingControlStatement _ statementItems) =
     maybe [] getOutputToStatementIR statementItems
 getOutputToStatementIR (SeqBlock statementItems) =
     concatMap getOutputToStatementIR statementItems
+getOutputToStatementIR (ConditionalStatement conditionalStatement) =
+    let elseBranchInputs = fmap getOutputToStatementIR conditionalStatement.elseBranch
+                                & Maybe.maybeToList
+                                & concat
+    in elseBranchInputs ++ concatMap (getOutputToStatementIR . snd) (conditionalStatement.ifAndElseIfBranches)
 -- class (Show svdt, Ord svdt, Eq svdt) => SVDataObject svdt where
 --     unaryOpMinus :: DataTypeIR -> svdt -> SignalValue
 --     unaryOpExclamationMark :: DataTypeIR -> svdt -> SignalValue
@@ -88,10 +102,15 @@ data SVDataObject =
         unaryOpMinus :: DataTypeIR -> SVDataObject,
         unaryOpExclamationMark :: DataTypeIR -> SVDataObject,
         binaryOpPlus :: DataTypeIR -> SVDataObject -> SVDataObject,
+        binaryMinus ::  DataTypeIR -> SVDataObject -> SVDataObject,
         getLSB :: Bool,
         objToInteger :: DataTypeIR -> Integer,
         objToString :: String,
-        binaryEqualEqual :: DataTypeIR -> SVDataObject -> Bool
+        binaryEqualEqual :: DataTypeIR -> SVDataObject -> SVDataObject,
+        binaryAsterisk :: DataTypeIR -> SVDataObject -> SVDataObject,
+        isTrue :: Bool,
+        isFalse :: Bool,
+        cast :: DataTypeIR -> SignalValue
     }
 
 instance Show SVDataObject where
@@ -101,7 +120,7 @@ data SignalValue = SignalValue DataTypeIR SVDataObject deriving (Generic, Show)
 toSVDataObject (SignalValue _ svdo) = svdo
 instance Eq SignalValue where
     (==) (SignalValue dt1 obj1) (SignalValue dt2 obj2) =
-        dt1 == dt2 && binaryEqualEqual obj1 dt1 obj2
+        dt1 == dt2 && isTrue (binaryEqualEqual obj1 dt1 obj2)
 instance Ord SignalValue where
     (<=) (SignalValue dt1 obj1) (SignalValue dt2 obj2) =
         objToInteger obj1 dt1 <= objToInteger obj2 dt2
@@ -115,7 +134,8 @@ data ExpressionIR = EConnection ConnectionIR
 
 getConnectionsInExpression (EConnection conn) = [conn]
 getConnectionsInExpression (EUnaryOperator _ expr) = getConnectionsInExpression expr
-getConnectionsInExpression _ = []
+getConnectionsInExpression (EBinaryOperator _ expr1 expr2)= getConnectionsInExpression expr1 ++ getConnectionsInExpression expr2
+getConnectionsInExpression (ELiteral _) = []
 
 data UnaryOperatorIR =  UOPlus
                         | UOMinus
@@ -132,7 +152,8 @@ data UnaryOperatorIR =  UOPlus
 data BinaryOperatorIR = BOPlus
                       | BOMinus
                       | BOAsterisk
-                      | BOForwardSlash deriving (Show, Eq, Ord, Generic)
+                      | BOForwardSlash
+                      | BOEqualEqual deriving (Show, Eq, Ord, Generic)
 -- Should be changed to CVariableIR and CNetIR, separated as VariableORNetIdentifier will be split into variableIdentifier and NetIdentifier
 data ConnectionIR =
     ConnectionVariableIR (HierarchicalIdentifierIR VariableOrNetIdentifierIR) (Maybe SelectIR)
@@ -242,6 +263,12 @@ data AlwaysConstructIR =
         _inputConnections                        :: Set.Set ConnectionIR,
         _outputConnections                       :: Set.Set ConnectionIR,
         _statementItems                          :: Maybe StatementItemIR
+    } deriving (Show, Eq, Ord, Generic)
+
+data ConditionalStatementIR =
+    ConditionalStatementIR {
+        ifAndElseIfBranches:: [(ExpressionIR, StatementItemIR)],
+        elseBranch :: Maybe StatementItemIR
     } deriving (Show, Eq, Ord, Generic)
 
 $(makeLenses ''AlwaysConstructIR)

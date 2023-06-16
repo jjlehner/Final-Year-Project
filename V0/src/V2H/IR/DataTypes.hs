@@ -41,6 +41,7 @@ getBitWidthOfPackedDimension (PackedDimensionIR a b) = a - b + 1
 getBitWidthOfSingularTypeIR :: SingularTypeIR -> Integer
 getBitWidthOfSingularTypeIR (STScalar _)  = 1
 getBitWidthOfSingularTypeIR (STPackedArray p s) = getBitWidthOfPackedDimension p * getBitWidthOfPackedArraySubTypeIR s
+getBitWidthOfSingularTypeIR (STInteger NSITInt) = 32
 
 getBitWidth :: DataTypeIR -> Integer
 getBitWidth (DTSingular s) = getBitWidthOfSingularTypeIR s
