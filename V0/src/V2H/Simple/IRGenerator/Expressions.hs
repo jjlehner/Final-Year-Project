@@ -8,6 +8,7 @@ import V2H.IR.DataTypes qualified as IR
 import Text.Pretty.Simple
 import Data.Text.Lazy (unpack)
 import Debug.Trace
+import Data.Bits
 
 fromBoolToInteger :: Bool -> Integer
 fromBoolToInteger False = 0
@@ -30,7 +31,11 @@ mkSignalValueDataObjectFromInteger i =
             \res b -> mkSignalValueDataObjectFromInteger $ (i - IR.objToInteger b res) `mod` 2 ^ IR.getBitWidth res,
         IR.isTrue = i/=0,
         IR.isFalse = i==0,
-        IR.cast = \dt -> IR.SignalValue dt $ mkSignalValueDataObjectFromInteger $ i `mod` 2 ^ IR.getBitWidth dt
+        IR.cast = \dt -> IR.SignalValue dt $ mkSignalValueDataObjectFromInteger $ i `mod` 2 ^ IR.getBitWidth dt,
+        IR.concatOp = \dt1 dt2 svdo2 ->
+                            let resultingType = IR.concatDataType dt1 dt2
+                                shiftedObject = IR.toSVDataObject $ IR.cast (mkSignalValueDataObjectFromInteger $ shift i $ fromIntegral $ IR.getBitWidth dt2) resultingType
+                            in (IR.binaryOpPlus shiftedObject resultingType  svdo2, resultingType)
     }
 
 generateExpression ::
@@ -48,6 +53,9 @@ generateExpression variables nets (SimpleAst.EConnection (SimpleAst.VariableIden
         (Just v, Just n) -> undefined
         (Just v, Nothing) -> IR.EConnection $ IR.ConnectionVariableIR (IR.I v.identifier) Nothing
         (Nothing, Just n) -> IR.EConnection $ IR.ConnectionNetIR (IR.I n.identifier) Nothing
+
+generateExpression variables nets (SimpleAst.EConcat expressions) =
+    IR.EConcat $ fmap (generateExpression variables nets) expressions
 
 generateExpression variables nets (SimpleAst.EUnaryOperator b exp) =
     IR.EUnaryOperator (generateUnaryOperator b) $ generateExpression variables nets exp

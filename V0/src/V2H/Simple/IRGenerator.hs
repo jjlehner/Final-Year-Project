@@ -288,6 +288,7 @@ updateExpressionIRHierarchicalIdentifiersIRs idenGen (IR.EConnection conn) = IR.
 updateExpressionIRHierarchicalIdentifiersIRs idenGen (IR.EUnaryOperator u e) = IR.EUnaryOperator u (updateExpressionIRHierarchicalIdentifiersIRs idenGen e)
 updateExpressionIRHierarchicalIdentifiersIRs idenGen (IR.EBinaryOperator op expr1 expr2) = IR.EBinaryOperator op (updateExpressionIRHierarchicalIdentifiersIRs idenGen expr1) (updateExpressionIRHierarchicalIdentifiersIRs idenGen expr2)
 updateExpressionIRHierarchicalIdentifiersIRs _ (IR.ELiteral x) = IR.ELiteral x
+updateExpressionIRHierarchicalIdentifiersIRs idenGen (IR.EConcat exprs) = IR.EConcat $ fmap (updateExpressionIRHierarchicalIdentifiersIRs idenGen) exprs
 
 updateStatementItemIRHierarchicalIdentifierIRs ::
     (forall a . (Ord a, Show a) => IR.HierarchicalIdentifierIR a -> IR.HierarchicalIdentifierIR a)
@@ -302,7 +303,6 @@ updateStatementItemIRHierarchicalIdentifierIRs idenGen (IR.SeqBlock statementIte
 updateStatementItemIRHierarchicalIdentifierIRs idenGen (IR.ConditionalStatement (IR.ConditionalStatementIR ifAndElseIfBranches elseBranch)) =
     let updater (expr, statementItem) = (updateExpressionIRHierarchicalIdentifiersIRs idenGen expr, updateStatementItemIRHierarchicalIdentifierIRs idenGen statementItem)
     in IR.ConditionalStatement $ IR.ConditionalStatementIR (updater <$> ifAndElseIfBranches) (updateStatementItemIRHierarchicalIdentifierIRs idenGen <$> elseBranch)
-
 updateEventExpressionIRHierarchicalIdentifierIR ::
     (forall a . (Ord a, Show a) => IR.HierarchicalIdentifierIR a -> IR.HierarchicalIdentifierIR a)
     -> IR.EventExpressionIR

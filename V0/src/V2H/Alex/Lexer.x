@@ -81,6 +81,9 @@ tokens :-
 <0> "+"                         { tok Plus }
 <0> "=="                        { tok EqualEqual }
 <0> "-"                         { tok Minus }
+<0> "{"                         { tok OpenCurlyBracket }
+<0> "}"                         { tok CloseCurlyBracket }
+
 <0> @identifier                 { tokId }
 <0> $decimalDigit+              { tokDecimal }
 {

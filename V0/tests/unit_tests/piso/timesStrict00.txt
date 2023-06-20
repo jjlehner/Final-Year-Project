@@ -1,0 +1,16 @@
+All Test Passed, 2,         0.30 real         0.03 user         0.00 sys
+All Test Passed, 4,         0.07 real         0.06 user         0.00 sys
+All Test Passed, 8,         0.12 real         0.11 user         0.00 sys
+All Test Passed, 16,         0.23 real         0.23 user         0.00 sys
+All Test Passed, 32,         0.46 real         0.45 user         0.00 sys
+All Test Passed, 64,         0.91 real         0.90 user         0.00 sys
+All Test Passed, 128,         1.82 real         1.80 user         0.00 sys
+All Test Passed, 256,         3.73 real         3.70 user         0.02 sys
+All Test Passed, 512,         7.29 real         7.25 user         0.03 sys
+All Test Passed, 1024,        14.51 real        14.45 user         0.06 sys
+All Test Passed, 2048,        29.04 real        28.93 user         0.11 sys
+All Test Passed, 4096,        58.35 real        58.13 user         0.23 sys
+All Test Passed, 8192,       116.34 real       115.71 user         0.41 sys
+All Test Passed, 16384,       233.43 real       230.39 user         0.90 sys
+time: command terminated abnormally
+      242.01 real       241.10 user         0.93 sys

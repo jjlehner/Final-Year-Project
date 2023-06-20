@@ -6,6 +6,7 @@ module V2H.Simple.Parser where
 
 import Text.Earley
 import Data.Maybe
+import Data.List
 import Data.Functor
 import Control.Applicative
 import qualified V2H.Alex.Lexer as Lexer
@@ -13,6 +14,7 @@ import qualified V2H.Simple.Ast as SimpleAst
 import Text.Pretty.Simple (pShow)
 import Data.Text.Lazy (unpack)
 import Debug.Trace
+import V2H.Alex.Lexer (AlexPosn)
 
 peelExpressions :: SimpleAst.Expression -> SimpleAst.Expression
 peelExpressions root =
@@ -24,8 +26,20 @@ runParser :: [Lexer.RangedToken] -> Either String SimpleAst.SourceText
 runParser tokens =
     case fullParses (parser grammar) tokens of
         ([parse], _) -> Right parse
-        (parse:_, _ ) -> Left "Ambiguous Grammar, multiple parses"
-        (_, report) -> Left $ "Failed to parse -- " ++ show report
+        (parse:_, _ ) -> Left "Ambiguous Grammar, multiple parses!"
+        (_, report) -> Left $ generateErrorMessageFromReport report
+
+
+generateErrorMessageFromReport ::
+    Report String [Lexer.RangedToken]
+    -> String
+generateErrorMessageFromReport report =
+    let (Lexer.RangedToken token pn) = head report.unconsumed
+        (Lexer.AlexPn _ lineNum columnNum) = Lexer.start pn
+    in unlines ["Syntax Error in SV File",
+                "Unexpected " ++ show token,
+                "Line: " ++ show lineNum ++ ", Column: " ++ show columnNum,
+                "Expecting: " ++ intercalate ", " report.expected]
 
 isPresent a = fmap isJust (optional a)
 eitherProd a b =
@@ -225,7 +239,9 @@ grammar = mdo
     blocking_assignment <- rule $ SimpleAst.BlockingAssignment <$> variable_lvalue <* equal <*> expression <* semicolon <?> "blocking_assignment"
     nonblocking_assignment <- rule $ SimpleAst.NonblockingAssignment <$> variable_lvalue <* lesser_equal <*> expression <* semicolon <?> "blocking_assignment"
     seq_block <- rule $ SimpleAst.SeqBlock <$> (begin *> many statement_item) <* end <?> "seq_block"
-    expression <- rule $ fmap peelExpressions $ SimpleAst.EBlank <$> equality_expression <?> "expression"
+    expression <- rule $ fmap peelExpressions $ SimpleAst.EBlank <$> concat_expression <?> "expression"
+    concat_expression <- rule $ SimpleAst.EConcat <$> (ocb *> ((:) <$> expression <*> (many (comma *> expression) <* ccb)))
+                                    <|> fmap peelExpressions SimpleAst.EBlank <$> equality_expression <?> "concat_expression"
     equality_expression <- rule $ SimpleAst.EBinaryOperator SimpleAst.BOEqualEqual <$> equality_expression <*> (equal_equal *> additive_expression)
                                     <|> fmap peelExpressions SimpleAst.EBlank <$> additive_expression <?> "equality_expression"
     additive_expression <- rule $ SimpleAst.EBinaryOperator SimpleAst.BOPlus <$> additive_expression <*> (plus *> multiplicative_expression)
@@ -258,7 +274,10 @@ grammar = mdo
     variable_lvalue <- rule $ SimpleAst.VariableLvalue
                                 <$> variable_identifier
                                 <*> optional bit_select
-                                <*> optional part_select_range <?> "variable_lvalue"
+                                <*> optional part_select_range
+                                <|> SimpleAst.VLConcatenation
+                                <$> (ocb *> ((:) <$> variable_lvalue <*> (many (comma *> variable_lvalue) <* ccb)))
+                                <?> "variable_lvalue"
     bit_select <- rule $ SimpleAst.BitSelect <$> (osb *> expression <* csb) <?> "bit_select"
     part_select_range <- rule $ SimpleAst.PartSelectRange <$> (osb *> unsigned_number) <*> (colon *> unsigned_number) <*csb <?> "part_select_range"
     module_instantiation <- rule $ SimpleAst.ModuleInstantiation <$> module_identifier <*> hierarchical_instance <* semicolon <?> "module_instantiation"

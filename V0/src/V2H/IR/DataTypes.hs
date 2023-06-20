@@ -10,7 +10,8 @@ data StructIR = StructIR deriving (Show, Eq, Ord, Generic, Lift )
 data UnionIR = UnionIR deriving (Show, Eq, Ord, Generic, Lift)
 
 data DataTypeIR = DTSingular SingularTypeIR
-                  | DTAggregate AggregateTypeIR deriving (Show, Eq, Ord, Generic, Lift)
+                  | DTAggregate AggregateTypeIR
+                  | DTUnit deriving (Show, Eq, Ord, Generic, Lift)
 
 data PackedArraySubTypeIR =
     PATScalar ScalarIntegerVectorTypeIR
@@ -45,5 +46,15 @@ getBitWidthOfSingularTypeIR (STInteger NSITInt) = 32
 
 getBitWidth :: DataTypeIR -> Integer
 getBitWidth (DTSingular s) = getBitWidthOfSingularTypeIR s
+getBitWidth DTUnit = 0
 
-
+concatDataType :: DataTypeIR -> DataTypeIR -> DataTypeIR
+concatDataType (DTSingular (STPackedArray (PackedDimensionIR a 0) (PATScalar SIVTLogic))) (DTSingular (STPackedArray (PackedDimensionIR b 0) (PATScalar SIVTLogic))) =
+    DTSingular $ STPackedArray (PackedDimensionIR (a+b) 0) (PATScalar SIVTLogic)
+concatDataType DTUnit a = a
+concatDataType a DTUnit = a
+concatDataType (DTSingular (STPackedArray (PackedDimensionIR a 0) (PATScalar SIVTLogic))) (DTSingular (STScalar SIVTLogic)) =
+    DTSingular $ STPackedArray (PackedDimensionIR (a+1) 0) (PATScalar SIVTLogic)
+concatDataType (DTSingular (STScalar SIVTLogic)) (DTSingular (STPackedArray (PackedDimensionIR a 0) (PATScalar SIVTLogic))) =
+    DTSingular $ STPackedArray (PackedDimensionIR (a+1) 0) (PATScalar SIVTLogic)
+concatDataType (DTSingular (STScalar SIVTLogic)) (DTSingular (STScalar SIVTLogic)) = DTSingular $ STPackedArray (PackedDimensionIR 1 0) (PATScalar SIVTLogic)

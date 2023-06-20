@@ -52,5 +52,6 @@ setup toplevelModuleName sourceFilePaths = do
                             & liftM2 (++) (generateEmptyValue expandedIR)
                             & liftM2 (++) (generateExpandedIRValue toplevelModuleName $ Either.fromRight' $ sequence eitherErrOrSourceCodes)
                             & liftM2 (++) (generateEval expandedIR)
+                            & liftM2 (++) generateInitState
                 runIO $ putStrLn $ pprint $ reverse code2Gen
                 return code2Gen

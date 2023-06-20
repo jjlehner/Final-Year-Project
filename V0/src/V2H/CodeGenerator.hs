@@ -213,8 +213,7 @@ generateConvertFromDynamicFunction dynamicCircuitRecordName expandedIR = do
             & fmap HVoni
     let circuitDynamic = mkName "circuitDynamic"
     bodyExpr <- generateBody circuitDynamic h
-    a <- (pure . pure) $ FunD (mkName "convertFromDynamic") [Clause [VarP circuitDynamic] (NormalB bodyExpr) []]
-    trace (pprint a) return a
+    (pure . pure) $ FunD (mkName "convertFromDynamic") [Clause [VarP circuitDynamic] (NormalB bodyExpr) []]
 
 
 generateAccessorTail ::
@@ -297,3 +296,11 @@ generateEval expandedIR = do
     evalStimulatedCircuitAsExp <- [e|evalStimulatedCircuit|]
     let body = NormalB $ AppE (AppE (AppE evalStimulatedCircuitAsExp (VarE $ mkName "expandedIR")) (VarE $ mkName "convertToDynamic")) (VarE $ mkName "convertFromDynamic")
     (pure . pure) $ ValD (VarP $ mkName "eval'") body []
+
+generateInitState :: Q [Dec]
+generateInitState = do
+    triggerCombBlocksExpr <- [e|triggerAllAlwaysCombBlocks|]
+    let body = NormalB (VarE (mkName "convertFromDynamic") `AppE` (triggerCombBlocksExpr `AppE` VarE (mkName "expandedIR") `AppE` VarE (mkName "empty")) )
+    (pure. pure) $ ValD (VarP $ mkName "initState") body []
+
+

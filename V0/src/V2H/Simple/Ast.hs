@@ -75,7 +75,8 @@ data NonblockingAssignment =
         expression :: Expression
     } deriving (Show, Generic)
 
-data VariableLvalue = VariableLvalue VariableIdentifier (Maybe BitSelect) (Maybe PartSelectRange) deriving (Show, Generic)
+data VariableLvalue = VariableLvalue VariableIdentifier (Maybe BitSelect) (Maybe PartSelectRange)
+                      | VLConcatenation [VariableLvalue] deriving (Show, Generic)
 
 newtype SeqBlock =
     SeqBlock { statements :: [StatementItem ]} deriving (Show, Generic)
@@ -122,7 +123,8 @@ data Expression =
     | EConnection VariableIdentifier (Maybe BitSelect) (Maybe PartSelectRange)
     | EBlank Expression
     | EBinaryOperator BinaryOperator Expression Expression
-    | EUnaryOperator UnaryOperator Expression deriving (Show, Generic)
+    | EUnaryOperator UnaryOperator Expression
+    | EConcat [Expression] deriving (Show, Generic)
 
 data NetType = NTWire deriving (Show, Generic)
 data DataType = DTIntegerVector IntegerVectorType [PackedDimension] | DTString deriving (Show, Generic)

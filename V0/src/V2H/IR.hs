@@ -108,6 +108,7 @@ data SVDataObject =
         objToString :: String,
         binaryEqualEqual :: DataTypeIR -> SVDataObject -> SVDataObject,
         binaryAsterisk :: DataTypeIR -> SVDataObject -> SVDataObject,
+        concatOp :: DataTypeIR -> DataTypeIR -> SVDataObject -> (SVDataObject, DataTypeIR),
         isTrue :: Bool,
         isFalse :: Bool,
         cast :: DataTypeIR -> SignalValue
@@ -130,13 +131,14 @@ signalValueToDataType (SignalValue dataType _) = dataType
 data ExpressionIR = EConnection ConnectionIR
                         | ELiteral SignalValue
                         | EUnaryOperator UnaryOperatorIR ExpressionIR
-                        | EBinaryOperator BinaryOperatorIR ExpressionIR ExpressionIR deriving (Show, Eq, Ord, Generic)
+                        | EBinaryOperator BinaryOperatorIR ExpressionIR ExpressionIR
+                        | EConcat [ExpressionIR] deriving (Show, Eq, Ord, Generic)
 
 getConnectionsInExpression (EConnection conn) = [conn]
 getConnectionsInExpression (EUnaryOperator _ expr) = getConnectionsInExpression expr
 getConnectionsInExpression (EBinaryOperator _ expr1 expr2)= getConnectionsInExpression expr1 ++ getConnectionsInExpression expr2
 getConnectionsInExpression (ELiteral _) = []
-
+getConnectionsInExpression (EConcat exprs ) = concatMap getConnectionsInExpression exprs
 data UnaryOperatorIR =  UOPlus
                         | UOMinus
                         | UOLogicalNot

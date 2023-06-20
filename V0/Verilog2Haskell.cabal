@@ -43,65 +43,200 @@ category:           Development
 
 -- Extra files to be distributed with the package, such as examples or a README.
 extra-source-files: CHANGELOG.md
+                    tests/parser/simple/empty_module.sv,
+                    tests/parser/simple/submodule.sv,
+                    tests/parser/simple/sub_sub_module.sv
+                    tests/parser/simple/flipper.sv
 
-executable verilog-to-haskell
+                    tests/unit_tests/flipper/rtl/flipper.sv
+                    tests/unit_tests/alu/rtl/alu.sv
+
+                    tests/unit_tests/ripple_counter/rtl/ripple.sv
+                    tests/unit_tests/ripple_counter/rtl/top.sv
+
+                    tests/unit_tests/piso/rtl/piso.sv
+                    tests/unit_tests/piso/rtl/stager.sv
+
+                    tests/unit_tests/sipo/rtl/sipo.sv
+                    tests/unit_tests/sipo/rtl/stager.sv
+
+executable simple-parser
     -- .hs or .lhs file containing the Main module.
-    main-is:          Main.hs
+    main-is:          SimpleMain.hs
     build-tool-depends: alex:alex
     -- Modules included in this executable, other than Main.
     other-modules:    V2H.Alex.Lexer,
-                      V2H.Parser,
-                      V2H.Component,
-                      V2H.Ast
-
+                      V2H.IR,
+                      V2H.IR.DataTypes,
+                      V2H.IR.Dimensions,
+                      V2H.IR.NetTypes,
+                      V2H.Simple.Ast,
+                      V2H.Simple.Parser,
+                      V2H.Simple.IRGenerator,
+                      V2H.Simple.IRGenerator.DataTypes,
+                      V2H.Simple.IRGenerator.Expressions
+                      V2H.Simple.IRGenerator.Identifiers,
+                      V2H.Simulator.Signal,
+                      V2H.CodeGenerator,
+                      V2H.Simple.V2H,
+                      V2H.Simulator.Simulate,
+                      V2H.Simulator.TimeSlot,
+                      V2H.Simple.Transpile,
+                      V2H.Simulator.EDSL,
+                      V2H.Simulator.Circuit
     -- LANGUAGE extensions used by modules in this package.
-    default-extensions:     DuplicateRecordFields,
-                            OverloadedRecordDot
+    default-extensions:     OverloadedRecordDot
+                            TemplateHaskell
+                            DuplicateRecordFields
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>= 4.16.4.0,
-                      containers ^>= 0.6.6,
-                      bytestring ^>= 0.11.4.0,
-                      array ^>= 0.5.4.0,
-                      mtl ^>= 2.3.1,
-                      Earley ^>= 0.13.0.1,
-                      generic-lens ^>= 2.2.2.0,
-                      lens ^>= 5.2.2
+    build-depends:  base ^>=4.16.4.0,
+                    array ^>= 0.5.4.0,
+                    bytestring ^>= 0.11.4.0,
+                    extra ^>= 1.7.13,
+                    Earley ^>= 0.13.0.1,
+                    containers,
+                    lens ^>= 5.2.2,
+                    generic-lens ^>= 2.2.2.0,
+                    pretty-simple ^>= 4.1.2.0,
+                    casing ^>= 0.1.4.1,
+                    mtl ^>= 2.3.1,
+                    sequence ^>= 0.9.9.0,
+                    text ^>= 2.0.2,
+                    template-haskell
 
     -- Directories containing source files.
     hs-source-dirs:    src,
-                       src/V2H
-
-
+                       src/V2H,
+                       src/V2H/Simulator,
+                       src/V2H/Simple,
+                       src/V2H/Simple/IRGeneartor
     -- Base language which the package is written in.
     default-language: GHC2021
 
-executable parse-tree-visualiser
+
+library V2H
     -- .hs or .lhs file containing the Main module.
-    main-is:          ParseTreeVisualiser.hs
     build-tool-depends: alex:alex
     -- Modules included in this executable, other than Main.
-    other-modules:    V2H.Alex.Lexer,
-                      V2H.Parser
-                      V2H.Ast
-
+    exposed-modules:  V2H.Alex.Lexer,
+                      V2H.IR,
+                      V2H.IR.DataTypes,
+                      V2H.IR.Dimensions,
+                      V2H.IR.NetTypes,
+                      V2H.Simple.Ast,
+                      V2H.Simple.Parser,
+                      V2H.Simple.IRGenerator,
+                      V2H.Simple.IRGenerator.DataTypes,
+                      V2H.Simple.IRGenerator.Expressions
+                      V2H.Simple.IRGenerator.Identifiers,
+                      V2H.Simulator.Signal,
+                      V2H.CodeGenerator,
+                      V2H.Simple.V2H,
+                      V2H.Simulator.Simulate,
+                      V2H.Simulator.TimeSlot,
+                      V2H.Simple.Transpile,
+                      V2H.Simulator.EDSL,
+                      V2H.Simulator.Circuit
     -- LANGUAGE extensions used by modules in this package.
-    default-extensions:    DuplicateRecordFields
+    default-extensions:     OverloadedRecordDot
+                            TemplateHaskell
+                            DuplicateRecordFields
     -- Other library packages from which modules are imported.
-    build-depends:    base ^>=4.16.4.0,
-                      containers ^>= 0.6.6,
-                      parsec ^>= 3.1.15.1,
-                      bytestring ^>= 0.11.4.0,
-                      array ^>= 0.5.4.0,
-                      graphviz ^>=  2999.20.1.0,
-                      aeson,
-                      Earley,
-                      unordered-containers,
-                      process
+    build-depends:  base ^>=4.16.4.0,
+                    array ^>= 0.5.4.0,
+                    bytestring ^>= 0.11.4.0,
+                    extra ^>= 1.7.13,
+                    Earley ^>= 0.13.0.1,
+                    containers,
+                    lens ^>= 5.2.2,
+                    generic-lens ^>= 2.2.2.0,
+                    pretty-simple ^>= 4.1.2.0,
+                    casing ^>= 0.1.4.1,
+                    mtl ^>= 2.3.1,
+                    sequence ^>= 0.9.9.0,
+                    text ^>= 2.0.2,
+                    template-haskell
 
     -- Directories containing source files.
     hs-source-dirs:    src,
-                       src/V2H
-                       src/V2H/ParseTreeVisualiser
+                       src/V2H,
+                       src/V2H/Simulator,
+                       src/V2H/Simple,
+                       src/V2H/Simple/IRGeneartor
+    -- Base language which the package is written in.
+    default-language: GHC2021
 
+common test-deps
+    build-depends:              base ^>= 4.16.4.0,
+                                V2H,
+                                mtl ^>= 2.3.1,
+                                containers ^>= 0.6.7,
+                                pretty-simple ^>= 4.1.2.0,
+                                lens ^>= 5.2.2,
+                                random ^>= 1.2.1.1,
+                                extra ^>= 1.7.13
+
+test-suite flipper-test
+    import:                 test-deps
+    type:                   exitcode-stdio-1.0
+    main-is:                testbench.hs
+    default-extensions:     OverloadedRecordDot
+                            TemplateHaskell
+                            DuplicateRecordFields
+    -- Other library packages from which modules are imported.
+    -- Directories containing source files.
+    hs-source-dirs:    tests/unit_tests/flipper
+    -- Base language which the package is written in.
+    default-language: GHC2021
+
+test-suite alu-test
+    import:                 test-deps
+    type:                   exitcode-stdio-1.0
+    main-is:                testbench.hs
+    default-extensions:     OverloadedRecordDot
+                            TemplateHaskell
+                            DuplicateRecordFields
+    -- Other library packages from which modules are imported.
+    -- Directories containing source files.
+    hs-source-dirs:    tests/unit_tests/alu
+    -- Base language which the package is written in.
+    default-language: GHC2021
+
+test-suite ripple-counter-test
+    import:                 test-deps
+    type:                   exitcode-stdio-1.0
+    main-is:                testbench.hs
+    default-extensions:     OverloadedRecordDot
+                            TemplateHaskell
+                            DuplicateRecordFields
+    -- Other library packages from which modules are imported.
+    -- Directories containing source files.
+    hs-source-dirs:    tests/unit_tests/ripple_counter
+    -- Base language which the package is written in.
+    default-language: GHC2021
+
+test-suite piso-test
+    import:                 test-deps
+    type:                   exitcode-stdio-1.0
+    main-is:                testbench.hs
+    default-extensions:     OverloadedRecordDot
+                            TemplateHaskell
+                            DuplicateRecordFields
+    -- Other library packages from which modules are imported.
+    -- Directories containing source files.
+    hs-source-dirs:    tests/unit_tests/piso
+    -- Base language which the package is written in.
+    default-language: GHC2021
+
+test-suite sipo-test
+    import:                 test-deps
+    type:                   exitcode-stdio-1.0
+    main-is:                testbench.hs
+    default-extensions:     OverloadedRecordDot
+                            TemplateHaskell
+                            DuplicateRecordFields
+    -- Other library packages from which modules are imported.
+    -- Directories containing source files.
+    hs-source-dirs:    tests/unit_tests/sipo
     -- Base language which the package is written in.
     default-language: GHC2021

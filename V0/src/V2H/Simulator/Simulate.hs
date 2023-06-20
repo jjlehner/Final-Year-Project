@@ -23,6 +23,7 @@ import Text.Pretty.Simple
 import Data.Text.Lazy (unpack)
 import qualified V2H.IR as IR
 import qualified V2H.IR.DataTypes as IR
+import V2H.Simple.IRGenerator.Expressions (mkSignalValueDataObjectFromInteger)
 
 data SignalValueChange = SignalValueChange {
     connection :: ConnectionIR,
@@ -193,7 +194,7 @@ getDataTypeOfSelfDeterminedExpression ::
 getDataTypeOfSelfDeterminedExpression expandedIR expr =
     case expr of
         (ELiteral (SignalValue dt _)) -> dt
-        (EConnection (ConnectionVariableIR hn Nothing) ) -> traceShow (hn, expandedIR.variables) $ (expandedIR.variables Map.! hn).dataType
+        (EConnection (ConnectionVariableIR hn Nothing) ) -> (expandedIR.variables Map.! hn).dataType
         (EUnaryOperator _ _) -> DTSingular $ STScalar SIVTLogic
         (EBinaryOperator bop expr1 expr2)
             ->  let maxSubExpr = (getDataTypeOfSelfDeterminedExpression expandedIR expr1, getDataTypeOfSelfDeterminedExpression expandedIR expr2)
@@ -233,6 +234,13 @@ evaluateExpression ir expressionType circuitState (EUnaryOperator unaryOp expr) 
         UOTildeCaret -> undefined
         UOCaretTilde -> undefined
 
+evaluateExpression ir expressionType circuitState e@(EConcat exprs) =
+    let dataTypes =  getDataTypeOfSelfDeterminedExpression ir <$> exprs
+        values = fmap (toSVDataObject . evaluateExpression ir expressionType circuitState) exprs
+        valuesAndDataTypes = zip values dataTypes
+        concatSVDataObjects (svdo1, dt1) (svdo2, dt2) = concatOp svdo1 dt1 dt2 svdo2
+        (resultObject, resultType) = foldl concatSVDataObjects (mkSignalValueDataObjectFromInteger 0, DTUnit) valuesAndDataTypes
+    in  cast resultObject (whenSD expressionType resultType)
 evaluateExpression ir expressionType circuitState e@(EBinaryOperator binaryOp expr1 expr2) =
     let resultType = whenSD expressionType $ getDataTypeOfSelfDeterminedExpression ir e
         resultTypeLeft = whenSD expressionType $ getDataTypeOfSelfDeterminedExpression ir expr1
