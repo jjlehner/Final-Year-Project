@@ -1,5 +1,6 @@
 # V2H Project
-
+## User Guide
+Find user guide here - [user_guide.md](user_guide.md)
 ## Where to find interesting files?
 
 ### Phase 1 Files
@@ -27,3 +28,5 @@
 * Serial In Parallel Out Shift Register - [tests/unit_tests/sipo/testbench.hs](tests/unit_tests/sipo/testbench.hs)
 
 * Fipper Module - [tests/unit_tests/flipper/testbench.hs](tests/unit_tests/flipper/testbench.hs)
+
+

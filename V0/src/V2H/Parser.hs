@@ -22,6 +22,7 @@ peelExpressions root =
         SimpleAst.EBlank exp -> peelExpressions exp
         other -> other
 
+-- | Toplevel function for starting parsers
 runParser :: [Lexer.RangedToken] -> Either String SimpleAst.SourceText
 runParser tokens =
     case fullParses (parser grammar) tokens of
@@ -29,7 +30,7 @@ runParser tokens =
         (parse:_, _ ) -> Left "Ambiguous Grammar, multiple parses!"
         (_, report) -> Left $ generateErrorMessageFromReport report
 
-
+-- | Generate useful error messages for invalid input
 generateErrorMessageFromReport ::
     Report String [Lexer.RangedToken]
     -> String
