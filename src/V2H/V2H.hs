@@ -54,7 +54,7 @@ setup toplevelModuleName sourceFilePaths = do
         Right (toplevelIR, irs) ->
             do
                 let expandedIR = generateExpandedIR toplevelIR irs
-                code2Gen <- generateSignalSumTypesFromIRs irs toplevelIR (IR.ModuleInstanceIdentifierIR toplevelModuleName)
+                generateSignalSumTypesFromIRs irs toplevelIR (IR.ModuleInstanceIdentifierIR toplevelModuleName)
                             & liftM2 (++) (generateSignalIdentifiers expandedIR)
                             & liftM2 (++) (generateCircuitRecord [IR.ModuleInstanceIdentifierIR toplevelModuleName] irs toplevelIR)
                             & liftM2 (++) (generateConvertFromDynamicFunction (mkName "top") expandedIR )
@@ -63,5 +63,3 @@ setup toplevelModuleName sourceFilePaths = do
                             & liftM2 (++) (generateExpandedIRValue toplevelModuleName $ Either.fromRight' $ sequence eitherErrOrSourceCodes)
                             & liftM2 (++) (generateEval expandedIR)
                             & liftM2 (++) generateInitState
-                runIO $ putStrLn $ pprint $ reverse code2Gen
-                return code2Gen
