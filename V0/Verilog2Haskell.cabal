@@ -70,18 +70,18 @@ executable simple-parser
                       V2H.IR.DataTypes,
                       V2H.IR.Dimensions,
                       V2H.IR.NetTypes,
-                      V2H.Simple.Ast,
-                      V2H.Simple.Parser,
-                      V2H.Simple.IRGenerator,
-                      V2H.Simple.IRGenerator.DataTypes,
-                      V2H.Simple.IRGenerator.Expressions
-                      V2H.Simple.IRGenerator.Identifiers,
+                      V2H.Ast,
+                      V2H.Parser,
+                      V2H.IRGenerator,
+                      V2H.IRGenerator.DataTypes,
+                      V2H.IRGenerator.Expressions
+                      V2H.IRGenerator.Identifiers,
                       V2H.Simulator.Signal,
                       V2H.CodeGenerator,
-                      V2H.Simple.V2H,
+                      V2H.V2H,
                       V2H.Simulator.Simulate,
                       V2H.Simulator.TimeSlot,
-                      V2H.Simple.Transpile,
+                      V2H.Transpile,
                       V2H.Simulator.EDSL,
                       V2H.Simulator.Circuit
     -- LANGUAGE extensions used by modules in this package.
@@ -108,8 +108,7 @@ executable simple-parser
     hs-source-dirs:    src,
                        src/V2H,
                        src/V2H/Simulator,
-                       src/V2H/Simple,
-                       src/V2H/Simple/IRGeneartor
+                       src/V2H/IRGeneartor
     -- Base language which the package is written in.
     default-language: GHC2021
 
@@ -123,18 +122,18 @@ library V2H
                       V2H.IR.DataTypes,
                       V2H.IR.Dimensions,
                       V2H.IR.NetTypes,
-                      V2H.Simple.Ast,
-                      V2H.Simple.Parser,
-                      V2H.Simple.IRGenerator,
-                      V2H.Simple.IRGenerator.DataTypes,
-                      V2H.Simple.IRGenerator.Expressions
-                      V2H.Simple.IRGenerator.Identifiers,
+                      V2H.Ast,
+                      V2H.Parser,
+                      V2H.IRGenerator,
+                      V2H.IRGenerator.DataTypes,
+                      V2H.IRGenerator.Expressions
+                      V2H.IRGenerator.Identifiers,
                       V2H.Simulator.Signal,
                       V2H.CodeGenerator,
-                      V2H.Simple.V2H,
+                      V2H.V2H,
                       V2H.Simulator.Simulate,
                       V2H.Simulator.TimeSlot,
-                      V2H.Simple.Transpile,
+                      V2H.Transpile,
                       V2H.Simulator.EDSL,
                       V2H.Simulator.Circuit
     -- LANGUAGE extensions used by modules in this package.
@@ -161,8 +160,7 @@ library V2H
     hs-source-dirs:    src,
                        src/V2H,
                        src/V2H/Simulator,
-                       src/V2H/Simple,
-                       src/V2H/Simple/IRGeneartor
+                       src/V2H/IRGeneartor
     -- Base language which the package is written in.
     default-language: GHC2021
 

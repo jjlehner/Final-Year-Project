@@ -17,13 +17,13 @@ import GHC.Integer
 import V2H.IR.DataTypes
 import V2H.Simulator.Signal
 import V2H.Simulator.Circuit
-import V2H.Simple.IRGenerator.Expressions qualified as IR
+import V2H.IRGenerator.Expressions qualified as IR
 import Debug.Trace
 import Text.Pretty.Simple
 import Data.Text.Lazy (unpack)
 import qualified V2H.IR as IR
 import qualified V2H.IR.DataTypes as IR
-import V2H.Simple.IRGenerator.Expressions (mkSignalValueDataObjectFromInteger)
+import V2H.IRGenerator.Expressions (mkSignalValueDataObjectFromInteger)
 
 data SignalValueChange = SignalValueChange {
     connection :: ConnectionIR,

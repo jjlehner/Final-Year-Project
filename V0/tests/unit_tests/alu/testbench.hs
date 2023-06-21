@@ -3,8 +3,8 @@
 module Main where
 import V2H.Simulator.Signal
 import V2H.Simulator.Simulate
-import V2H.Simple.V2H
-import V2H.Simple.IRGenerator
+import V2H.V2H
+import V2H.IRGenerator
 
 import V2H.Simulator.EDSL
 import Control.Lens.Combinators

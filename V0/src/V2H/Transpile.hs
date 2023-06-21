@@ -1,9 +1,9 @@
-module V2H.Simple.Transpile where
+module V2H.Transpile where
 import Control.Exception (Exception)
 import Data.Function
 import qualified V2H.Alex.Lexer as Lexer
-import qualified V2H.Simple.Parser as Parser
-import qualified V2H.Simple.IRGenerator as IR
+import qualified V2H.Parser as Parser
+import qualified V2H.IRGenerator as IR
 import qualified V2H.IR as IR
 import Data.ByteString.Lazy qualified as LazyByteString
 

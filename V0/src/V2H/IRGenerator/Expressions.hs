@@ -1,8 +1,8 @@
-module V2H.Simple.IRGenerator.Expressions where
+module V2H.IRGenerator.Expressions where
 import Control.Lens
 import Data.Map qualified as Map
 import Data.Bits qualified as Bits
-import V2H.Simple.Ast qualified as SimpleAst
+import V2H.Ast qualified as SimpleAst
 import V2H.IR qualified as IR
 import V2H.IR.DataTypes qualified as IR
 import Text.Pretty.Simple

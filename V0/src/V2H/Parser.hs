@@ -2,7 +2,7 @@
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 {-# HLINT ignore "Use camelCase" #-}
 
-module V2H.Simple.Parser where
+module V2H.Parser where
 
 import Text.Earley
 import Data.Maybe
@@ -10,7 +10,7 @@ import Data.List
 import Data.Functor
 import Control.Applicative
 import qualified V2H.Alex.Lexer as Lexer
-import qualified V2H.Simple.Ast as SimpleAst
+import qualified V2H.Ast as SimpleAst
 import Text.Pretty.Simple (pShow)
 import Data.Text.Lazy (unpack)
 import Debug.Trace

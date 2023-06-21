@@ -17,9 +17,9 @@ import Language.Haskell.TH.Syntax
 import V2H.IR qualified as IR
 import V2H.IR.DataTypes qualified as IR
 import V2H.Simulator.Signal
-import V2H.Simple.IRGenerator.Expressions
+import V2H.IRGenerator.Expressions
 import V2H.Simulator.Simulate qualified as Simulate
-import V2H.Simple.Transpile
+import V2H.Transpile
 import Debug.Trace
 import Control.Monad.Extra (concatMapM)
 import V2H.IR (getLeafFromHierachicalIdentifier)
@@ -88,6 +88,8 @@ generateSignalIdentifier h = do
     value <- [e| h |]
     pure $ ValD (VarP $ mkName varName) (NormalB value) []
 
+-- | Generate the hierarchial identifiers used by the second stage ir
+-- to reference signals
 generateSignalIdentifiers ::
     IR.ExpandedIR
     -> Q [Dec]
@@ -128,6 +130,7 @@ generateSubmoduleFieldType idens submodule =
 generateSubmoduleNameFromHierarchicalIdentifier hIden =
     generateModuleName (IR.flattenHierarchicalIdentifier hIden)
 
+-- | Generate Static Representation of circuit for use by the EDSL
 generateCircuitRecord ::
     [IR.ModuleInstanceIdentifierIR]
     -> [IR.IR]

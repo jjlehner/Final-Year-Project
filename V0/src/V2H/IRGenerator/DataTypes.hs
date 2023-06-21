@@ -1,5 +1,5 @@
-module V2H.Simple.IRGenerator.DataTypes where
-import V2H.Simple.Ast as SimpleAst
+module V2H.IRGenerator.DataTypes where
+import V2H.Ast as SimpleAst
 import V2H.IR qualified as IR
 import V2H.IR.DataTypes qualified as IR
 import V2H.IR.Dimensions qualified as IR

@@ -7,7 +7,7 @@ import GHC.TypeLits
 import Control.Lens.TH
 import V2H.IR qualified as IR
 import V2H.IR.DataTypes qualified as IR
-import V2H.Simple.IRGenerator.Expressions qualified as IR
+import V2H.IRGenerator.Expressions qualified as IR
 import Data.Kind
 import Data.Type.Bool
 import Data.Data
