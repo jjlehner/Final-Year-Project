@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+-- | Module holding structures and functions used to manipulate a timeslot.
 module V2H.Simulator.TimeSlot where
 
 import Data.Sequence.Queue qualified as Queue
@@ -66,9 +67,13 @@ addToReactiveRegion = addToRegion reActiveRegion
 addToReNbaRegion :: TimeSlot -> TimeSlotEvent -> TimeSlot
 addToReNbaRegion = addToRegion reNbaRegion
 
+addManyToActiveRegion :: TimeSlot -> [TimeSlotEvent] -> TimeSlot
+addManyToActiveRegion = foldl addToActiveRegion
+
 addManyToReactiveRegion :: TimeSlot -> [TimeSlotEvent] -> TimeSlot
 addManyToReactiveRegion = foldl addToReactiveRegion
-addToRegion regionLens timeSlot event = over regionLens (Queue.|> event) timeSlot
 
 addManyToNbaRegion :: TimeSlot -> [TimeSlotEvent] -> TimeSlot
 addManyToNbaRegion = foldl addToNbaRegion
+
+addToRegion regionLens timeSlot event = over regionLens (Queue.|> event) timeSlot

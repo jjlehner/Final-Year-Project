@@ -30,3 +30,4 @@ Find user guide here - [user_guide.md](user_guide.md)
 * Fipper Module - [tests/unit_tests/flipper/testbench.hs](tests/unit_tests/flipper/testbench.hs)
 
 
+## Automatically generated documentation can be found here - [Verilog2Haskell/V2H-V2H.html](Verilog2Haskell/V2H-V2H.html)

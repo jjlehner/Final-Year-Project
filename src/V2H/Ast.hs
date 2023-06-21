@@ -1,4 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields #-}
+
+-- | Module Holding Abstract Syntax Tree Nodes
 module V2H.Ast where
 
 import GHC.Generics

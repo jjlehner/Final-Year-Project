@@ -19,11 +19,13 @@ import System.Environment
 import System.IO
 import Data.List.Extra qualified as Extra
 
+-- Generate type information for EDSL
 $(setup "piso" [
         "tests/unit_tests/piso/rtl/piso.sv",
         "tests/unit_tests/piso/rtl/stager.sv"
     ])
 
+-- Generate Lens for type automatically generated
 $(makeFieldsNoPrefix ''Piso)
 
 assert :: Bool -> a -> a
@@ -57,6 +59,7 @@ isEqualTo ln val errMsg = do
     sig <- fetchValue ln
     assert (sig == val) $ pure errMsg
 
+-- | Shift out single element of the shift register and return value
 saveOutThenClk :: State (StimulatedCircuit Piso) (Signal 1)
 saveOutThenClk = do
     uptake <== mkSignal @0
@@ -66,12 +69,14 @@ saveOutThenClk = do
     toggleClk
     return a
 
+-- | Shift out all elements of the shift register and return each value
 shiftOutAll :: State (StimulatedCircuit Piso) [Signal 1]
 shiftOutAll = do
     replicateM 6 saveOutThenClk
 
+-- | Set the input value to the shift register
 setInput inVal = do
-    enable <== mkSignal @1
+    enable <== mkSignal @1 -- Set control lines
     uptake <== mkSignal @1
     eval'
     in0 <== Signal (fromBool $ testBit inVal 0)
@@ -95,7 +100,7 @@ main =
     in do
         x <- fmap (read . Extra.headDef "1000") getArgs
         g <- getStdGen
-        take x (randomRs (0::Integer, 64) g)
-            & fmap runTest
-            & and
-            & flip assert (hPutStr stderr $ "All Test Passed, " ++ show x ++ ", ")
+        take x (randomRs (0::Integer, 64) g) -- Generate random number to fill into shift register
+            & fmap runTest  -- Run test each time with a random number
+            & and -- Reduce Test results using logic and
+            & flip assert (hPutStr stderr $ "All Test Passed, " ++ show x ++ ", ") -- Check that all tests have passed

@@ -38,10 +38,21 @@ main =
             b <== mkSignal @3
             operation <== mkSignal @0
             toggleClk
+            o1 <- fetchValue out
+            assert (o1 == mkSignal @0) $ pure ()
+            a <== mkSignal @1
+            b <== mkSignal @2
+            operation <== mkSignal @2
             toggleClk
-            out <- fetchValue out
+            o2 <- fetchValue out
+            assert (o2 == mkSignal @2) $ pure ()
+            a <== mkSignal @2
+            b <== mkSignal @0
+            operation <== mkSignal @2
+            toggleClk
+            o2 <- fetchValue out
+            assert (o2 == mkSignal @0) $ pure ()
             pure ()
-            -- assert (out == mkSignal @9) $ pure ()
     in do
         pPrint expandedIR
         pPrint $ runTest (replicateM_ 1 test1) e

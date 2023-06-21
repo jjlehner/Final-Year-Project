@@ -23,6 +23,10 @@ $(setup "sipo" [
         "tests/unit_tests/sipo/rtl/sipo.sv",
         "tests/unit_tests/sipo/rtl/stager.sv"
     ])
+$(setupWriteOutput "tests/unit_tests/sipo/generated.txt" "sipo" [
+        "tests/unit_tests/sipo/rtl/sipo.sv",
+        "tests/unit_tests/sipo/rtl/stager.sv"
+    ])
 
 $(makeFieldsNoPrefix ''Sipo)
 

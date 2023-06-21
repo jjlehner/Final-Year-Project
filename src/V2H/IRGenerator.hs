@@ -1,4 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields#-}
+-- | Module for converting Abstract Syntax Tree representation of circuit
+-- into First Stage IR and First Stage IR into Second Stage IR.
 module V2H.IRGenerator where
 
 import Control.Lens
@@ -20,6 +22,7 @@ generateConnection ::
 generateConnection (SimpleAst.VariableLvalue v Nothing partSelectRange) =
     IR.ConnectionVariableIR (IR.I $ generateVariableOrNetIdentifier v) Nothing
 
+-- | Generate statementItemIRs from abstract syntax tree representation
 generateStatementItemIRs ::
     IR.VariableMapIR
     -> IR.NetMapIR
@@ -61,6 +64,8 @@ generateEdgeIdentifier =
                     SimpleAst.Negedge -> IR.Negedge
                     SimpleAst.Edge -> IR.Edge
     in fmap converter
+
+-- | Generate always construct ir from abstract syntax tree representation
 generateAlwaysConstructIR ::
     IR.VariableMapIR
     -> IR.NetMapIR
@@ -205,7 +210,6 @@ generateSubmoduleIRs ::
 generateSubmoduleIRs variables nets moduleDeclaration =
     generateSubmoduleIR variables nets <$> toListOf (types @SimpleAst.ModuleInstantiation) moduleDeclaration
 
-
 generateModuleIR ::
     SimpleAst.ModuleDeclaration
     -> IR.IR
@@ -224,6 +228,7 @@ generateModuleIR moduleDeclaration =
         submodules = generateSubmoduleIRs variables nets moduleDeclaration
     }
 
+-- | Entry function to generate First Stage IR representation from abstract syntax tree.
 generateIR ::
     SimpleAst.SourceText
     -> Either String [IR.IR]
@@ -329,7 +334,8 @@ updateAlwaysConstructIRHierarchicalIdentifierIRs idenGen alwaysConstruct =
     & over IR.statementItems (fmap $ updateStatementItemIRHierarchicalIdentifierIRs idenGen)
     & over IR.sensitivity (updateSensitivityIRHierarchicalIdentifierIRs idenGen)
 
-
+-- | Fill out hierarchy of modules in second stage IR.
+-- Uses rank-2 function type to wrap identifiers into hierarchical identifiers.
 generateExpandedIRSubmodule ::
     [IR.IR]
     -> IR.IR
@@ -349,6 +355,7 @@ generateExpandedIRSubmodule irs ir identifier =
 
 moduleIdenToModuleInstanceIden (IR.ModuleIdentifierIR iden) = IR.ModuleInstanceIdentifierIR iden
 
+-- | Generate Second Stage IR representation from abstract first stage IR.
 generateExpandedIR ::
     IR.IR
     -> [IR.IR]

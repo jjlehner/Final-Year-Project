@@ -1,7 +1,0 @@
-cabal.project.local
-dist/*
-dist-newstyle/*
-.direnv/*
-.ghci_history
-.vscode/*
-bin/
